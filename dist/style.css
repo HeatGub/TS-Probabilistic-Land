@@ -1,0 +1,18 @@
+:root {
+    background: rgba(0, 0, 0, 0.834);
+}
+#canvas1 {
+    position: absolute;
+    border: 1px solid black;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /* image-rendering: pixelated; */
+}
+#asteroid {
+    display: none;
+}
+
+.hidden{
+    display: none;
+}
