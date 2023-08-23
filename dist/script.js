@@ -3,8 +3,14 @@ window.addEventListener('load', function () {
     //GLOBALS
     const canvas = document.getElementById('canvas1');
     const ctx = canvas.getContext('2d');
-    canvas.width = 1600;
-    canvas.height = 1200;
+    //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    window.addEventListener('resize', function () {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        tree.drawTheTree(); // tree possibly not ready at resizes
+    });
     class Branch {
         constructor(x0, y0, len, angle, lineWidth = 20, //trunk width
         parent, // parent branch or root
@@ -29,13 +35,13 @@ window.addEventListener('load', function () {
         }
         makeChildBranch(parent, angleDiff) {
             // ctx.strokeStyle = 'green' // why is the trunk green?
-            let childBranch = new Branch(this.xF, this.yF, this.len * 0.8, angleDiff, this.lineWidth * 0.5, parent);
+            let childBranch = new Branch(this.xF, this.yF, this.len * 0.8, angleDiff, this.lineWidth * 0.6, parent);
             childBranch.parent = this;
             childBranch.level = this.level + 1;
             this.children.push(childBranch);
             // console.log(this.parent)
             // childBranch.drawBranch()
-            setTimeout(() => { childBranch.drawBranch(); }, 100);
+            // setTimeout(() => {childBranch.drawBranch()} , 50)
             return childBranch;
         }
         drawBranch() {
@@ -51,20 +57,20 @@ window.addEventListener('load', function () {
         }
     }
     class Tree {
-        constructor(initX, initY, initLen, initAngle, maxLevel = 8, everyLevelBranches = [[]]) {
+        constructor(initX, initY, initLen, initAngle, maxLevel = 10, everyLevelBranches = [[]]) {
             this.initX = initX;
             this.initY = initY;
             this.initLen = initLen;
             this.initAngle = initAngle;
             this.maxLevel = maxLevel;
             this.everyLevelBranches = everyLevelBranches;
-            this.everyLevelBranches[0] = [new Branch(initX, initY, initLen, initAngle, 20, root)]; //save trunk as 0lvl branch
-            this.everyLevelBranches[0][0].drawBranch(); //draw the trunk
-            // let currLvl = 1 -> LOOP ALL LEVELS EXCEPT 0 (TRUNK)
+            const startTime = Date.now();
+            this.everyLevelBranches[0] = [new Branch(initX, initY, initLen, initAngle, 50, root)]; //save trunk as 0lvl branch
+            // this.everyLevelBranches[0][0].drawBranch()     //draw the trunk
             for (let currLvl = 0; currLvl < this.maxLevel; currLvl++) {
                 this.everyLevelBranches.push([]); // push empty array to fill it by the forEach loop
                 this.everyLevelBranches[currLvl].forEach(element => {
-                    // console.log('parent = ' + element)
+                    // MAKE BRANCHES
                     if (Math.random() > 0.1) {
                         this.everyLevelBranches[currLvl + 1].push(element.makeChildBranch(element, 25));
                     }
@@ -73,7 +79,18 @@ window.addEventListener('load', function () {
                     }
                 });
             }
+            console.log('Tree constructed in ' + (Date.now() - startTime) + ' ms');
         } // constructor end
+        drawTheTree() {
+            const startTime = Date.now();
+            for (let currLvl = 0; currLvl < this.maxLevel; currLvl++) {
+                this.everyLevelBranches.push([]); // push empty array to fill it by the forEach loop
+                this.everyLevelBranches[currLvl].forEach(element => {
+                    element.drawBranch();
+                });
+            }
+            console.log('Tree painted in ' + (Date.now() - startTime) + ' ms');
+        }
     }
     class Root {
         constructor(angle = 0) {
@@ -85,7 +102,19 @@ window.addEventListener('load', function () {
     // With the root there is no need for checking for parent element in Branch constructor
     const root = new Root();
     const tree = new Tree(canvas.width / 2, canvas.height, 200, 0); // initialize tree with trunk params
-    // tree.trunk.drawBranch() // why it draws everything and in one width and col?
-    console.log(tree.everyLevelBranches);
+    tree.drawTheTree();
+    // console.log(tree.everyLevelBranches)
+    // // ANIMATE
+    // let lastTime = 0
+    // function animate(timeStamp: number) {
+    //     const deltaTime = timeStamp - lastTime
+    //     lastTime = timeStamp
+    //     ctx.clearRect(0,0, canvas.width, canvas.height)
+    //     game.render(ctx, deltaTime)
+    //     // console.log(Math.floor(1000/deltaTime)) //FPS
+    //     requestAnimationFrame(animate)
+    // }
+    // //run animation loop, first time stamp as argument
+    // animate(0)
 });
 //# sourceMappingURL=script.js.map
