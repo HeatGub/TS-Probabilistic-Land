@@ -57,24 +57,28 @@ window.addEventListener('load', function () {
         }
     }
     class Tree {
-        constructor(initX, initY, initLen, initAngle, maxLevel = 10, everyLevelBranches = [[]]) {
+        constructor(initX, initY, initLen, initAngle, branchingProbability = 0.8, maxLevel = 12, everyLevelBranches = [[]]) {
             this.initX = initX;
             this.initY = initY;
             this.initLen = initLen;
             this.initAngle = initAngle;
+            this.branchingProbability = branchingProbability;
             this.maxLevel = maxLevel;
             this.everyLevelBranches = everyLevelBranches;
             const startTime = Date.now();
             this.everyLevelBranches[0] = [new Branch(initX, initY, initLen, initAngle, 50, root)]; //save trunk as 0lvl branch
-            // this.everyLevelBranches[0][0].drawBranch()     //draw the trunk
-            for (let currLvl = 0; currLvl < this.maxLevel; currLvl++) {
+            for (let currLvl = 0; currLvl <= this.maxLevel; currLvl++) {
+                // prob should = 1 for level 0 (trunk) 
+                // this variable lowers branching probability with lever. In range from 1 to branchingProbability linearly
+                let branchingProbabilityByLevel = branchingProbability + ((1 - branchingProbability) * ((this.maxLevel - currLvl) / this.maxLevel));
+                console.log(branchingProbabilityByLevel, currLvl);
                 this.everyLevelBranches.push([]); // push empty array to fill it by the forEach loop
                 this.everyLevelBranches[currLvl].forEach(element => {
                     // MAKE BRANCHES
-                    if (Math.random() > 0.1) {
+                    if (Math.random() < branchingProbabilityByLevel) {
                         this.everyLevelBranches[currLvl + 1].push(element.makeChildBranch(element, 25));
                     }
-                    if (Math.random() > 0.1) {
+                    if (Math.random() < branchingProbabilityByLevel) {
                         this.everyLevelBranches[currLvl + 1].push(element.makeChildBranch(element, -25));
                     }
                 });

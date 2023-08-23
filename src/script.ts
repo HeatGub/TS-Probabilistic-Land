@@ -64,20 +64,24 @@ window.addEventListener('load', function() {
             readonly initY: number,
             readonly initLen: number,
             readonly initAngle: number,
-            readonly maxLevel: number = 10,
+            readonly branchingProbability: number = 0.8,
+            readonly maxLevel: number = 12,
             public everyLevelBranches: [Branch[]] = [[]],
         ){
             const startTime = Date.now()
             this.everyLevelBranches[0] = [new Branch (initX, initY, initLen, initAngle, 50, root)]   //save trunk as 0lvl branch
-            // this.everyLevelBranches[0][0].drawBranch()     //draw the trunk
-            for (let currLvl = 0; currLvl < this.maxLevel; currLvl++) {
+            for (let currLvl = 0; currLvl <= this.maxLevel; currLvl++) {
+                // prob should = 1 for level 0 (trunk) 
+                // this variable lowers branching probability with lever. In range from 1 to branchingProbability linearly
+                let branchingProbabilityByLevel = branchingProbability + ( (1-branchingProbability) * ((this.maxLevel-currLvl)/this.maxLevel) )
+                console.log(branchingProbabilityByLevel, currLvl)
                 this.everyLevelBranches.push([]) // push empty array to fill it by the forEach loop
                 this.everyLevelBranches[currLvl].forEach( element => {
                     // MAKE BRANCHES
-                    if (Math.random() > 0.1){
+                    if (Math.random() < branchingProbabilityByLevel){
                         this.everyLevelBranches[currLvl+1].push(element.makeChildBranch(element,25))
                     }
-                    if (Math.random() > 0.1){
+                    if (Math.random() < branchingProbabilityByLevel){
                         this.everyLevelBranches[currLvl+1].push(element.makeChildBranch(element,-25))
                     }
                 })
