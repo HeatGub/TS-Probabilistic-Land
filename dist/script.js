@@ -48,7 +48,7 @@ window.addEventListener('load', function () {
         }
         drawBranch() {
             ctx.lineWidth = this.lineWidth;
-            ctx.strokeStyle = 'rgb(10,' + (30 + 12 * this.level) + ', 0)';
+            ctx.strokeStyle = 'rgb(10,' + (40 + 10 * this.level) + ', 0)';
             ctx.lineCap = "round";
             ctx.beginPath();
             ctx.moveTo(this.x0, this.y0);
@@ -62,7 +62,7 @@ window.addEventListener('load', function () {
         }
     }
     class Tree {
-        constructor(initX, initY, initLen, initAngle, branchingProbability = 0.8, maxLevel = 5, allBranches = [[]]) {
+        constructor(initX, initY, initLen, initAngle, branchingProbability = 0.8, maxLevel = 16, allBranches = [[]]) {
             this.initX = initX;
             this.initY = initY;
             this.initLen = initLen;
@@ -72,7 +72,7 @@ window.addEventListener('load', function () {
             this.allBranches = allBranches;
             const startTime = Date.now();
             this.allBranches[0] = [new Branch(initX, initY, initLen, initAngle, 50, root)]; //save trunk as 0lvl branch
-            for (let currLvl = 0; currLvl <= this.maxLevel; currLvl++) {
+            for (let currLvl = 0; currLvl < this.maxLevel; currLvl++) {
                 // prob should = 1 for level 0 (trunk) 
                 // this variable lowers branching probability with lever. In range from 1 to branchingProbability linearly
                 let branchingProbabilityByLevel = branchingProbability + ((1 - branchingProbability) * ((this.maxLevel - currLvl) / this.maxLevel));
@@ -92,11 +92,11 @@ window.addEventListener('load', function () {
         } // constructor end
         drawTheTree() {
             const startTime = Date.now();
-            for (let currLvl = 0; currLvl <= this.maxLevel + 1; currLvl++) {
-                let lvlLen = this.allBranches[currLvl].length;
-                for (let item = 0; item < lvlLen; item++) {
-                    this.allBranches[currLvl][item].drawBranch();
-                }
+            for (let currLvl = 0; currLvl <= this.maxLevel; currLvl++) {
+                // console.log(this.allBranches[currLvl])
+                this.allBranches[currLvl].forEach((element) => {
+                    element.drawBranch();
+                });
             }
             console.log('drawTheTree in ' + (Date.now() - startTime) + ' ms');
         }
@@ -112,46 +112,80 @@ window.addEventListener('load', function () {
     const root = new Root();
     const tree = new Tree(canvas.width / 2, canvas.height, 200, 0); // initialize tree with trunk params
     // tree.drawTheTree() //all at once
-    // console.log(tree.allBranches)
-    // let timer = 0
+    console.log(tree.allBranches);
     // _________ ANIMATE _________
     let lvl = 0;
-    let item = 0;
+    // let item = 0
     let lastTime = 0;
     let accumulatedTime = 0;
-    const timeLimit = 20;
-    function animate(timeStamp) {
+    const timeLimit = 10;
+    function animateByLvl(timeStamp) {
         const timeDelta = timeStamp - lastTime;
         // console.log(timeDelta)
         lastTime = timeStamp;
         // break the loop
-        if (lvl > tree.maxLevel && item > tree.allBranches[tree.maxLevel].length) {
-            console.log('Animation end');
+        if (lvl > tree.maxLevel) {
+            console.log('___Animation_end___');
             return;
         }
-        // increase lvl if that was the last item in that level
-        if (item >= tree.allBranches[lvl].length) {
-            lvl++;
-            item = 0;
-            console.log('lvl =' + lvl);
-        }
-        // draw a branch if accumulated Time is higher than timeLimit
+        // draw if accumulated Time is higher than timeLimit
         if (accumulatedTime >= timeLimit) {
-            // tree.allBranches[lvl].forEach(element => {element.drawBranch()})
-            tree.allBranches[lvl][item].drawBranch();
-            item++;
+            tree.allBranches[lvl].forEach(element => { element.drawBranch(); });
+            lvl++;
+            // tree.allBranches[lvl][item].drawBranch()
+            // console.log('lvl ' + (lvl-1) + ', ' + accumulatedTime + 'ms')
             accumulatedTime = 0;
         }
         // or add accumulated time 
         else if (accumulatedTime < timeLimit) {
             accumulatedTime += timeDelta;
         }
-        requestAnimationFrame(animate);
+        requestAnimationFrame(animateByLvl);
         if (Math.floor(1000 / timeDelta) < 50)
-            console.log(Math.floor(1000 / timeDelta) + ' FPS'); //FPS
+            console.log(Math.floor(1000 / timeDelta) + ' FPS!!!'); //FPS
     }
     // animate
-    animate(0);
+    animateByLvl(0);
     // _________ ANIMATE _________
 });
+// // _________ ANIMATE _________
+// let lvl = 0
+// let item = 0
+// let lastTime = 0
+// let accumulatedTime = 0
+// const timeLimit = 20
+// function animate(timeStamp: number) {
+//     const timeDelta = timeStamp - lastTime
+//     // console.log(timeDelta)
+//     lastTime = timeStamp
+//     // break the loop
+//     if (lvl > tree.maxLevel && item > tree.allBranches[tree.maxLevel].length) {
+//         console.log('Animation end')
+//         return
+//     }
+//     // increase lvl if that was the last item in that level
+//     if (item >= tree.allBranches[lvl].length) {
+//         lvl++
+//         item = 0
+//         console.log('lvl =' + lvl)
+//     }
+//     // draw a branch if accumulated Time is higher than timeLimit
+//     if (accumulatedTime >= timeLimit) {
+//         // tree.allBranches[lvl].forEach(element => {element.drawBranch()})
+//         tree.allBranches[lvl][item].drawBranch()
+//         item ++
+//         accumulatedTime = 0
+//     }
+//     // or add accumulated time 
+//     else if (accumulatedTime < timeLimit) {
+//         accumulatedTime += timeDelta
+//     }
+//     requestAnimationFrame(animate)
+//     if (Math.floor(1000/timeDelta) < 50)
+//     console.log(Math.floor(1000/timeDelta) + ' FPS') //FPS
+// }
+// // animate
+// animate(0)
+// // _________ ANIMATE _________
+// })
 //# sourceMappingURL=script.js.map
