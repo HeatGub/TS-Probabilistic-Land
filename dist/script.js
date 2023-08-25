@@ -3,13 +3,16 @@ window.addEventListener('load', function () {
     //GLOBALS
     const canvas = document.getElementById('canvas1');
     const ctx = canvas.getContext('2d');
+    // ctx.lineCap = "round";
+    // let lastTime = 0
+    // let acumulatedTime = 0
     //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     window.addEventListener('resize', function () {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        tree.drawTheTree(); // tree possibly not ready at resizes
+        tree.drawTheTree(); // tree possibly not ready at resize
     });
     class Branch {
         constructor(x0, y0, len, angle, lineWidth = 20, //trunk width
@@ -34,8 +37,11 @@ window.addEventListener('load', function () {
             this.yF = y0 - Math.cos(this.angle / 180 * Math.PI) * len;
         }
         makeChildBranch(parent, angleDiff) {
-            // ctx.strokeStyle = 'green' // why is the trunk green?
-            let childBranch = new Branch(this.xF, this.yF, this.len * 0.8, angleDiff, this.lineWidth * 0.6, parent);
+            let childBranch = new Branch(this.xF, this.yF, this.len * 0.8, angleDiff, this.lineWidth * 0.75, parent);
+            // _________ rebranching at different positions. Not worth it for now. _________
+            // childBranch.x0 = this.xF + Math.cos(this.angle/180* Math.PI) * this.lineWidth/4 * (childBranch.angle/ Math.abs(childBranch.angle))
+            // childBranch.y0 = this.yF + Math.sin(this.angle/180* Math.PI) * this.lineWidth/4 * (childBranch.angle/ Math.abs(childBranch.angle))
+            // _________ _________
             childBranch.parent = this;
             childBranch.level = this.level + 1;
             this.children.push(childBranch);
@@ -45,19 +51,19 @@ window.addEventListener('load', function () {
             return childBranch;
         }
         drawBranch() {
-            // console.log(this)
             ctx.lineWidth = this.lineWidth;
-            ctx.strokeStyle = 'rgb(10,' + 20 * this.level + ', 0)';
+            ctx.strokeStyle = 'rgb(10,' + (30 + 12 * this.level) + ', 0)';
             ctx.moveTo(this.x0, this.y0);
+            // ctx.bezierCurveTo(this.x0, this.y0, (this.x0 + this.xF)/2 + 10, (this.y0 + this.yF)/2 -10, this.xF, this.yF);
             ctx.lineTo(this.xF, this.yF);
             // ctx.fillStyle = 'white'
             // ctx.fillText(String(this.angle) + '  ' + String(this.level), (this.xF+this.x0)/2 + 10, (this.y0+this.yF)/2)
             ctx.stroke();
-            return;
+            // console.log('drawBranch')
         }
     }
     class Tree {
-        constructor(initX, initY, initLen, initAngle, branchingProbability = 0.8, maxLevel = 12, everyLevelBranches = [[]]) {
+        constructor(initX, initY, initLen, initAngle, branchingProbability = 0.8, maxLevel = 8, everyLevelBranches = [[]]) {
             this.initX = initX;
             this.initY = initY;
             this.initLen = initLen;
@@ -71,15 +77,15 @@ window.addEventListener('load', function () {
                 // prob should = 1 for level 0 (trunk) 
                 // this variable lowers branching probability with lever. In range from 1 to branchingProbability linearly
                 let branchingProbabilityByLevel = branchingProbability + ((1 - branchingProbability) * ((this.maxLevel - currLvl) / this.maxLevel));
-                console.log(branchingProbabilityByLevel, currLvl);
+                // console.log(branchingProbabilityByLevel, currLvl)
                 this.everyLevelBranches.push([]); // push empty array to fill it by the forEach loop
                 this.everyLevelBranches[currLvl].forEach(element => {
                     // MAKE BRANCHES
                     if (Math.random() < branchingProbabilityByLevel) {
-                        this.everyLevelBranches[currLvl + 1].push(element.makeChildBranch(element, 25));
+                        this.everyLevelBranches[currLvl + 1].push(element.makeChildBranch(element, 20 + Math.random() * 15));
                     }
                     if (Math.random() < branchingProbabilityByLevel) {
-                        this.everyLevelBranches[currLvl + 1].push(element.makeChildBranch(element, -25));
+                        this.everyLevelBranches[currLvl + 1].push(element.makeChildBranch(element, -20 - Math.random() * 15));
                     }
                 });
             }
@@ -88,12 +94,12 @@ window.addEventListener('load', function () {
         drawTheTree() {
             const startTime = Date.now();
             for (let currLvl = 0; currLvl < this.maxLevel; currLvl++) {
-                this.everyLevelBranches.push([]); // push empty array to fill it by the forEach loop
                 this.everyLevelBranches[currLvl].forEach(element => {
+                    // element.animateBranch()
                     element.drawBranch();
                 });
             }
-            console.log('Tree painted in ' + (Date.now() - startTime) + ' ms');
+            console.log('drawTheTree in ' + (Date.now() - startTime) + ' ms');
         }
     }
     class Root {
@@ -108,17 +114,16 @@ window.addEventListener('load', function () {
     const tree = new Tree(canvas.width / 2, canvas.height, 200, 0); // initialize tree with trunk params
     tree.drawTheTree();
     // console.log(tree.everyLevelBranches)
-    // // ANIMATE
-    // let lastTime = 0
+    // // _________ ANIMATE _________
     // function animate(timeStamp: number) {
     //     const deltaTime = timeStamp - lastTime
+    //     deltaTime //just to call
     //     lastTime = timeStamp
-    //     ctx.clearRect(0,0, canvas.width, canvas.height)
-    //     game.render(ctx, deltaTime)
-    //     // console.log(Math.floor(1000/deltaTime)) //FPS
+    //     // drawBranch()
+    //     // tree.drawTheTree()
     //     requestAnimationFrame(animate)
+    //     console.log(Math.floor(1000/deltaTime) + ' FPS') //FPS
     // }
-    // //run animation loop, first time stamp as argument
     // animate(0)
 });
 //# sourceMappingURL=script.js.map
