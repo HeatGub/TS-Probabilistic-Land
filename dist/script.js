@@ -16,7 +16,10 @@ window.addEventListener('load', function () {
         constructor(x0, y0, len, angle, lineWidth = 20, //trunk width
         parent, // parent branch or root
         xF = 0, //could be ? but then lineTo errors with null
-        yF = 0, level = 0, children = []) {
+        yF = 0, level = 0, children = [], // list of children branches
+        // public segments: [{x0: number, y0: number, xF: number, yF: number}] = [{x0: 0, y0: 0, xF: 0, yF: 0}]
+        segments = [] // remove empty array type?
+        ) {
             this.x0 = x0;
             this.y0 = y0;
             this.len = len;
@@ -27,15 +30,40 @@ window.addEventListener('load', function () {
             this.yF = yF;
             this.level = level;
             this.children = children;
+            this.segments = segments;
             this.parent = parent;
             // recalculate the angle according to parent branch first 
             this.angle = this.parent.angle + this.angle;
             // THEN CALCULATE TIP (FINAL) COORDINATES
-            this.xF = x0 + Math.sin(this.angle / 180 * Math.PI) * len;
-            this.yF = y0 - Math.cos(this.angle / 180 * Math.PI) * len;
+            this.xF = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len;
+            this.yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len;
+            // SEGMENTING
+            let segmentingLen = 20;
+            let segmentsAmount = Math.ceil(this.len / segmentingLen);
+            for (let segment = 0; segment < segmentsAmount; segment++) {
+                this.segments.push({ x0: 0, y0: 0, xF: 0, yF: 0 });
+                this.segments[segment].x0 = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len * (segment / segmentsAmount);
+                this.segments[segment].y0 = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len * (segment / segmentsAmount);
+                this.segments[segment].xF = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len * ((segment + 1) / segmentsAmount);
+                this.segments[segment].yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len * ((segment + 1) / segmentsAmount);
+                ctx.beginPath();
+                ctx.lineCap = "round";
+                ctx.lineWidth = this.lineWidth;
+                ctx.strokeStyle = 'rgb(10,' + (40 + 10 * segment) + ', 0)';
+                ctx.moveTo(this.segments[segment].x0, this.segments[segment].y0);
+                ctx.lineTo(this.segments[segment].xF, this.segments[segment].yF);
+                ctx.stroke();
+                ctx.closePath();
+                // console.log(this.segments[segment].x0)
+                // console.log(segment)
+            }
+            // console.log(this.level, segmentsAmount)
+            // console.log(this.segments[segmentsAmount].xF, this.segments[segmentsAmount].yF)
+            // console.log(this.xF, this.yF)
+            // console.log(this.segments)
         }
         makeChildBranch(parent, angleDiff) {
-            let childBranch = new Branch(this.xF, this.yF, this.len * 0.8, angleDiff, this.lineWidth * 0.75, parent);
+            let childBranch = new Branch(this.xF, this.yF, this.len * 0.71 + Math.random() * this.len * 0.15, angleDiff, this.lineWidth * 0.8, parent);
             // _________ rebranching at different positions. Not worth it for now. _________
             // childBranch.x0 = this.xF + Math.cos(this.angle/180* Math.PI) * this.lineWidth/4 * (childBranch.angle/ Math.abs(childBranch.angle))
             // childBranch.y0 = this.yF + Math.sin(this.angle/180* Math.PI) * this.lineWidth/4 * (childBranch.angle/ Math.abs(childBranch.angle))
@@ -47,9 +75,16 @@ window.addEventListener('load', function () {
             return childBranch;
         }
         drawBranch() {
-            ctx.lineWidth = this.lineWidth;
-            ctx.strokeStyle = 'rgb(10,' + (40 + 10 * this.level) + ', 0)';
+            // Add the gradient 
+            const gradient = ctx.createLinearGradient(this.x0, this.y0, this.xF, this.yF);
+            gradient.addColorStop(0, 'rgb(10,' + (10 + 10 * this.level) + ', 0)');
+            gradient.addColorStop(1, 'rgb(10,' + (20 + 10 * this.level) + ', 0)');
+            // gradient.addColorStop(0, 'rgb(10,0,' + (10 + 5*this.level)  + ')');
+            // gradient.addColorStop(1, 'rgb(10,0,' + (20 + 5*this.level)  + ')');
+            ctx.strokeStyle = gradient;
+            // ctx.strokeStyle = 'rgb(10,' + (40 + 10*this.level) + ', 0)'
             ctx.lineCap = "round";
+            ctx.lineWidth = this.lineWidth;
             ctx.beginPath();
             ctx.moveTo(this.x0, this.y0);
             // ctx.bezierCurveTo(this.x0, this.y0, (this.x0 + this.xF)/2 + 10, (this.y0 + this.yF)/2 -10, this.xF, this.yF);
@@ -71,7 +106,7 @@ window.addEventListener('load', function () {
             this.maxLevel = maxLevel;
             this.allBranches = allBranches;
             const startTime = Date.now();
-            this.allBranches[0] = [new Branch(initX, initY, initLen, initAngle, 50, root)]; //save trunk as 0lvl branch
+            this.allBranches[0] = [new Branch(initX, initY, initLen, initAngle, 40, root)]; //save trunk as 0lvl branch
             for (let currLvl = 0; currLvl < this.maxLevel; currLvl++) {
                 // prob should = 1 for level 0 (trunk) 
                 // this variable lowers branching probability with lever. In range from 1 to branchingProbability linearly
@@ -113,40 +148,40 @@ window.addEventListener('load', function () {
     const tree = new Tree(canvas.width / 2, canvas.height, 200, 0); // initialize tree with trunk params
     // tree.drawTheTree() //all at once
     console.log(tree.allBranches);
-    // _________ ANIMATE _________
-    let lvl = 0;
-    // let item = 0
-    let lastTime = 0;
-    let accumulatedTime = 0;
-    const timeLimit = 10;
-    function animateByLvl(timeStamp) {
-        const timeDelta = timeStamp - lastTime;
-        // console.log(timeDelta)
-        lastTime = timeStamp;
-        // break the loop
-        if (lvl > tree.maxLevel) {
-            console.log('___Animation_end___');
-            return;
-        }
-        // draw if accumulated Time is higher than timeLimit
-        if (accumulatedTime >= timeLimit) {
-            tree.allBranches[lvl].forEach(element => { element.drawBranch(); });
-            lvl++;
-            // tree.allBranches[lvl][item].drawBranch()
-            // console.log('lvl ' + (lvl-1) + ', ' + accumulatedTime + 'ms')
-            accumulatedTime = 0;
-        }
-        // or add accumulated time 
-        else if (accumulatedTime < timeLimit) {
-            accumulatedTime += timeDelta;
-        }
-        requestAnimationFrame(animateByLvl);
-        if (Math.floor(1000 / timeDelta) < 50)
-            console.log(Math.floor(1000 / timeDelta) + ' FPS!!!'); //FPS
-    }
-    // animate
-    animateByLvl(0);
-    // _________ ANIMATE _________
+    // // _________ ANIMATE _________
+    // let lvl = 0
+    // // let item = 0
+    // let lastTime = 0
+    // let accumulatedTime = 0
+    // const timeLimit = 10
+    // function animateByLvl(timeStamp: number) {
+    //     const timeDelta = timeStamp - lastTime
+    //     // console.log(timeDelta)
+    //     lastTime = timeStamp
+    //     // break the loop
+    //     if (lvl > tree.maxLevel) {
+    //         console.log('___Animation_end___')
+    //         return
+    //     }
+    //     // draw if accumulated Time is higher than timeLimit
+    //     if (accumulatedTime >= timeLimit) {
+    //         tree.allBranches[lvl].forEach(element => {element.drawBranch()})
+    //         lvl++
+    //         // tree.allBranches[lvl][item].drawBranch()
+    //         // console.log('lvl ' + (lvl-1) + ', ' + accumulatedTime + 'ms')
+    //         accumulatedTime = 0
+    //     }
+    //     // or add accumulated time 
+    //     else if (accumulatedTime < timeLimit) {
+    //         accumulatedTime += timeDelta
+    //     }
+    //     requestAnimationFrame(animateByLvl)
+    //     if (Math.floor(1000/timeDelta) < 50)
+    //     console.log(Math.floor(1000/timeDelta) + ' FPS!!!') //FPS
+    // }
+    // // animate
+    // animateByLvl(0)
+    // // _________ ANIMATE _________
 });
 // // _________ ANIMATE _________
 // let lvl = 0
