@@ -2,8 +2,12 @@ window.addEventListener('load', function() {
 //GLOBALS
 const canvas = document.getElementById('canvas1') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
-// ctx.lineCap = "round"; doesnt work from here
+
 const segmentingLen = 2
+const trunkLen = 200
+const lenMultiplier = 0.71
+const trunkWidth = 40
+const maxLevelGlobal = 8
 
 //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
 canvas.width = window.innerWidth
@@ -24,12 +28,15 @@ class Branch {
         public parent: Branch|Root, // parent branch or root
         private xF: number = 0, //could be ? but then lineTo errors with null
         private yF: number  = 0,
-        private level: number = 0,
+        // private level: number = 0,
+        public level: number = 0,
         public children: Branch[] = [], // list of children branches
         public segments: {x0: number, y0: number, xF: number, yF: number}[] = [],   // remove empty array type?
         public drawnSegments: number = 0, //to track branch drawing progress
     ){
         this.parent = parent
+        this.level = this.parent.level + 1
+
         // recalculate the angle according to parent branch first 
         this.angle = this.parent.angle + this.angle
         // THEN CALCULATE BRANCH TIP (FINAL) COORDINATES
@@ -37,7 +44,9 @@ class Branch {
         this.yF = this.y0 - Math.cos(this.angle/180* Math.PI) * this.len
 
         // SEGMENTING A BRANCH
-        let segAmount = Math.ceil(this.len / segmentingLen)
+        // let segAmount = Math.ceil(this.len / segmentingLen) //MAY RESULT IN DIFFERENT AMOUNT FOR SAME LEVEL, WHICH 'FREEZES' ANIMATION (because of waiting for the last segments to draw)
+        let segAmount = Math.ceil( (trunkLen* (Math.pow(lenMultiplier, this.level)) ) / segmentingLen ) // now it only depends on globals and level
+        // console.log(segAmount)
         for (let seg=0; seg < segAmount; seg++){
             this.segments.push({x0: 0, y0: 0, xF: 0, yF: 0})
             // Calculate coordinates analogically to branch xF yF, but for shorter lengths. 
@@ -47,30 +56,12 @@ class Branch {
             this.segments[seg].xF = this.x0 + Math.sin(this.angle/180* Math.PI) * this.len * ((seg +1)/segAmount)
             this.segments[seg].yF = this.y0 - Math.cos(this.angle/180* Math.PI) * this.len * ((seg +1)/segAmount)
         }
-
-        // check if last segment's tip coords are equal to branch tip coords - OK
-        if (this.segments[0].x0 !== this.x0) {
-            console.log('this.segments[0].x0 !== this.x0')
-        }
-        if (this.segments[0].y0 !== this.y0) {
-            console.log('this.segments[0].y0 !== this.y0')
-        }
-
-        if (this.segments[this.segments.length-1].xF !== this.xF) {
-            console.log( (this.segments[this.segments.length-1].xF).toPrecision(2) )
-            console.log( this.xF.toPrecision(2) )
-        }
-        if (this.segments[this.segments.length-1].yF !== this.yF) {
-            console.log( (this.segments[this.segments.length-1].yF).toPrecision(2) )
-            console.log( this.yF.toPrecision(2) )
-        }
-
     } // Branch constructor
 
     makeChildBranch(parent: Branch|Root, angleDiff: number) {
-        let childBranch: Branch = new Branch (this.xF, this.yF, this.len*0.71 + Math.random()*this.len*0.15, angleDiff, this.lineWidth*0.8, parent)
-        childBranch.parent = this
-        childBranch.level = this.level +1
+        let childBranch: Branch = new Branch (this.xF, this.yF, this.len*lenMultiplier + Math.random()*this.len*0.15, angleDiff, this.lineWidth*0.8, parent)
+        // childBranch.parent = this
+        // childBranch.level = this.level +1
         this.children.push(childBranch)
         return childBranch
     }
@@ -111,21 +102,11 @@ class Branch {
 
         ctx.lineWidth = this.lineWidth
         ctx.beginPath();
-        // this.segments[this.drawnSegments].x0
         ctx.moveTo(this.segments[this.drawnSegments].x0, this.segments[this.drawnSegments].y0)
         ctx.lineTo(this.segments[this.drawnSegments].xF, this.segments[this.drawnSegments].yF)
-        // ctx.fillStyle = 'white'
-        // ctx.fillText(String(this.angle) + '  ' + String(this.level), (this.xF+this.x0)/2 + 10, (this.y0+this.yF)/2)
         ctx.stroke()
-        // console.log('drawBranch')
         ctx.closePath()
         this.drawnSegments ++
-        // console.log('draw segment. Segms = ' + this.segments.length)
-        if (this.segments.length === this.drawnSegments){
-            // console.log(this.segments.length , this.drawnSegments)
-            // console.log('equal')
-        }
-
     }
 
 }
@@ -136,12 +117,12 @@ class Tree {
         readonly initY: number,
         readonly initLen: number,
         readonly initAngle: number,
-        readonly maxLevel: number = 8,
+        readonly maxLevel: number = maxLevelGlobal,
         readonly branchingProbability: number = 0.8,
         public allBranches: [Branch[]] = [[]],
     ){
         const startTime = Date.now()
-        this.allBranches[0] = [new Branch (initX, initY, initLen, initAngle, 42, root)]   //save trunk as 0lvl branch
+        this.allBranches[0] = [new Branch (initX, initY, initLen, initAngle, trunkWidth, root)]   //save trunk as 0lvl branch
         for (let currLvl = 0; currLvl < this.maxLevel; currLvl++) {
             // prob should = 1 for level 0 (trunk) 
             // this variable lowers branching probability with lever. In range from 1 to branchingProbability linearly
@@ -176,6 +157,7 @@ class Tree {
 class Root {
     constructor(
         public angle: number = 0, //Rotates the tree. 
+        public level: number = -1,
     ){
 }}
 
@@ -183,7 +165,7 @@ class Root {
 // Root just acts as a parent element for the trunk. 
 // With the root there is no need for checking for parent element in Branch constructor
 const root = new Root ()
-const tree = new Tree (canvas.width/2, canvas.height, 200, 0) // initialize tree with trunk params. TRUNK LENGTH HERE
+const tree = new Tree (canvas.width/2, canvas.height, trunkLen, 0) // initialize tree with trunk params. TRUNK LENGTH HERE
 // tree.drawTheTree() //all at once
 console.log(tree.allBranches)
 
@@ -192,18 +174,16 @@ tree.allBranches.forEach( level => {
     branchesAll += level.length
 } )
 
-console.log('all = ' + branchesAll)
+console.log('branches amount = ' + branchesAll)
 
-// _________ ANIMATE SEGMENTS 1 _________
+// _________ ANIMATE SEGMENTS _________
 let lvl = 0
 let lastTime = 0
 let accumulatedTime = 0
 const timeLimit = 10
 
-let previousForEachCompleted = 0
 let thisForEachCompleted = 0
-// let branchesCompletedThisLvl = 0
-
+let branchesCompletedThisLvl = 0
 
 // if (branchesCompletedThisLvl) {}
 function animateByLSegments(timeStamp: number) {
@@ -226,32 +206,18 @@ function animateByLSegments(timeStamp: number) {
                 thisForEachCompleted ++
             }
             else if (branch.drawnSegments < branch.segments.length) {
-                // if (branch.drawnSegments === 0) {
-                //     console.log('drawnSegments === 0')
-                // }
                 branch.drawBranchBySegments()
                 accumulatedTime = 0
             }
         })
-        // branchesCompletedThisLvl = thisForEachCompleted - previousForEachCompleted
-        previousForEachCompleted = thisForEachCompleted
+        branchesCompletedThisLvl = thisForEachCompleted
+        thisForEachCompleted = 0
 
-        console.log('thisForEachCompleted = ' + thisForEachCompleted)
-        console.log('previousForEachCompleted = ' + previousForEachCompleted)
-
-        if (thisForEachCompleted - previousForEachCompleted === 0 && previousForEachCompleted > 0){
-            // branchesCompletedThisLvl = 0
-            thisForEachCompleted = 0
+        if (branchesCompletedThisLvl === tree.allBranches[lvl].length){
+            branchesCompletedThisLvl = 0
             lvl++
         // console.log('lvl = ' + lvl)
         }
-
-        // if (branchesCompletedThisLvl >= tree.allBranches[lvl].length){
-        //     branchesCompletedThisLvl = 0
-        //     thisForEachCompleted = 0
-        //     lvl++
-        // // console.log('lvl = ' + lvl)
-        // }
     }
     //OR ACCUMULATE PASSED TIME
     else if (accumulatedTime < timeLimit){
@@ -266,7 +232,7 @@ function animateByLSegments(timeStamp: number) {
 }
 // animate
 animateByLSegments(0)
-// _________ ANIMATE SEGMENTS 1 _________
+// _________ ANIMATE SEGMENTS _________
 
 })
 
