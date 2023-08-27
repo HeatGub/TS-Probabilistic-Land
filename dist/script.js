@@ -3,8 +3,8 @@ window.addEventListener('load', function () {
     //GLOBALS
     const canvas = document.getElementById('canvas1');
     const ctx = canvas.getContext('2d');
-    // ctx.lineCap = "round"; doesnt work
-    let segmentingLen = 20;
+    // ctx.lineCap = "round"; doesnt work from here
+    const segmentingLen = 2;
     //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -14,8 +14,7 @@ window.addEventListener('load', function () {
         tree.drawTheTree(); // tree possibly not ready at resize
     });
     class Branch {
-        constructor(x0, y0, len, angle, lineWidth = 20, //trunk width
-        parent, // parent branch or root
+        constructor(x0, y0, len, angle, lineWidth = 0, parent, // parent branch or root
         xF = 0, //could be ? but then lineTo errors with null
         yF = 0, level = 0, children = [], // list of children branches
         segments = [], // remove empty array type?
@@ -48,6 +47,21 @@ window.addEventListener('load', function () {
                 this.segments[seg].y0 = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len * (seg / segAmount);
                 this.segments[seg].xF = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len * ((seg + 1) / segAmount);
                 this.segments[seg].yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len * ((seg + 1) / segAmount);
+            }
+            // check if last segment's tip coords are equal to branch tip coords - OK
+            if (this.segments[0].x0 !== this.x0) {
+                console.log('this.segments[0].x0 !== this.x0');
+            }
+            if (this.segments[0].y0 !== this.y0) {
+                console.log('this.segments[0].y0 !== this.y0');
+            }
+            if (this.segments[this.segments.length - 1].xF !== this.xF) {
+                console.log((this.segments[this.segments.length - 1].xF).toPrecision(2));
+                console.log(this.xF.toPrecision(2));
+            }
+            if (this.segments[this.segments.length - 1].yF !== this.yF) {
+                console.log((this.segments[this.segments.length - 1].yF).toPrecision(2));
+                console.log(this.yF.toPrecision(2));
             }
         } // Branch constructor
         makeChildBranch(parent, angleDiff) {
@@ -89,7 +103,7 @@ window.addEventListener('load', function () {
             ctx.lineCap = "round";
             ctx.lineWidth = this.lineWidth;
             ctx.beginPath();
-            this.segments[this.drawnSegments].x0;
+            // this.segments[this.drawnSegments].x0
             ctx.moveTo(this.segments[this.drawnSegments].x0, this.segments[this.drawnSegments].y0);
             ctx.lineTo(this.segments[this.drawnSegments].xF, this.segments[this.drawnSegments].yF);
             // ctx.fillStyle = 'white'
@@ -98,10 +112,15 @@ window.addEventListener('load', function () {
             // console.log('drawBranch')
             ctx.closePath();
             this.drawnSegments++;
+            // console.log('draw segment. Segms = ' + this.segments.length)
+            if (this.segments.length === this.drawnSegments) {
+                // console.log(this.segments.length , this.drawnSegments)
+                // console.log('equal')
+            }
         }
     }
     class Tree {
-        constructor(initX, initY, initLen, initAngle, maxLevel = 15, branchingProbability = 0.8, allBranches = [[]]) {
+        constructor(initX, initY, initLen, initAngle, maxLevel = 8, branchingProbability = 0.8, allBranches = [[]]) {
             this.initX = initX;
             this.initY = initY;
             this.initLen = initLen;
@@ -110,7 +129,7 @@ window.addEventListener('load', function () {
             this.branchingProbability = branchingProbability;
             this.allBranches = allBranches;
             const startTime = Date.now();
-            this.allBranches[0] = [new Branch(initX, initY, initLen, initAngle, 40, root)]; //save trunk as 0lvl branch
+            this.allBranches[0] = [new Branch(initX, initY, initLen, initAngle, 42, root)]; //save trunk as 0lvl branch
             for (let currLvl = 0; currLvl < this.maxLevel; currLvl++) {
                 // prob should = 1 for level 0 (trunk) 
                 // this variable lowers branching probability with lever. In range from 1 to branchingProbability linearly
@@ -149,15 +168,22 @@ window.addEventListener('load', function () {
     // Root just acts as a parent element for the trunk. 
     // With the root there is no need for checking for parent element in Branch constructor
     const root = new Root();
-    const tree = new Tree(canvas.width / 2, canvas.height, 200, 0); // initialize tree with trunk params
+    const tree = new Tree(canvas.width / 2, canvas.height, 200, 0); // initialize tree with trunk params. TRUNK LENGTH HERE
     // tree.drawTheTree() //all at once
     console.log(tree.allBranches);
+    let branchesAll = 0;
+    tree.allBranches.forEach(level => {
+        branchesAll += level.length;
+    });
+    console.log('all = ' + branchesAll);
     // _________ ANIMATE SEGMENTS 1 _________
     let lvl = 0;
     let lastTime = 0;
     let accumulatedTime = 0;
     const timeLimit = 10;
-    let branchesCompletedThisLvl = 0;
+    let previousForEachCompleted = 0;
+    let thisForEachCompleted = 0;
+    // let branchesCompletedThisLvl = 0
     // if (branchesCompletedThisLvl) {}
     function animateByLSegments(timeStamp) {
         const timeDelta = timeStamp - lastTime;
@@ -172,28 +198,43 @@ window.addEventListener('load', function () {
             //for every branch
             tree.allBranches[lvl].forEach(branch => {
                 // 
-                if (branch.drawnSegments < branch.segments.length) {
+                if (branch.drawnSegments >= branch.segments.length) {
+                    // branchesCompletedThisLvl ++
+                    thisForEachCompleted++;
+                }
+                else if (branch.drawnSegments < branch.segments.length) {
+                    // if (branch.drawnSegments === 0) {
+                    //     console.log('drawnSegments === 0')
+                    // }
                     branch.drawBranchBySegments();
                     accumulatedTime = 0;
                 }
-                else if (branch.drawnSegments >= branch.segments.length) {
-                    branchesCompletedThisLvl++;
-                }
             });
-            if (branchesCompletedThisLvl >= tree.allBranches[lvl].length) {
-                branchesCompletedThisLvl = 0;
+            // branchesCompletedThisLvl = thisForEachCompleted - previousForEachCompleted
+            previousForEachCompleted = thisForEachCompleted;
+            console.log('thisForEachCompleted = ' + thisForEachCompleted);
+            console.log('previousForEachCompleted = ' + previousForEachCompleted);
+            if (thisForEachCompleted - previousForEachCompleted === 0 && previousForEachCompleted > 0) {
+                // branchesCompletedThisLvl = 0
+                thisForEachCompleted = 0;
                 lvl++;
-                console.log('lvl = ' + lvl);
+                // console.log('lvl = ' + lvl)
             }
+            // if (branchesCompletedThisLvl >= tree.allBranches[lvl].length){
+            //     branchesCompletedThisLvl = 0
+            //     thisForEachCompleted = 0
+            //     lvl++
+            // // console.log('lvl = ' + lvl)
+            // }
         }
         //OR ACCUMULATE PASSED TIME
         else if (accumulatedTime < timeLimit) {
             accumulatedTime += timeDelta;
         }
         requestAnimationFrame(animateByLSegments);
-        if (Math.floor(1000 / timeDelta) < 50) {
-            console.log(Math.floor(1000 / timeDelta) + ' FPS!!!'); // FPS ALERT
-        }
+        // if (Math.floor(1000/timeDelta) < 50){
+        //     console.log(Math.floor(1000/timeDelta) + ' FPS!!!') // FPS ALERT
+        // }
     }
     // animate
     animateByLSegments(0);
