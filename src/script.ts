@@ -3,11 +3,14 @@ window.addEventListener('load', function() {
 const canvas = document.getElementById('canvas1') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 
-const segmentingLen = 125
-const trunkLen = 200
+const segmentingLen = 20
+const trunkLen = 250
 const lenMultiplier = 0.71
-const trunkWidth = 40
-const maxLevelGlobal = 9
+const trunkWidth = 50
+const maxLevelGlobal = 10
+const widthMultiplier = 0.75
+// const levelShift = 1 + Math.round(Math.random()*1)
+// let levelShift = 0
 let segAmountByLevel = Math.ceil( (trunkLen* (Math.pow(lenMultiplier, 0)) ) / segmentingLen ) //for a trunk
 
 //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
@@ -21,16 +24,17 @@ window.addEventListener('resize', function() {
 
 class Branch {
     constructor(
+        public parent: Branch|Root, // parent branch or root
         public x0: number,
         public y0: number,
         public len: number,
         public angle: number,
-        private lineWidth: number = 0,
-        public parent: Branch|Root, // parent branch or root
+        public lineWidth: number,
         private xF: number = 0, //could be ? but then lineTo errors with null
         private yF: number  = 0,
         // private level: number = 0,
         public level: number = 0,
+        public levelShift: number = 0,
         public children: Branch[] = [], // list of children branches
         public segments: {x0: number, y0: number, xF: number, yF: number}[] = [],   // remove empty array type?
         public drawnSegments: number = 0, //to track branch drawing progress
@@ -59,9 +63,8 @@ class Branch {
         }
     } // Branch constructor
 
-    makeChildBranch(parent: Branch|Root, angleDiff: number) {
-        let childBranch: Branch = new Branch (this.xF, this.yF, this.len*lenMultiplier + Math.random()*this.len*0.15, angleDiff, this.lineWidth*0.8, parent)
-        // childBranch.parent = this
+    makeChildBranch(angleDiff: number) {
+        let childBranch: Branch = new Branch (this, this.xF, this.yF, this.len*lenMultiplier + Math.random()*this.len*0.15, angleDiff, this.lineWidth*widthMultiplier)
         // childBranch.level = this.level +1
         this.children.push(childBranch)
         return childBranch
@@ -70,8 +73,9 @@ class Branch {
     drawBranch() {
         // Add the gradient 
         const gradient = ctx.createLinearGradient(this.x0, this.y0, this.xF, this.yF);
-        gradient.addColorStop(0, 'rgb(10,' + (10 + 10*this.level) + ', 0)');
-        gradient.addColorStop(1, 'rgb(10,' + (20 + 10*this.level) + ', 0)');
+        // gradient.addColorStop(0, 'rgb(10,' + (10 + 10*this.level) + ', 0)');
+        // gradient.addColorStop(1, 'rgb(10,' + (20 + 10*this.level) + ', 0)');
+
         // gradient.addColorStop(0, 'rgb(10,0,' + (10 + 5*this.level)  + ')');
         // gradient.addColorStop(1, 'rgb(10,0,' + (20 + 5*this.level)  + ')');
         ctx.strokeStyle = gradient
@@ -94,14 +98,33 @@ class Branch {
     drawBranchBySegments() {
         // gradient color for the whole branch
         const gradient = ctx.createLinearGradient(this.x0, this.y0, this.xF, this.yF);
-        gradient.addColorStop(0, 'rgb(80,' + (10 + 10*this.level) + ', 0)');
-        gradient.addColorStop(1, 'rgb(80,' + (20 + 10*this.level) + ', 0)');
+        // gradient.addColorStop(0, 'rgb(80,' + (10 + 10*this.level) + ', 0)');
+        // gradient.addColorStop(1, 'rgb(80,' + (20 + 10*this.level) + ', 0)');
+
+        // gradient.addColorStop(0, 'rgb(80,' + (15*this.parent.level) + ', 0)');
+        // gradient.addColorStop(1, 'rgb(80,' + (15*this.level) + ', 0)');
+
         // gradient.addColorStop(0, 'rgb(10,0,' + (10 + 5*this.level)  + ')');
         // gradient.addColorStop(1, 'rgb(10,0,' + (20 + 5*this.level)  + ')');
+
+        gradient.addColorStop(0, 'rgb(10,' + (10 + 10*this.level) + ',' + (100*this.levelShift) + ')' );
+        gradient.addColorStop(1, 'rgb(10,' + (20 + 10*this.level) + ',' + (100*this.levelShift) + ')' );
         ctx.strokeStyle = gradient
         ctx.lineCap = "round";
 
-        ctx.lineWidth = this.lineWidth
+        // ctx.lineWidth = this.lineWidth/this.level
+        ctx.lineWidth = (trunkWidth* (Math.pow(widthMultiplier, this.level)) ) 
+        // calculate len with level. HERE!
+
+        // /TOODOO LIIST
+        //     - add levelShift property to Branch
+        //     - recalculate level with levelShift 
+        //     - calculate new length with updated level
+        //     - calculate new width with updated level
+
+        // formulas of type A*b^c like
+        // trunkWidth* (Math.pow(widthMultiplier, this.level))
+
         ctx.beginPath();
         ctx.moveTo(this.segments[this.drawnSegments].x0, this.segments[this.drawnSegments].y0)
         ctx.lineTo(this.segments[this.drawnSegments].xF, this.segments[this.drawnSegments].yF)
@@ -123,7 +146,7 @@ class Tree {
         public allBranches: [Branch[]] = [[]],
     ){
         const startTime = Date.now()
-        this.allBranches[0] = [new Branch (initX, initY, initLen, initAngle, trunkWidth, root)]   //save trunk as 0lvl branch
+        this.allBranches[0] = [new Branch (root, initX, initY, initLen, initAngle, trunkWidth)]   //save trunk as 0lvl branch
         // append array for every level ahead. Needed for levelShifts
         for (let lvl = 0; lvl < this.maxLevel; lvl++) {
             this.allBranches.push([]) //
@@ -132,8 +155,9 @@ class Tree {
 
         for (let currLvl = 0; currLvl < this.maxLevel; currLvl++) {
             // prob should = 1 for level 0 (trunk) 
-            // this variable lowers branching probability with lever. In range from 1 to branchingProbability linearly
-            let branchingProbabilityByLevel = branchingProbability + ( (1-branchingProbability) * ((this.maxLevel-currLvl)/this.maxLevel) )
+            // this variable lowers branching probability with level. In range from 1 to branchingProbability linearly
+            let branchingProbabilityByLevel = this.branchingProbability + ( (1-branchingProbability) * ((this.maxLevel-currLvl)/this.maxLevel) )
+            let occasionalBranchingProbability = ((this.maxLevel-currLvl)/this.maxLevel)
             // console.log(branchingProbabilityByLevel, currLvl)
             segAmountByLevel = Math.ceil( (trunkLen* (Math.pow(lenMultiplier, currLvl)) ) / segmentingLen ) // now it only depends on globals and level
 
@@ -141,18 +165,27 @@ class Tree {
             this.allBranches[currLvl].forEach( element => {
                 // MAKE BRANCHES
                 if (Math.random() < branchingProbabilityByLevel){
-                    this.allBranches[currLvl+1].push(element.makeChildBranch(element,20 + Math.random()*15))
+                    this.allBranches[currLvl+1].push(element.makeChildBranch(20 + Math.random()*15))
                 }
                 if (Math.random() < branchingProbabilityByLevel){
-                    this.allBranches[currLvl+1].push(element.makeChildBranch(element,-20 - Math.random()*15))
+                    this.allBranches[currLvl+1].push(element.makeChildBranch(-20 - Math.random()*15))
                 }
-                // OCCASIONAL BRANCHING WITH LEVEL SHIFT
-                if (Math.random() < branchingProbabilityByLevel/4) {
-                    console.log('occasional branching')
-                    const levelShift = Math.round(Math.random()*1)
+                // OCCASIONAL BRANCHING WITH LEVEL SHIFT (children level is not parent level + 1)
+                if (Math.random() < occasionalBranchingProbability) {
+                    let levelShift = 0 + Math.round(Math.random()*3)
+                    // console.log('occasional branching')
                     if (element.level + levelShift < this.maxLevel) {
-                        const occasionalBranch = element.makeChildBranch(element, -20 + Math.random()*40)
+                        const occasionalBranch = element.makeChildBranch(-20 + Math.random()*40)
+                        occasionalBranch.levelShift = levelShift
                         occasionalBranch.level += levelShift
+                        // occasionalBranch length (or width) = orig.len * lenMultipl^levelShift
+                        occasionalBranch.lineWidth = occasionalBranch.lineWidth * Math.pow(widthMultiplier, occasionalBranch.levelShift)
+                        Math.pow(lenMultiplier, 0)
+                        occasionalBranch.len = occasionalBranch.len * Math.pow(lenMultiplier, occasionalBranch.levelShift)
+                        Math.pow(lenMultiplier, 0)
+                        // console.log('occasional branching ' + levelShift)
+                        
+                        // occasionalBranch.lineWidth = 
                         this.allBranches[currLvl+1+levelShift].push(occasionalBranch)
                     }
                 }
