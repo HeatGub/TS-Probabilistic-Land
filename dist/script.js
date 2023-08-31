@@ -5,10 +5,10 @@ window.addEventListener('load', function () {
     const ctx = canvas.getContext('2d');
     const segmentingLen = 20;
     const trunkLen = 250;
-    const lenMultiplier = 0.71;
     const trunkWidth = 50;
-    const maxLevelGlobal = 10;
+    const lenMultiplier = 0.71;
     const widthMultiplier = 0.75;
+    const maxLevelGlobal = 12;
     // const levelShift = 1 + Math.round(Math.random()*1)
     // let levelShift = 0
     let segAmountByLevel = Math.ceil((trunkLen * (Math.pow(lenMultiplier, 0))) / segmentingLen); //for a trunk
@@ -22,11 +22,9 @@ window.addEventListener('load', function () {
     });
     class Branch {
         constructor(parent, // parent branch or root
-        x0, y0, len, angle, lineWidth, xF = 0, //could be ? but then lineTo errors with null
-        yF = 0, 
-        // private level: number = 0,
-        level = 0, levelShift = 0, children = [], // list of children branches
-        segments = [], // remove empty array type?
+        x0, y0, len, angle, lineWidth, levelShift = 0, xF = 0, //could be ? but then lineTo errors with null
+        yF = 0, level = 0, children = [], // list of children branches
+        segments = [], // segments endpoints to draw lines between
         drawnSegments = 0) {
             this.parent = parent;
             this.x0 = x0;
@@ -34,15 +32,23 @@ window.addEventListener('load', function () {
             this.len = len;
             this.angle = angle;
             this.lineWidth = lineWidth;
+            this.levelShift = levelShift;
             this.xF = xF;
             this.yF = yF;
             this.level = level;
-            this.levelShift = levelShift;
             this.children = children;
             this.segments = segments;
             this.drawnSegments = drawnSegments;
             this.parent = parent;
-            this.level = this.parent.level + 1;
+            // RECALCULATE LEN AND WIDTH WITH levelShift
+            this.level = this.parent.level + 1 + this.levelShift;
+            // if (this.levelShift > 0) console.log(this.levelShift)
+            if (this.level > maxLevelGlobal)
+                console.log(this.level);
+            // Occasional branch length (or width) = orig.len * lenMultipl^levelShift
+            this.lineWidth = this.lineWidth * Math.pow(widthMultiplier, this.levelShift);
+            this.len = this.len * Math.pow(lenMultiplier, this.levelShift);
+            this.len = this.len + this.len * Math.random() * 0.15;
             // recalculate the angle according to parent branch first 
             this.angle = this.parent.angle + this.angle;
             // THEN CALCULATE BRANCH TIP (FINAL) COORDINATES
@@ -61,17 +67,16 @@ window.addEventListener('load', function () {
                 this.segments[seg].yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len * ((seg + 1) / segAmountByLevel);
             }
         } // Branch constructor
-        makeChildBranch(angleDiff) {
-            let childBranch = new Branch(this, this.xF, this.yF, this.len * lenMultiplier + Math.random() * this.len * 0.15, angleDiff, this.lineWidth * widthMultiplier);
-            // childBranch.level = this.level +1
+        makeChildBranch(angleDiff, levelShift) {
+            let childBranch = new Branch(this, this.xF, this.yF, this.len * lenMultiplier, angleDiff, this.lineWidth * widthMultiplier, levelShift);
             this.children.push(childBranch);
             return childBranch;
         }
         drawBranch() {
             // Add the gradient 
             const gradient = ctx.createLinearGradient(this.x0, this.y0, this.xF, this.yF);
-            // gradient.addColorStop(0, 'rgb(10,' + (10 + 10*this.level) + ', 0)');
-            // gradient.addColorStop(1, 'rgb(10,' + (20 + 10*this.level) + ', 0)');
+            gradient.addColorStop(0, 'rgb(10,' + (10 + 10 * this.level) + ', 0)');
+            gradient.addColorStop(1, 'rgb(10,' + (20 + 10 * this.level) + ', 0)');
             // gradient.addColorStop(0, 'rgb(10,0,' + (10 + 5*this.level)  + ')');
             // gradient.addColorStop(1, 'rgb(10,0,' + (20 + 5*this.level)  + ')');
             ctx.strokeStyle = gradient;
@@ -93,24 +98,13 @@ window.addEventListener('load', function () {
             const gradient = ctx.createLinearGradient(this.x0, this.y0, this.xF, this.yF);
             // gradient.addColorStop(0, 'rgb(80,' + (10 + 10*this.level) + ', 0)');
             // gradient.addColorStop(1, 'rgb(80,' + (20 + 10*this.level) + ', 0)');
-            // gradient.addColorStop(0, 'rgb(80,' + (15*this.parent.level) + ', 0)');
-            // gradient.addColorStop(1, 'rgb(80,' + (15*this.level) + ', 0)');
-            // gradient.addColorStop(0, 'rgb(10,0,' + (10 + 5*this.level)  + ')');
-            // gradient.addColorStop(1, 'rgb(10,0,' + (20 + 5*this.level)  + ')');
-            gradient.addColorStop(0, 'rgb(10,' + (10 + 10 * this.level) + ',' + (100 * this.levelShift) + ')');
-            gradient.addColorStop(1, 'rgb(10,' + (20 + 10 * this.level) + ',' + (100 * this.levelShift) + ')');
+            gradient.addColorStop(0, 'rgb(80,' + (15 * this.parent.level) + ', 0)');
+            gradient.addColorStop(1, 'rgb(80,' + (15 * this.level) + ', 0)');
+            // gradient.addColorStop(0, 'rgb(10,' + (10 + 10*this.level) + ',' + (100*this.levelShift) + ')' );
+            // gradient.addColorStop(1, 'rgb(10,' + (20 + 10*this.level) + ',' + (100*this.levelShift) + ')' );
             ctx.strokeStyle = gradient;
             ctx.lineCap = "round";
-            // ctx.lineWidth = this.lineWidth/this.level
-            ctx.lineWidth = (trunkWidth * (Math.pow(widthMultiplier, this.level)));
-            // calculate len with level. HERE!
-            // /TOODOO LIIST
-            //     - add levelShift property to Branch
-            //     - recalculate level with levelShift 
-            //     - calculate new length with updated level
-            //     - calculate new width with updated level
-            // formulas of type A*b^c like
-            // trunkWidth* (Math.pow(widthMultiplier, this.level))
+            ctx.lineWidth = this.lineWidth;
             ctx.beginPath();
             ctx.moveTo(this.segments[this.drawnSegments].x0, this.segments[this.drawnSegments].y0);
             ctx.lineTo(this.segments[this.drawnSegments].xF, this.segments[this.drawnSegments].yF);
@@ -146,27 +140,20 @@ window.addEventListener('load', function () {
                 this.allBranches[currLvl].forEach(element => {
                     // MAKE BRANCHES
                     if (Math.random() < branchingProbabilityByLevel) {
-                        this.allBranches[currLvl + 1].push(element.makeChildBranch(20 + Math.random() * 15));
+                        this.allBranches[currLvl + 1].push(element.makeChildBranch(20 + Math.random() * 15, 0));
                     }
                     if (Math.random() < branchingProbabilityByLevel) {
-                        this.allBranches[currLvl + 1].push(element.makeChildBranch(-20 - Math.random() * 15));
+                        this.allBranches[currLvl + 1].push(element.makeChildBranch(-20 - Math.random() * 15, 0));
                     }
                     // OCCASIONAL BRANCHING WITH LEVEL SHIFT (children level is not parent level + 1)
                     if (Math.random() < occasionalBranchingProbability) {
-                        let levelShift = 0 + Math.round(Math.random() * 3);
+                        // random level shift
+                        let levelShift = 1 + Math.round(Math.random() * 1);
                         // console.log('occasional branching')
-                        if (element.level + levelShift < this.maxLevel) {
-                            const occasionalBranch = element.makeChildBranch(-20 + Math.random() * 40);
-                            occasionalBranch.levelShift = levelShift;
-                            occasionalBranch.level += levelShift;
-                            // occasionalBranch length (or width) = orig.len * lenMultipl^levelShift
-                            occasionalBranch.lineWidth = occasionalBranch.lineWidth * Math.pow(widthMultiplier, occasionalBranch.levelShift);
-                            Math.pow(lenMultiplier, 0);
-                            occasionalBranch.len = occasionalBranch.len * Math.pow(lenMultiplier, occasionalBranch.levelShift);
-                            Math.pow(lenMultiplier, 0);
-                            // console.log('occasional branching ' + levelShift)
-                            // occasionalBranch.lineWidth = 
+                        if (element.level + 1 + levelShift < this.maxLevel) {
+                            const occasionalBranch = element.makeChildBranch(-20 + Math.random() * 40, levelShift);
                             this.allBranches[currLvl + 1 + levelShift].push(occasionalBranch);
+                            // console.log('occasional, lvl =' + (currLvl+levelShift))
                         }
                     }
                 });
