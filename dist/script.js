@@ -3,21 +3,22 @@ window.addEventListener('load', function () {
     //GLOBALS
     const canvas = document.getElementById('canvas1');
     const ctx = canvas.getContext('2d');
-    const segmentingLen = 20;
+    const segmentingLen = 10;
     const trunkLen = 200;
     const trunkWidth = 60;
     const lenMultiplier = 0.71;
     const widthMultiplier = 0.75;
     const rebranchingAngle = 18;
-    const maxLevelGlobal = 12;
+    const maxLevelGlobal = 10;
     const occasionalBranchesLimit = 1;
+    const leafProbability = 0.12;
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
     const axis1WidthRatio = 1;
-    const axis2WidthRatio = 0.1;
+    const axis2WidthRatio = 0.5;
     const axis1LenRatio = -0.15;
     const axis2LenRatio = 0.5;
-    const petioleLenRatio = 0.2; //of the whole length
+    const petioleLenRatio = 0.33; //of the whole length
     //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -26,6 +27,11 @@ window.addEventListener('load', function () {
         canvas.height = window.innerHeight;
         tree.drawTheTree(); // tree possibly not ready at resize
     });
+    // TOODOO LIST:
+    //     - make segments gradually thiner
+    //     - add probability for spawning a leaf
+    //     - spawn leaf at the border of the branch, not in the middle
+    //     - make growing leaf stages
     class Branch {
         constructor(parent, // parent branch or root
         x0, y0, len, angle, lineWidth, levelShift = 0, xF = 0, //could be ? but then lineTo errors with null
@@ -121,13 +127,27 @@ window.addEventListener('load', function () {
             // gradient.addColorStop(1, 'rgb(10,' + (20 + 10*this.level) + ',' + (100*this.levelShift) + ')' );
             ctx.strokeStyle = gradient;
             ctx.lineCap = "round";
-            ctx.lineWidth = this.lineWidth;
+            // ctx.lineWidth = this.lineWidth
+            // linearly change lineWidth for each segment 
+            // this.lineWidth = this.lineWidth * Math.pow(widthMultiplier, this.levelShift)
+            ctx.lineWidth = this.lineWidth + ((this.segments.length - this.drawnSegments) / this.segments.length) * (this.lineWidth / widthMultiplier - this.lineWidth); // this.lineWidth/widthMultiplier makes width as +1 lvl
             ctx.beginPath();
             ctx.moveTo(this.segments[this.drawnSegments].x0, this.segments[this.drawnSegments].y0);
             ctx.lineTo(this.segments[this.drawnSegments].xF, this.segments[this.drawnSegments].yF);
             ctx.stroke();
             ctx.closePath();
             this.drawnSegments++;
+            // ADD LEAF - many conditions ahead
+            if (Math.random() < leafProbability && this.level >= tree.maxLevel - 1 && this.segments.length > this.drawnSegments) {
+                if (this.drawnSegments % 4 === 0) {
+                    const leafL = new Leaf(this.segments[this.drawnSegments].x0, this.segments[this.drawnSegments].y0, 35, this.angle - 45, 1);
+                    leafL.drawLeaf();
+                }
+                else if (this.drawnSegments % 2 === 0) {
+                    const leafR = new Leaf(this.segments[this.drawnSegments].x0, this.segments[this.drawnSegments].y0, 35, this.angle + 45, 1);
+                    leafR.drawLeaf();
+                }
+            }
         }
     }
     class Tree {
@@ -190,9 +210,10 @@ window.addEventListener('load', function () {
     }
     class Root {
         constructor(angle = 0, //Rotates the tree. 
-        level = -1) {
+        level = -1, lineWidth = trunkWidth * 1.7) {
             this.angle = angle;
             this.level = level;
+            this.lineWidth = lineWidth;
         }
     }
     class Leaf {
@@ -253,7 +274,7 @@ window.addEventListener('load', function () {
         }
         drawLeaf() {
             ctx.beginPath();
-            ctx.strokeStyle = 'green';
+            ctx.strokeStyle = 'rgb(10,60,0)';
             //MAIN NERVE
             ctx.moveTo(this.x0, this.y0);
             ctx.lineTo(this.xF, this.yF);
@@ -270,14 +291,11 @@ window.addEventListener('load', function () {
             // left side of a leaf
             ctx.bezierCurveTo(stg.xL1, stg.yL1, stg.xL2, stg.yL2, this.xF, this.yF);
             ctx.closePath();
-            ctx.fillStyle = 'rgb(0,150,0)';
+            ctx.fillStyle = 'rgb(10,80,0)';
             ctx.fill();
             ctx.stroke();
         }
     }
-    const leaf = new Leaf(250, 250, 200, 0, 3);
-    console.log(leaf);
-    leaf.drawLeaf();
     // _________ INITIALIZE THE TREE _________
     // Root just acts as a parent element for the trunk. 
     // With the root there is no need for checking for parent element in Branch constructor
