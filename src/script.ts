@@ -3,13 +3,14 @@ window.addEventListener('load', function() {
 const canvas = document.getElementById('canvas1') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 
-const segmentingLen = 1000
+const segmentingLen = 20
 const trunkLen = 200
 const trunkWidth = 60
 const lenMultiplier = 0.71
 const widthMultiplier = 0.75
-const rebranchingAngle = 23
-const maxLevelGlobal = 8
+const rebranchingAngle = 18
+const maxLevelGlobal = 12
+const occasionalBranchesLimit = 1
 
 // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
 // ratio is relative to Leaf's this.len
@@ -43,6 +44,7 @@ class Branch {
         public children: Branch[] = [], // list of children branches
         public segments: {x0: number, y0: number, xF: number, yF: number}[] = [], // segments endpoints to draw lines between
         public drawnSegments: number = 0, //to track branch drawing progress
+        public occasionalBranches = 0,
     ){
         this.parent = parent
 
@@ -83,6 +85,15 @@ class Branch {
         let childBranch: Branch = new Branch (this, this.xF, this.yF, this.len*lenMultiplier, angleDiff, this.lineWidth*widthMultiplier, levelShift)
         this.children.push(childBranch)
         return childBranch
+    }
+
+    // make levelshifted Branch at random segment
+    makeGrandChildBranch(angleDiff: number, levelShift: number) {
+        let randomSegmentIndex = Math.floor(Math.random()*this.segments.length)
+        let grandChildBranch: Branch = new Branch (this, this.segments[randomSegmentIndex].xF, this.segments[randomSegmentIndex].yF, this.len*lenMultiplier, angleDiff, this.lineWidth*widthMultiplier, levelShift)
+        this.occasionalBranches ++
+        this.children.push(grandChildBranch)
+        return grandChildBranch
     }
 
     drawBranch() {
@@ -169,12 +180,13 @@ class Tree {
                     this.allBranches[currLvl+1].push(element.makeChildBranch(-rebranchingAngle - Math.random()*rebranchingAngle, 0))
                 }
                 // OCCASIONAL BRANCHING WITH LEVEL SHIFT (children level is not parent level + 1)
-                if (Math.random() < occasionalBranchingProbability) {
+                // compare occasionalBranches to occasionalBranchesLimit  
+                if (Math.random() < occasionalBranchingProbability && element.occasionalBranches < occasionalBranchesLimit) {
                     // random level shift
                     let levelShift = 1 + Math.round(Math.random()*2)
                     // console.log('occasional branching')
                     if (element.level + 1 + levelShift < this.maxLevel) {
-                        const occasionalBranch = element.makeChildBranch(-rebranchingAngle + Math.random()*2*rebranchingAngle, levelShift)                       
+                        const occasionalBranch = element.makeGrandChildBranch(-rebranchingAngle + Math.random()*2*rebranchingAngle, levelShift)                       
                         this.allBranches[currLvl+1+levelShift].push(occasionalBranch)
                         // console.log('occasional, lvl =' + (currLvl+levelShift))
                     }
@@ -219,7 +231,6 @@ class Leaf {
         public currentStageParameters = {xF: 0, yF: 0, xFPetiole: 0, yFPetiole: 0, xR1: 0, yR1: 0, xL1: 0, yL1: 0, xR2: 0, yR2: 0, xL2: 0, yL2: 0},
         public allStages: typeof currentStageParameters[] = [], 
         ) {
-        // this.currentStageParameters = {xF: 0, yF: 0, xFPetiole: 0, yFPetiole: 0, xR1: 0, yR1: 0, xL1: 0, yL1: 0, xR2: 0, yR2: 0, xL2: 0, yL2: 0},
         ctx.lineWidth = this.lineWidth
         // CALCULATE TIP (FINAL) COORDINATES. LEAF'S MAIN NERVE ENDS HERE
         this.xF = this.x0 + Math.sin(this.angle/180* Math.PI) * this.len

@@ -3,13 +3,14 @@ window.addEventListener('load', function () {
     //GLOBALS
     const canvas = document.getElementById('canvas1');
     const ctx = canvas.getContext('2d');
-    const segmentingLen = 1000;
+    const segmentingLen = 20;
     const trunkLen = 200;
     const trunkWidth = 60;
     const lenMultiplier = 0.71;
     const widthMultiplier = 0.75;
-    const rebranchingAngle = 23;
-    const maxLevelGlobal = 8;
+    const rebranchingAngle = 18;
+    const maxLevelGlobal = 12;
+    const occasionalBranchesLimit = 1;
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
     const axis1WidthRatio = 1;
@@ -30,7 +31,8 @@ window.addEventListener('load', function () {
         x0, y0, len, angle, lineWidth, levelShift = 0, xF = 0, //could be ? but then lineTo errors with null
         yF = 0, level = 0, children = [], // list of children branches
         segments = [], // segments endpoints to draw lines between
-        drawnSegments = 0) {
+        drawnSegments = 0, //to track branch drawing progress
+        occasionalBranches = 0) {
             this.parent = parent;
             this.x0 = x0;
             this.y0 = y0;
@@ -44,6 +46,7 @@ window.addEventListener('load', function () {
             this.children = children;
             this.segments = segments;
             this.drawnSegments = drawnSegments;
+            this.occasionalBranches = occasionalBranches;
             this.parent = parent;
             // RECALCULATE LEN AND WIDTH WITH levelShift
             this.level = this.parent.level + 1 + this.levelShift;
@@ -77,6 +80,14 @@ window.addEventListener('load', function () {
             let childBranch = new Branch(this, this.xF, this.yF, this.len * lenMultiplier, angleDiff, this.lineWidth * widthMultiplier, levelShift);
             this.children.push(childBranch);
             return childBranch;
+        }
+        // make levelshifted Branch at random segment
+        makeGrandChildBranch(angleDiff, levelShift) {
+            let randomSegmentIndex = Math.floor(Math.random() * this.segments.length);
+            let grandChildBranch = new Branch(this, this.segments[randomSegmentIndex].xF, this.segments[randomSegmentIndex].yF, this.len * lenMultiplier, angleDiff, this.lineWidth * widthMultiplier, levelShift);
+            this.occasionalBranches++;
+            this.children.push(grandChildBranch);
+            return grandChildBranch;
         }
         drawBranch() {
             // Add the gradient 
@@ -151,12 +162,13 @@ window.addEventListener('load', function () {
                         this.allBranches[currLvl + 1].push(element.makeChildBranch(-rebranchingAngle - Math.random() * rebranchingAngle, 0));
                     }
                     // OCCASIONAL BRANCHING WITH LEVEL SHIFT (children level is not parent level + 1)
-                    if (Math.random() < occasionalBranchingProbability) {
+                    // compare occasionalBranches to occasionalBranchesLimit  
+                    if (Math.random() < occasionalBranchingProbability && element.occasionalBranches < occasionalBranchesLimit) {
                         // random level shift
                         let levelShift = 1 + Math.round(Math.random() * 2);
                         // console.log('occasional branching')
                         if (element.level + 1 + levelShift < this.maxLevel) {
-                            const occasionalBranch = element.makeChildBranch(-rebranchingAngle + Math.random() * 2 * rebranchingAngle, levelShift);
+                            const occasionalBranch = element.makeGrandChildBranch(-rebranchingAngle + Math.random() * 2 * rebranchingAngle, levelShift);
                             this.allBranches[currLvl + 1 + levelShift].push(occasionalBranch);
                             // console.log('occasional, lvl =' + (currLvl+levelShift))
                         }
@@ -201,7 +213,6 @@ window.addEventListener('load', function () {
             this.currentStage = currentStage;
             this.currentStageParameters = currentStageParameters;
             this.allStages = allStages;
-            // this.currentStageParameters = {xF: 0, yF: 0, xFPetiole: 0, yFPetiole: 0, xR1: 0, yR1: 0, xL1: 0, yL1: 0, xR2: 0, yR2: 0, xL2: 0, yL2: 0},
             ctx.lineWidth = this.lineWidth;
             // CALCULATE TIP (FINAL) COORDINATES. LEAF'S MAIN NERVE ENDS HERE
             this.xF = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len;
