@@ -3,15 +3,15 @@ window.addEventListener('load', function () {
     //GLOBALS
     const canvas = document.getElementById('canvas1');
     const ctx = canvas.getContext('2d');
+    // const canvas2 = document.body.appendChild(document.createElement("canvas"));
     const segmentingLen = 10;
     const trunkLen = 200;
     const trunkWidth = 60;
-    const lenMultiplier = 0.71;
-    const widthMultiplier = 0.75;
+    const lenMultiplier = 0.75;
+    const widthMultiplier = 0.7;
     const rebranchingAngle = 18;
-    const maxLevelGlobal = 6;
+    const maxLevelGlobal = 7;
     const occasionalBranchesLimit = 1;
-    const leafProbability = 0.8;
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
     const axis1WidthRatio = 1;
@@ -19,6 +19,7 @@ window.addEventListener('load', function () {
     const axis1LenRatio = -0.15;
     const axis2LenRatio = 0.5;
     const petioleLenRatio = 0.33; //of the whole length
+    const leafProbability = 0.2;
     //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -70,13 +71,15 @@ window.addEventListener('load', function () {
             let segAmountByLevel = Math.ceil(((trunkLen * (Math.pow(lenMultiplier, this.level))) / segmentingLen) + (this.level / 2));
             // console.log(segAmountByLevel)
             for (let seg = 0; seg < segAmountByLevel; seg++) {
-                this.segments.push({ x0: 0, y0: 0, xF: 0, yF: 0 });
+                this.segments.push({ x0: 0, y0: 0, xF: 0, yF: 0, width: 100 });
                 // Calculate coordinates analogically to branch xF yF, but for shorter lengths. 
                 // segment is in range from (seg/segAmount) to ((seg +1)/segAmount) * len
                 this.segments[seg].x0 = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len * (seg / segAmountByLevel);
                 this.segments[seg].y0 = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len * (seg / segAmountByLevel);
                 this.segments[seg].xF = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len * ((seg + 1) / segAmountByLevel);
                 this.segments[seg].yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len * ((seg + 1) / segAmountByLevel);
+                // linearly change lineWidth for each segment 
+                this.segments[seg].width = this.lineWidth + ((segAmountByLevel - seg + 1) / segAmountByLevel) * (this.lineWidth / widthMultiplier - this.lineWidth); // this.lineWidth/widthMultiplier makes width as +1 lvl
             }
         } // Branch constructor
         makeChildBranch(angleDiff, levelShift) {
@@ -105,7 +108,6 @@ window.addEventListener('load', function () {
             ctx.lineWidth = this.lineWidth;
             ctx.beginPath();
             ctx.moveTo(this.x0, this.y0);
-            // ctx.bezierCurveTo(this.x0, this.y0, (this.x0 + this.xF)/2 + 10, (this.y0 + this.yF)/2 -10, this.xF, this.yF);
             ctx.lineTo(this.xF, this.yF);
             // ctx.fillStyle = 'white'
             // ctx.fillText(String(this.angle) + '  ' + String(this.level), (this.xF+this.x0)/2 + 10, (this.y0+this.yF)/2)
@@ -124,34 +126,32 @@ window.addEventListener('load', function () {
             // gradient.addColorStop(1, 'rgb(10,' + (20 + 10*this.level) + ',' + (100*this.levelShift) + ')' );
             ctx.strokeStyle = gradient;
             ctx.lineCap = "round";
-            // ctx.lineWidth = this.lineWidth
-            // linearly change lineWidth for each segment 
-            // this.lineWidth = this.lineWidth * Math.pow(widthMultiplier, this.levelShift)
-            ctx.lineWidth = this.lineWidth + ((this.segments.length - this.drawnSegments) / this.segments.length) * (this.lineWidth / widthMultiplier - this.lineWidth); // this.lineWidth/widthMultiplier makes width as +1 lvl
+            ctx.lineWidth = this.segments[this.drawnSegments].width;
             ctx.beginPath();
             ctx.moveTo(this.segments[this.drawnSegments].x0, this.segments[this.drawnSegments].y0);
             ctx.lineTo(this.segments[this.drawnSegments].xF, this.segments[this.drawnSegments].yF);
             ctx.stroke();
             ctx.closePath();
+            // ctx.shadowColor = 'black'
+            // ctx.shadowOffsetX = 10
+            // ctx.shadowOffsetY = 10
+            // ctx.shadowBlur = 5
             this.drawnSegments++;
             // ADD LEAF - many conditions ahead
             if (Math.random() < leafProbability && this.level >= tree.maxLevel - 1 && this.segments.length > this.drawnSegments) {
-                // let x0Leaf = this.segments[this.drawnSegments].x0 + Math.sin(this.angle/180* Math.PI) * this.lineWidth/2
-                // let y0Leaf = this.segments[this.drawnSegments].y0 + Math.cos(this.angle/180* Math.PI) * this.lineWidth/2
-                let lineWidth = this.lineWidth + ((this.segments.length - this.drawnSegments) / this.segments.length) * (this.lineWidth / widthMultiplier - this.lineWidth);
+                let lineWidth = this.segments[this.drawnSegments].width;
                 if (this.drawnSegments % 4 === 0) {
                     //recalculate leaf starting point to match the segment width
                     let x0Leaf = this.segments[this.drawnSegments].x0 - Math.cos(this.angle / 180 * Math.PI) * lineWidth / 2;
                     let y0Leaf = this.segments[this.drawnSegments].y0 - Math.sin(this.angle / 180 * Math.PI) * lineWidth / 2;
-                    // let y0Leaf = this.segments[this.drawnSegments].y0e
-                    const leafL = new Leaf(x0Leaf, y0Leaf, 35, this.angle - 45, 1);
+                    const leafL = new Leaf(x0Leaf, y0Leaf, 35, this.angle - 40 - Math.random() * 10, 2);
                     leafL.drawLeaf();
                 }
                 else if (this.drawnSegments % 2 === 0) {
                     //recalculate leaf starting point to match the segment width
                     let x0Leaf = this.segments[this.drawnSegments].x0 + Math.cos(this.angle / 180 * Math.PI) * lineWidth / 2;
                     let y0Leaf = this.segments[this.drawnSegments].y0 + Math.sin(this.angle / 180 * Math.PI) * lineWidth / 2;
-                    const leafR = new Leaf(x0Leaf, y0Leaf, 35, this.angle + 45, 1);
+                    const leafR = new Leaf(x0Leaf, y0Leaf, 35, this.angle + 40 + Math.random() * 10, 2);
                     leafR.drawLeaf();
                 }
             }
@@ -216,11 +216,10 @@ window.addEventListener('load', function () {
         }
     }
     class Root {
-        constructor(angle = 0, //Rotates the tree. 
-        level = -1, lineWidth = trunkWidth * 1.7) {
+        constructor(angle = 0, // Rotates the tree
+        level = -1) {
             this.angle = angle;
             this.level = level;
-            this.lineWidth = lineWidth;
         }
     }
     class Leaf {
@@ -250,9 +249,8 @@ window.addEventListener('load', function () {
             // PETIOLE'S END COORDS
             this.currentStageParameters.xFPetiole = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len * petioleLenRatio;
             this.currentStageParameters.yFPetiole = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len * petioleLenRatio;
-            // let rotateLeafRightFrom0To1 = -1 + 2*Math.random()
-            // let rotateLeafRightFrom0To1 = 1-(this.angle%360)/360
-            let rotateLeafRightFrom0To1 = 0.5;
+            // 0.5 is no rotation. 0-1 range
+            let rotateLeafRightFrom0To1 = 0.35 + Math.random() * 0.30 + Math.sin(this.angle / 180 * Math.PI) * 0.3;
             // BEZIER CURVES - AXIS 1
             const axis1 = this.calcBezierPointsForPerpendicularAxis(axis1LenRatio, axis1WidthRatio, rotateLeafRightFrom0To1);
             // console.log(axis1)
@@ -313,8 +311,8 @@ window.addEventListener('load', function () {
     const tree = new Tree(canvas.width / 2, canvas.height, trunkLen, 0); // initialize tree with trunk params. TRUNK LENGTH HERE
     // tree.drawTheTree() //all at once
     // console.log(tree.allBranches)
-    const leafTest = new Leaf(250, 200, 150, 180);
-    leafTest.drawLeaf();
+    // const leafTest = new Leaf (250, 200, 150, 180)
+    // leafTest.drawLeaf()
     let branchesAll = 0;
     tree.allBranches.forEach(level => {
         branchesAll += level.length;
