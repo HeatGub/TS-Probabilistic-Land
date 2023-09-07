@@ -9,9 +9,9 @@ const trunkWidth = 60
 const lenMultiplier = 0.71
 const widthMultiplier = 0.75
 const rebranchingAngle = 18
-const maxLevelGlobal = 10
+const maxLevelGlobal = 6
 const occasionalBranchesLimit = 1
-const leafProbability = 0.12
+const leafProbability = 0.8
 
 // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
 // ratio is relative to Leaf's this.len
@@ -31,9 +31,6 @@ window.addEventListener('resize', function() {
 })
 
 // TOODOO LIST:
-//     - make segments gradually thiner
-//     - add probability for spawning a leaf
-//     - spawn leaf at the border of the branch, not in the middle
 //     - make growing leaf stages
 
 class Branch {
@@ -63,7 +60,7 @@ class Branch {
         // Occasional branch length (or width) = orig.len * lenMultipl^levelShift
         this.lineWidth = this.lineWidth * Math.pow(widthMultiplier, this.levelShift)
         this.len = this.len * Math.pow(lenMultiplier, this.levelShift)
-        this.len = this.len + this.len*Math.random()*0.15
+        this.len = this.len + this.len*Math.random()*0.15  //randomize len
 
         // recalculate the angle according to parent branch first 
         this.angle = this.parent.angle + this.angle
@@ -155,17 +152,29 @@ class Branch {
 
         // ADD LEAF - many conditions ahead
         if (Math.random() < leafProbability && this.level >= tree.maxLevel-1 && this.segments.length > this.drawnSegments) {
+
+            // let x0Leaf = this.segments[this.drawnSegments].x0 + Math.sin(this.angle/180* Math.PI) * this.lineWidth/2
+            // let y0Leaf = this.segments[this.drawnSegments].y0 + Math.cos(this.angle/180* Math.PI) * this.lineWidth/2
+            let lineWidth = this.lineWidth + ((this.segments.length-this.drawnSegments) / this.segments.length) * (this.lineWidth/widthMultiplier - this.lineWidth)
+
             if (this.drawnSegments % 4 === 0) {
-                const leafL = new Leaf (this.segments[this.drawnSegments].x0, this.segments[this.drawnSegments].y0, 35, this.angle-45, 1)
+                //recalculate leaf starting point to match the segment width
+                let x0Leaf = this.segments[this.drawnSegments].x0 - Math.cos(this.angle/180* Math.PI) * lineWidth/2
+                let y0Leaf = this.segments[this.drawnSegments].y0 - Math.sin(this.angle/180* Math.PI) * lineWidth/2
+                // let y0Leaf = this.segments[this.drawnSegments].y0e
+
+                const leafL = new Leaf (x0Leaf, y0Leaf, 35, this.angle-45, 1)
                 leafL.drawLeaf()
             }
             else if (this.drawnSegments % 2 === 0) {
-                const leafR = new Leaf (this.segments[this.drawnSegments].x0, this.segments[this.drawnSegments].y0, 35, this.angle+45, 1)
+                //recalculate leaf starting point to match the segment width
+                let x0Leaf = this.segments[this.drawnSegments].x0 + Math.cos(this.angle/180* Math.PI) * lineWidth/2
+                let y0Leaf = this.segments[this.drawnSegments].y0 + Math.sin(this.angle/180* Math.PI) * lineWidth/2
+                const leafR = new Leaf (x0Leaf, y0Leaf, 35, this.angle+45, 1)
                 leafR.drawLeaf()
             }
         }
     }
-
 }
 
 class Tree {
@@ -245,7 +254,7 @@ class Leaf {
         public y0: number,
         public len: number,
         public angle: number,
-        public lineWidth: number = 2,
+        public lineWidth: number = 4,
         public xF: number = 0, //could be ? but then lineTo errors with null
         public yF: number  = 0,
         public maxStages = 5,
@@ -265,11 +274,15 @@ class Leaf {
         this.currentStageParameters.xFPetiole = this.x0 + Math.sin(this.angle/180* Math.PI) * this.len * petioleLenRatio
         this.currentStageParameters.yFPetiole = this.y0 - Math.cos(this.angle/180* Math.PI) * this.len * petioleLenRatio
 
+        // let rotateLeafRightFrom0To1 = -1 + 2*Math.random()
+        // let rotateLeafRightFrom0To1 = 1-(this.angle%360)/360
+        let rotateLeafRightFrom0To1 = 0.5
+
         // BEZIER CURVES - AXIS 1
-        const axis1 = this.calcBezierPointsForPerpendicularAxis(axis1LenRatio, axis1WidthRatio)
+        const axis1 = this.calcBezierPointsForPerpendicularAxis(axis1LenRatio, axis1WidthRatio, rotateLeafRightFrom0To1)
         // console.log(axis1)
         // BEZIER CURVES - AXIS 2
-        const axis2 = this.calcBezierPointsForPerpendicularAxis(axis2LenRatio, axis2WidthRatio)
+        const axis2 = this.calcBezierPointsForPerpendicularAxis(axis2LenRatio, axis2WidthRatio, rotateLeafRightFrom0To1)
         // console.log(axis2)
 
         // FILL UP THIS STAGE
@@ -287,14 +300,14 @@ class Leaf {
 
     } //Leaf constructor
 
-    calcBezierPointsForPerpendicularAxis (axisLenRatio: number, axisWidthRatio: number) {
+    calcBezierPointsForPerpendicularAxis (axisLenRatio: number, axisWidthRatio: number, moveAxis:number) {
         let x0Axis = this.x0 + Math.sin(this.angle/180* Math.PI) * this.len *axisLenRatio
         let y0Axis = this.y0 - Math.cos(this.angle/180* Math.PI) * this.len *axisLenRatio
         // calculate points on line perpendiuclar to the main nerve
-        let xR =  x0Axis + Math.sin((90 + this.angle)/180* Math.PI) * this.len* axisWidthRatio/2 // /2 because its only one half
-        let yR =  y0Axis - Math.cos((90 + this.angle)/180* Math.PI) * this.len* axisWidthRatio/2
-        let xL =  x0Axis + Math.sin((-90 + this.angle)/180* Math.PI) * this.len* axisWidthRatio/2
-        let yL =  y0Axis - Math.cos((-90 + this.angle)/180* Math.PI) * this.len* axisWidthRatio/2
+        let xR =  x0Axis + Math.sin((90 + this.angle)/180* Math.PI) * this.len* axisWidthRatio * (moveAxis) // /2 because its only one half
+        let yR =  y0Axis - Math.cos((90 + this.angle)/180* Math.PI) * this.len* axisWidthRatio * (moveAxis)
+        let xL =  x0Axis + Math.sin((-90 + this.angle)/180* Math.PI) * this.len* axisWidthRatio * (1-moveAxis)
+        let yL =  y0Axis - Math.cos((-90 + this.angle)/180* Math.PI) * this.len* axisWidthRatio * (1-moveAxis)
         return {xR: xR, yR: yR, xL: xL, yL: yL}
     }
 
@@ -332,7 +345,11 @@ class Leaf {
 const root = new Root ()
 const tree = new Tree (canvas.width/2, canvas.height, trunkLen, 0) // initialize tree with trunk params. TRUNK LENGTH HERE
 // tree.drawTheTree() //all at once
-console.log(tree.allBranches)
+// console.log(tree.allBranches)
+const leafTest = new Leaf (250, 200, 150, 180)
+leafTest.drawLeaf()
+
+
 
 let branchesAll = 0
 tree.allBranches.forEach( level => {
