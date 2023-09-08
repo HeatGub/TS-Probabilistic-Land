@@ -4,14 +4,15 @@ window.addEventListener('load', function () {
     const canvas = document.getElementById('canvas1');
     const ctx = canvas.getContext('2d');
     // const canvas2 = document.body.appendChild(document.createElement("canvas"));
-    const segmentingLen = 10;
+    // ctx.globalAlpha = 0.3;
+    const segmentingLen = 100;
     const trunkLen = 200;
     const trunkWidth = 60;
     const lenMultiplier = 0.75;
     const widthMultiplier = 0.7;
     const rebranchingAngle = 18;
     const maxLevelGlobal = 7;
-    const occasionalBranchesLimit = 1;
+    const occasionalBranchesLimit = 0.3;
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
     const axis1WidthRatio = 1;
@@ -19,7 +20,7 @@ window.addEventListener('load', function () {
     const axis1LenRatio = -0.15;
     const axis2LenRatio = 0.5;
     const petioleLenRatio = 0.33; //of the whole length
-    const leafProbability = 0.2;
+    const leafProbability = 0.5;
     //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -145,14 +146,16 @@ window.addEventListener('load', function () {
                     let x0Leaf = this.segments[this.drawnSegments].x0 - Math.cos(this.angle / 180 * Math.PI) * lineWidth / 2;
                     let y0Leaf = this.segments[this.drawnSegments].y0 - Math.sin(this.angle / 180 * Math.PI) * lineWidth / 2;
                     const leafL = new Leaf(x0Leaf, y0Leaf, 35, this.angle - 40 - Math.random() * 10, 2);
-                    leafL.drawLeaf();
+                    // leafL.drawLeaf()
+                    leafL.drawLeafStages();
                 }
                 else if (this.drawnSegments % 2 === 0) {
                     //recalculate leaf starting point to match the segment width
                     let x0Leaf = this.segments[this.drawnSegments].x0 + Math.cos(this.angle / 180 * Math.PI) * lineWidth / 2;
                     let y0Leaf = this.segments[this.drawnSegments].y0 + Math.sin(this.angle / 180 * Math.PI) * lineWidth / 2;
                     const leafR = new Leaf(x0Leaf, y0Leaf, 35, this.angle + 40 + Math.random() * 10, 2);
-                    leafR.drawLeaf();
+                    // leafR.drawLeaf()
+                    leafR.drawLeafStages();
                 }
             }
         }
@@ -225,10 +228,7 @@ window.addEventListener('load', function () {
     class Leaf {
         constructor(
         // public parent: Branch, // parent branch
-        x0, y0, len, angle, lineWidth = 4, xF = 0, //could be ? but then lineTo errors with null
-        yF = 0, maxStages = 5, currentStage = 0, 
-        //initialize empty currentStageParameters object to fill it up
-        currentStageParameters = { xF: 0, yF: 0, xFPetiole: 0, yFPetiole: 0, xR1: 0, yR1: 0, xL1: 0, yL1: 0, xR2: 0, yR2: 0, xL2: 0, yL2: 0 }, allStages = []) {
+        x0, y0, len, angle, lineWidth = 4, xF = 0, yF = 0, maxStages = 4, currentStage = 0, allStages = []) {
             this.x0 = x0;
             this.y0 = y0;
             this.len = len;
@@ -238,70 +238,102 @@ window.addEventListener('load', function () {
             this.yF = yF;
             this.maxStages = maxStages;
             this.currentStage = currentStage;
-            this.currentStageParameters = currentStageParameters;
             this.allStages = allStages;
-            ctx.lineWidth = this.lineWidth;
-            // CALCULATE TIP (FINAL) COORDINATES. LEAF'S MAIN NERVE ENDS HERE
+            // final len in final stage
             this.xF = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len;
             this.yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len;
-            this.currentStageParameters.xF = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len;
-            this.currentStageParameters.yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len;
-            // PETIOLE'S END COORDS
-            this.currentStageParameters.xFPetiole = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len * petioleLenRatio;
-            this.currentStageParameters.yFPetiole = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len * petioleLenRatio;
-            // 0.5 is no rotation. 0-1 range
-            let rotateLeafRightFrom0To1 = 0.35 + Math.random() * 0.30 + Math.sin(this.angle / 180 * Math.PI) * 0.3;
-            // BEZIER CURVES - AXIS 1
-            const axis1 = this.calcBezierPointsForPerpendicularAxis(axis1LenRatio, axis1WidthRatio, rotateLeafRightFrom0To1);
-            // console.log(axis1)
-            // BEZIER CURVES - AXIS 2
-            const axis2 = this.calcBezierPointsForPerpendicularAxis(axis2LenRatio, axis2WidthRatio, rotateLeafRightFrom0To1);
-            // console.log(axis2)
-            // FILL UP THIS STAGE
-            this.currentStageParameters.xR1 = axis1.xR;
-            this.currentStageParameters.yR1 = axis1.yR;
-            this.currentStageParameters.xL1 = axis1.xL;
-            this.currentStageParameters.yL1 = axis1.yL;
-            // ____________
-            this.currentStageParameters.xR2 = axis2.xR;
-            this.currentStageParameters.yR2 = axis2.yR;
-            this.currentStageParameters.xL2 = axis2.xL;
-            this.currentStageParameters.yL2 = axis2.yL;
-            // PUSH TO allStages
-            this.allStages.push(this.currentStageParameters);
+            for (let stg = 0; stg < this.maxStages; stg++) {
+                // push zeros to fill the object
+                this.allStages.push({ stageLen: 0, xF: 0, yF: 0, xFPetiole: 0, yFPetiole: 0, xR1: 0, yR1: 0, xL1: 0, yL1: 0, xR2: 0, yR2: 0, xL2: 0, yL2: 0 });
+                this.allStages[stg].stageLen = this.len * (stg / this.maxStages);
+                // console.log(this.allStages[stg].stageLen)
+                let stageLen = this.allStages[stg].stageLen;
+                // console.log(stageLen)
+                ctx.lineWidth = this.lineWidth;
+                // CALCULATE TIP (FINAL) COORDINATES. LEAF'S MAIN NERVE ENDS HERE
+                this.allStages[stg].xF = this.x0 + Math.sin(this.angle / 180 * Math.PI) * stageLen;
+                this.allStages[stg].yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * stageLen;
+                // PETIOLE'S END COORDS
+                this.allStages[stg].xFPetiole = this.x0 + Math.sin(this.angle / 180 * Math.PI) * stageLen * petioleLenRatio;
+                this.allStages[stg].yFPetiole = this.y0 - Math.cos(this.angle / 180 * Math.PI) * stageLen * petioleLenRatio;
+                // 0.5 is no rotation. 0-1 range
+                let rotateLeafRightFrom0To1 = 0.35 + Math.random() * 0.30 + Math.sin(this.angle / 180 * Math.PI) * 0.3;
+                // BEZIER CURVES - AXIS 1
+                const axis1 = this.calcBezierPointsForPerpendicularAxis(axis1LenRatio, axis1WidthRatio, rotateLeafRightFrom0To1, stg);
+                // console.log(axis1)
+                // BEZIER CURVES - AXIS 2
+                const axis2 = this.calcBezierPointsForPerpendicularAxis(axis2LenRatio, axis2WidthRatio, rotateLeafRightFrom0To1, stg);
+                // console.log(axis2)
+                // FILL UP THIS STAGE
+                this.allStages[stg].xR1 = axis1.xR;
+                this.allStages[stg].yR1 = axis1.yR;
+                this.allStages[stg].xL1 = axis1.xL;
+                this.allStages[stg].yL1 = axis1.yL;
+                // ____________
+                this.allStages[stg].xR2 = axis2.xR;
+                this.allStages[stg].yR2 = axis2.yR;
+                this.allStages[stg].xL2 = axis2.xL;
+                this.allStages[stg].yL2 = axis2.yL;
+                // console.log(this.allStages)
+            }
+            console.log(this);
         } //Leaf constructor
-        calcBezierPointsForPerpendicularAxis(axisLenRatio, axisWidthRatio, moveAxis) {
-            let x0Axis = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len * axisLenRatio;
-            let y0Axis = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len * axisLenRatio;
+        calcBezierPointsForPerpendicularAxis(axisLenRatio, axisWidthRatio, moveAxis, index) {
+            let x0Axis = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.allStages[index].stageLen * axisLenRatio;
+            let y0Axis = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.allStages[index].stageLen * axisLenRatio;
             // calculate points on line perpendiuclar to the main nerve
-            let xR = x0Axis + Math.sin((90 + this.angle) / 180 * Math.PI) * this.len * axisWidthRatio * (moveAxis); // /2 because its only one half
-            let yR = y0Axis - Math.cos((90 + this.angle) / 180 * Math.PI) * this.len * axisWidthRatio * (moveAxis);
-            let xL = x0Axis + Math.sin((-90 + this.angle) / 180 * Math.PI) * this.len * axisWidthRatio * (1 - moveAxis);
-            let yL = y0Axis - Math.cos((-90 + this.angle) / 180 * Math.PI) * this.len * axisWidthRatio * (1 - moveAxis);
+            let xR = x0Axis + Math.sin((90 + this.angle) / 180 * Math.PI) * this.allStages[index].stageLen * axisWidthRatio * (moveAxis); // /2 because its only one half
+            let yR = y0Axis - Math.cos((90 + this.angle) / 180 * Math.PI) * this.allStages[index].stageLen * axisWidthRatio * (moveAxis);
+            let xL = x0Axis + Math.sin((-90 + this.angle) / 180 * Math.PI) * this.allStages[index].stageLen * axisWidthRatio * (1 - moveAxis);
+            let yL = y0Axis - Math.cos((-90 + this.angle) / 180 * Math.PI) * this.allStages[index].stageLen * axisWidthRatio * (1 - moveAxis);
             return { xR: xR, yR: yR, xL: xL, yL: yL };
         }
-        drawLeaf() {
-            ctx.beginPath();
-            ctx.strokeStyle = 'rgb(10,60,0)';
-            //MAIN NERVE
-            ctx.moveTo(this.x0, this.y0);
-            ctx.lineTo(this.xF, this.yF);
-            // stg for shorter code 
-            const stg = this.allStages[0];
-            ctx.stroke();
-            ctx.closePath();
-            // BEZIER CURVES FOR BOTH SIDES OF A LEAF
-            ctx.beginPath();
-            ctx.moveTo(stg.xFPetiole, stg.yFPetiole);
-            // right side of a leaf
-            ctx.bezierCurveTo(stg.xR1, stg.yR1, stg.xR2, stg.yR2, this.xF, this.yF);
-            ctx.moveTo(stg.xFPetiole, stg.yFPetiole);
-            // left side of a leaf
-            ctx.bezierCurveTo(stg.xL1, stg.yL1, stg.xL2, stg.yL2, this.xF, this.yF);
-            ctx.closePath();
-            ctx.fillStyle = 'rgb(10,80,0)';
-            ctx.fill();
-            ctx.stroke();
+        // drawLeaf () {
+        //     ctx.beginPath();
+        //     ctx.strokeStyle = 'rgb(10,60,0)'
+        //     //MAIN NERVE
+        //     ctx.moveTo(this.x0, this.y0)
+        //     ctx.lineTo(this.xF, this.yF)
+        //     // stg for shorter code 
+        //     const stg = this.allStages[0]
+        //     ctx.stroke()
+        //     ctx.closePath()
+        //     // BEZIER CURVES FOR BOTH SIDES OF A LEAF
+        //     ctx.beginPath();
+        //     ctx.moveTo(stg.xFPetiole, stg.yFPetiole)
+        //     // right side of a leaf
+        //     ctx.bezierCurveTo(stg.xR1, stg.yR1, stg.xR2, stg.yR2, this.xF, this.yF)
+        //     ctx.moveTo(stg.xFPetiole, stg.yFPetiole)
+        //     // left side of a leaf
+        //     ctx.bezierCurveTo(stg.xL1, stg.yL1, stg.xL2, stg.yL2, this.xF, this.yF)
+        //     ctx.closePath()
+        //     ctx.fillStyle = 'rgb(10,80,0)'
+        //     ctx.fill()
+        //     ctx.stroke()
+        // }
+        drawLeafStages() {
+            for (let i = 0; i < this.maxStages / 2; i++) {
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgb(10,60,0)';
+                //MAIN NERVE
+                ctx.moveTo(this.x0, this.y0);
+                ctx.lineTo(this.allStages[i].xF, this.allStages[i].yF);
+                ctx.stroke();
+                ctx.closePath();
+                // BEZIER CURVES FOR BOTH SIDES OF A LEAF
+                ctx.beginPath();
+                ctx.moveTo(this.allStages[i].xFPetiole, this.allStages[i].yFPetiole);
+                // right side of a leaf
+                ctx.bezierCurveTo(this.allStages[i].xR1, this.allStages[i].yR1, this.allStages[i].xR2, this.allStages[i].yR2, this.allStages[i].xF, this.allStages[i].yF);
+                ctx.moveTo(this.allStages[i].xFPetiole, this.allStages[i].yFPetiole);
+                // left side of a leaf
+                ctx.bezierCurveTo(this.allStages[i].xL1, this.allStages[i].yL1, this.allStages[i].xL2, this.allStages[i].yL2, this.allStages[i].xF, this.allStages[i].yF);
+                ctx.closePath();
+                ctx.fillStyle = 'rgb(10,80,0)';
+                ctx.fill();
+                ctx.stroke();
+                // console.log('stageDraw')
+            }
         }
     }
     // _________ INITIALIZE THE TREE _________
