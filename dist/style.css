@@ -1,5 +1,5 @@
 :root {
-    background: rgb(1, 47, 82);
+    background: rgb(0, 0, 0);
 }
 
 * {
@@ -8,14 +8,33 @@
     box-sizing: border-box; /*hides scrollbars*/
 }
 
-#canvas1 {
+.canvas {
     overflow: hidden;
     width: 100%;
     height: 100%;
     position: absolute;
-    border: 1px solid rgb(0, 0, 105);
+    border: 3px solid rgb(0, 0, 105);
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     /* image-rendering: smooth; */
+}
+
+/* #canvas1 { 
+    display: none;
+} */
+
+/* #canvas2 { 
+    display: none;
+} */
+
+.leafCanvas {
+    overflow: hidden;
+    /* width: 100%;
+    height: 100%; */
+    position: absolute;
+    border: 1px solid rgb(77, 162, 6);
+    /* top: 50%; */
+    /* left: 50%; */
+    /* transform: translate(-50%, -50%); */
 }

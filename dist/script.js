@@ -3,15 +3,17 @@ window.addEventListener('load', function () {
     //GLOBALS
     const canvas = document.getElementById('canvas1');
     const ctx = canvas.getContext('2d');
+    const canvas2 = document.getElementById('canvas2');
+    const ctx2 = canvas2.getContext('2d');
     // const canvas2 = document.body.appendChild(document.createElement("canvas"));
     // ctx.globalAlpha = 0.3;
-    const segmentingLen = 100;
+    const segmentingLen = 10;
     const trunkLen = 200;
     const trunkWidth = 60;
     const lenMultiplier = 0.75;
     const widthMultiplier = 0.7;
     const rebranchingAngle = 18;
-    const maxLevelGlobal = 7;
+    const maxLevelGlobal = 1;
     const occasionalBranchesLimit = 0.3;
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
@@ -24,9 +26,13 @@ window.addEventListener('load', function () {
     //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    canvas2.width = window.innerWidth;
+    canvas2.height = window.innerHeight;
     window.addEventListener('resize', function () {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+        canvas2.width = window.innerWidth;
+        canvas2.height = window.innerHeight;
         tree.drawTheTree(); // tree possibly not ready at resize
     });
     // TOODOO LIST:
@@ -37,7 +43,7 @@ window.addEventListener('load', function () {
         yF = 0, level = 0, children = [], // list of children branches
         segments = [], // segments endpoints to draw lines between
         drawnSegments = 0, //to track branch drawing progress
-        occasionalBranches = 0) {
+        occasionalBranches = 0, leaves = []) {
             this.parent = parent;
             this.x0 = x0;
             this.y0 = y0;
@@ -52,7 +58,9 @@ window.addEventListener('load', function () {
             this.segments = segments;
             this.drawnSegments = drawnSegments;
             this.occasionalBranches = occasionalBranches;
+            this.leaves = leaves;
             this.parent = parent;
+            // console.log(this.leaves)
             // RECALCULATE LEN AND WIDTH WITH levelShift
             this.level = this.parent.level + 1 + this.levelShift;
             // if (this.levelShift > 0) console.log(this.levelShift)
@@ -145,17 +153,19 @@ window.addEventListener('load', function () {
                     //recalculate leaf starting point to match the segment width
                     let x0Leaf = this.segments[this.drawnSegments].x0 - Math.cos(this.angle / 180 * Math.PI) * lineWidth / 2;
                     let y0Leaf = this.segments[this.drawnSegments].y0 - Math.sin(this.angle / 180 * Math.PI) * lineWidth / 2;
-                    const leafL = new Leaf(x0Leaf, y0Leaf, 35, this.angle - 40 - Math.random() * 10, 2);
-                    // leafL.drawLeaf()
-                    leafL.drawLeafStages();
+                    const leafL = new Leaf(this.segments[this.drawnSegments], x0Leaf, y0Leaf, 35, this.angle - 40 - Math.random() * 10, 2);
+                    this.leaves.push(leafL);
+                    // leafL.drawAllLeafStages()
+                    leafL.drawLeafStage();
                 }
                 else if (this.drawnSegments % 2 === 0) {
                     //recalculate leaf starting point to match the segment width
                     let x0Leaf = this.segments[this.drawnSegments].x0 + Math.cos(this.angle / 180 * Math.PI) * lineWidth / 2;
                     let y0Leaf = this.segments[this.drawnSegments].y0 + Math.sin(this.angle / 180 * Math.PI) * lineWidth / 2;
-                    const leafR = new Leaf(x0Leaf, y0Leaf, 35, this.angle + 40 + Math.random() * 10, 2);
-                    // leafR.drawLeaf()
-                    leafR.drawLeafStages();
+                    const leafR = new Leaf(this.segments[this.drawnSegments], x0Leaf, y0Leaf, 35, this.angle + 40 + Math.random() * 10, 2);
+                    this.leaves.push(leafR);
+                    // leafR.drawAllLeafStages()
+                    leafR.drawLeafStage();
                 }
             }
         }
@@ -226,9 +236,10 @@ window.addEventListener('load', function () {
         }
     }
     class Leaf {
-        constructor(
-        // public parent: Branch, // parent branch
-        x0, y0, len, angle, lineWidth = 4, xF = 0, yF = 0, maxStages = 4, currentStage = 0, allStages = []) {
+        constructor(parentSegment, // parent branch
+        x0, y0, len, angle, lineWidth = 4, xF = 0, yF = 0, maxStages = 4, currentStage = 0, allStages = [], ctx = canvas.getContext('2d') // CHANGE THAT. Initialize something, but maybe not that much
+        ) {
+            this.parentSegment = parentSegment;
             this.x0 = x0;
             this.y0 = y0;
             this.len = len;
@@ -239,9 +250,20 @@ window.addEventListener('load', function () {
             this.maxStages = maxStages;
             this.currentStage = currentStage;
             this.allStages = allStages;
+            this.ctx = ctx;
             // final len in final stage
             this.xF = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len;
             this.yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len;
+            const canvasLeaf = document.body.appendChild(document.createElement("canvas"));
+            canvasLeaf.classList.add('leafCanvas');
+            this.ctx = canvasLeaf.getContext('2d');
+            canvasLeaf.style.left = this.x0.toString() + 'px';
+            canvasLeaf.style.top = this.y0.toString() + 'px';
+            // canvasLeaf.style.rotate = this.angle.toString() + 'deg'
+            canvasLeaf.style.width = '10px';
+            canvasLeaf.style.height = '10px';
+            // canvasLeaf.style.width = this.len.toString() + 'px'
+            // canvasLeaf.style.height = this.len.toString() + 'px'
             for (let stg = 0; stg < this.maxStages; stg++) {
                 // push zeros to fill the object
                 this.allStages.push({ stageLen: 0, xF: 0, yF: 0, xFPetiole: 0, yFPetiole: 0, xR1: 0, yR1: 0, xL1: 0, yL1: 0, xR2: 0, yR2: 0, xL2: 0, yL2: 0 });
@@ -249,7 +271,6 @@ window.addEventListener('load', function () {
                 // console.log(this.allStages[stg].stageLen)
                 let stageLen = this.allStages[stg].stageLen;
                 // console.log(stageLen)
-                ctx.lineWidth = this.lineWidth;
                 // CALCULATE TIP (FINAL) COORDINATES. LEAF'S MAIN NERVE ENDS HERE
                 this.allStages[stg].xF = this.x0 + Math.sin(this.angle / 180 * Math.PI) * stageLen;
                 this.allStages[stg].yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * stageLen;
@@ -276,7 +297,7 @@ window.addEventListener('load', function () {
                 this.allStages[stg].yL2 = axis2.yL;
                 // console.log(this.allStages)
             }
-            console.log(this);
+            // console.log(this)
         } //Leaf constructor
         calcBezierPointsForPerpendicularAxis(axisLenRatio, axisWidthRatio, moveAxis, index) {
             let x0Axis = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.allStages[index].stageLen * axisLenRatio;
@@ -288,52 +309,59 @@ window.addEventListener('load', function () {
             let yL = y0Axis - Math.cos((-90 + this.angle) / 180 * Math.PI) * this.allStages[index].stageLen * axisWidthRatio * (1 - moveAxis);
             return { xR: xR, yR: yR, xL: xL, yL: yL };
         }
-        // drawLeaf () {
-        //     ctx.beginPath();
-        //     ctx.strokeStyle = 'rgb(10,60,0)'
-        //     //MAIN NERVE
-        //     ctx.moveTo(this.x0, this.y0)
-        //     ctx.lineTo(this.xF, this.yF)
-        //     // stg for shorter code 
-        //     const stg = this.allStages[0]
-        //     ctx.stroke()
-        //     ctx.closePath()
-        //     // BEZIER CURVES FOR BOTH SIDES OF A LEAF
-        //     ctx.beginPath();
-        //     ctx.moveTo(stg.xFPetiole, stg.yFPetiole)
-        //     // right side of a leaf
-        //     ctx.bezierCurveTo(stg.xR1, stg.yR1, stg.xR2, stg.yR2, this.xF, this.yF)
-        //     ctx.moveTo(stg.xFPetiole, stg.yFPetiole)
-        //     // left side of a leaf
-        //     ctx.bezierCurveTo(stg.xL1, stg.yL1, stg.xL2, stg.yL2, this.xF, this.yF)
-        //     ctx.closePath()
-        //     ctx.fillStyle = 'rgb(10,80,0)'
-        //     ctx.fill()
-        //     ctx.stroke()
+        // drawAllLeafStages () {
+        //     for (let i = 0; i < this.maxStages; i++) {
+        //         ctx.beginPath();
+        //         ctx.strokeStyle = 'rgb(10,60,0)'
+        //         //MAIN NERVE
+        //         ctx.moveTo(this.x0, this.y0)
+        //         ctx.lineTo(this.allStages[i].xF, this.allStages[i].yF)
+        //         // ctx.lineWidth = this.lineWidth * (this.currentStage/this.maxStages)
+        //         ctx.stroke()
+        //         ctx.closePath()
+        //         // BEZIER CURVES FOR BOTH SIDES OF A LEAF
+        //         ctx.beginPath();
+        //         ctx.moveTo(this.allStages[i].xFPetiole, this.allStages[i].yFPetiole)
+        //         // right side of a leaf
+        //         ctx.bezierCurveTo(this.allStages[i].xR1, this.allStages[i].yR1, this.allStages[i].xR2, this.allStages[i].yR2, this.allStages[i].xF, this.allStages[i].yF)
+        //         ctx.moveTo(this.allStages[i].xFPetiole, this.allStages[i].yFPetiole)
+        //         // left side of a leaf
+        //         ctx.bezierCurveTo(this.allStages[i].xL1, this.allStages[i].yL1, this.allStages[i].xL2, this.allStages[i].yL2, this.allStages[i].xF, this.allStages[i].yF)
+        //         ctx.closePath()
+        //         ctx.fillStyle = 'rgb(10,80,0)'
+        //         ctx.fill()
+        //         ctx.stroke()
+        //         // console.log('stageDraw')
+        //     }
         // }
-        drawLeafStages() {
-            for (let i = 0; i < this.maxStages / 2; i++) {
-                ctx.beginPath();
-                ctx.strokeStyle = 'rgb(10,60,0)';
-                //MAIN NERVE
-                ctx.moveTo(this.x0, this.y0);
-                ctx.lineTo(this.allStages[i].xF, this.allStages[i].yF);
-                ctx.stroke();
-                ctx.closePath();
-                // BEZIER CURVES FOR BOTH SIDES OF A LEAF
-                ctx.beginPath();
-                ctx.moveTo(this.allStages[i].xFPetiole, this.allStages[i].yFPetiole);
-                // right side of a leaf
-                ctx.bezierCurveTo(this.allStages[i].xR1, this.allStages[i].yR1, this.allStages[i].xR2, this.allStages[i].yR2, this.allStages[i].xF, this.allStages[i].yF);
-                ctx.moveTo(this.allStages[i].xFPetiole, this.allStages[i].yFPetiole);
-                // left side of a leaf
-                ctx.bezierCurveTo(this.allStages[i].xL1, this.allStages[i].yL1, this.allStages[i].xL2, this.allStages[i].yL2, this.allStages[i].xF, this.allStages[i].yF);
-                ctx.closePath();
-                ctx.fillStyle = 'rgb(10,80,0)';
-                ctx.fill();
-                ctx.stroke();
-                // console.log('stageDraw')
-            }
+        drawLeafStage() {
+            // ctx2.save()
+            // ctx2.rotate(this.angle)
+            // ctx2.clearRect(this.x0, this.y0, 100, this.len)
+            // ctx2.clearRect(0, 0, canvas2.width, canvas2.height)
+            // ctx2.restore()
+            // this.ctx.moveTo(this.x0, this.y0)
+            ctx2.beginPath();
+            ctx2.strokeStyle = 'rgb(10,60,0)';
+            //MAIN NERVE
+            ctx2.moveTo(this.x0, this.y0);
+            ctx2.lineTo(this.allStages[this.currentStage].xF, this.allStages[this.currentStage].yF);
+            ctx2.stroke();
+            ctx2.closePath();
+            // BEZIER CURVES FOR BOTH SIDES OF A LEAF
+            ctx2.beginPath();
+            ctx2.moveTo(this.allStages[this.currentStage].xFPetiole, this.allStages[this.currentStage].yFPetiole);
+            // right side of a leaf
+            ctx2.bezierCurveTo(this.allStages[this.currentStage].xR1, this.allStages[this.currentStage].yR1, this.allStages[this.currentStage].xR2, this.allStages[this.currentStage].yR2, this.allStages[this.currentStage].xF, this.allStages[this.currentStage].yF);
+            ctx2.moveTo(this.allStages[this.currentStage].xFPetiole, this.allStages[this.currentStage].yFPetiole);
+            // left side of a leaf
+            ctx2.bezierCurveTo(this.allStages[this.currentStage].xL1, this.allStages[this.currentStage].yL1, this.allStages[this.currentStage].xL2, this.allStages[this.currentStage].yL2, this.allStages[this.currentStage].xF, this.allStages[this.currentStage].yF);
+            ctx2.closePath();
+            ctx2.fillStyle = 'rgb(10,80,0)';
+            ctx2.fill();
+            ctx2.stroke();
+            // console.log('drawLeafStage')
+            this.currentStage++;
         }
     }
     // _________ INITIALIZE THE TREE _________
@@ -342,7 +370,7 @@ window.addEventListener('load', function () {
     const root = new Root();
     const tree = new Tree(canvas.width / 2, canvas.height, trunkLen, 0); // initialize tree with trunk params. TRUNK LENGTH HERE
     // tree.drawTheTree() //all at once
-    // console.log(tree.allBranches)
+    console.log(tree.allBranches);
     // const leafTest = new Leaf (250, 200, 150, 180)
     // leafTest.drawLeaf()
     let branchesAll = 0;
@@ -357,8 +385,7 @@ window.addEventListener('load', function () {
     const timeLimit = 10;
     let thisForEachCompleted = 0;
     let branchesCompletedThisLvl = 0;
-    // if (branchesCompletedThisLvl) {}
-    function animateByLSegments(timeStamp) {
+    function animateTheTree(timeStamp) {
         const timeDelta = timeStamp - lastTime;
         lastTime = timeStamp;
         // BREAK THE LOOP IF REACHED MAX LVL
@@ -370,18 +397,28 @@ window.addEventListener('load', function () {
         if (accumulatedTime >= timeLimit) {
             //for every branch
             tree.allBranches[lvl].forEach(branch => {
-                // 
+                // if this branch is completly drawn 
                 if (branch.drawnSegments >= branch.segments.length) {
-                    // branchesCompletedThisLvl ++
                     thisForEachCompleted++;
                 }
+                // if not, draw it
                 else if (branch.drawnSegments < branch.segments.length) {
                     branch.drawBranchBySegments();
                     accumulatedTime = 0;
                 }
+                // LEAVES
+                if (branch.leaves) {
+                    branch.leaves.forEach((leaf) => {
+                        // leaf.currentStage > 0 to wait for a segment to rise
+                        if (leaf.currentStage > 0 && leaf.currentStage < leaf.maxStages) {
+                            leaf.drawLeafStage();
+                        }
+                    });
+                }
             });
             branchesCompletedThisLvl = thisForEachCompleted;
             thisForEachCompleted = 0;
+            // go next level if completed all the branches at this frame
             if (branchesCompletedThisLvl === tree.allBranches[lvl].length) {
                 branchesCompletedThisLvl = 0;
                 lvl++;
@@ -392,13 +429,13 @@ window.addEventListener('load', function () {
         else if (accumulatedTime < timeLimit) {
             accumulatedTime += timeDelta;
         }
-        requestAnimationFrame(animateByLSegments);
+        requestAnimationFrame(animateTheTree);
         // if (Math.floor(1000/timeDelta) < 50){
         //     console.log(Math.floor(1000/timeDelta) + ' FPS!!!') // FPS ALERT
         // }
     }
     // animate
-    animateByLSegments(0);
+    animateTheTree(0);
     // _________ ANIMATE SEGMENTS _________
     // class Cloud {
     //     constructor (context: CanvasRenderingContext2D) {
