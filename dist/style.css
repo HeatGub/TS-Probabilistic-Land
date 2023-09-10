@@ -5,15 +5,17 @@
 * {
     margin: 0;
     padding: 0;
-    box-sizing: border-box; /*hides scrollbars*/
+    box-sizing: border-box;
+    overflow: hidden; /* hides elements from the window's outside so the scrollbar is not needed */
 }
+
 
 .canvas {
     overflow: hidden;
     width: 100%;
     height: 100%;
     position: absolute;
-    border: 3px solid rgb(0, 0, 105);
+    border: 2px solid rgba(4, 98, 92, 0.305);
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -31,5 +33,5 @@
 .leafCanvas {
     /* overflow: hidden; */
     position: absolute;
-    border: 1px solid rgba(76, 162, 6, 0.5);
+    /* border: 1px solid rgba(76, 162, 6, 0.5); */
 }
