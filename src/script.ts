@@ -9,7 +9,7 @@ const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 // const canvas2 = document.body.appendChild(document.createElement("canvas"));
 // ctx.globalAlpha = 0.3;
 
-const segmentingLen = 100
+const segmentingLen = 25
 const trunkLen = 200
 const trunkWidth = 60
 const lenMultiplier = 0.75
@@ -25,9 +25,8 @@ const axis1LenRatio = -0.15
 const axis2LenRatio = 0.5
 const petioleLenRatio = 0.33 //of the whole length
 const leafyLevels = 3
-const leafProbability = 0.5
-const allLeaves: Leaf[] = []
-
+const leafProbability = 0.12
+const growingLeavesList: Leaf[] = []
 
 //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
 canvas.width = window.innerWidth
@@ -102,8 +101,8 @@ class Branch {
                     //recalculate leaf starting point to match the segment width
                     const x0Leaf  = this.segments[seg].x0 - Math.cos(this.angle/180* Math.PI) * segmentWidth/2
                     const y0Leaf  = this.segments[seg].y0 - Math.sin(this.angle/180* Math.PI) * segmentWidth/2
-                    const leafL = new Leaf (this.segments[seg], x0Leaf , y0Leaf , 50, this.angle -40 - Math.random()*10)
-                    allLeaves.push(leafL)
+                    const leafL = new Leaf (this.segments[seg], x0Leaf , y0Leaf , 35, this.angle -40 - Math.random()*10)
+                    growingLeavesList.push(leafL)
                     // leafL.drawLeafStage()
                     // leafL.currentStage ++
                     this.segments[seg].leaves.push(leafL)
@@ -113,8 +112,8 @@ class Branch {
                     //recalculate leaf starting point to match the segment width
                     const x0Leaf  = this.segments[seg].x0 + Math.cos(this.angle/180* Math.PI) * segmentWidth/2
                     const y0Leaf  = this.segments[seg].y0 + Math.sin(this.angle/180* Math.PI) * segmentWidth/2
-                    const leafR = new Leaf (this.segments[seg], x0Leaf , y0Leaf , 50, this.angle + 40 + Math.random()*10)
-                    allLeaves.push(leafR)
+                    const leafR = new Leaf (this.segments[seg], x0Leaf , y0Leaf , 35, this.angle + 40 + Math.random()*10)
+                    growingLeavesList.push(leafR)
                     // leafR.drawLeafStage()
                     // leafR.currentStage ++
                     this.segments[seg].leaves.push(leafR)
@@ -182,6 +181,7 @@ class Branch {
 
         if (this.segments[this.drawnSegments].leaves.length > 0) { // if there are any leaves, let them grow from now on
             this.segments[this.drawnSegments].leaves.forEach( (leaf) => {leaf.state = "growing"} )
+            console.log("{leaf.state = growing}")
         }
 
         this.drawnSegments ++
@@ -199,7 +199,7 @@ class Tree {
         readonly maxLevel: number = maxLevelGlobal,
         readonly branchingProbability: number = 0.8,
         public allBranches: [Branch[]] = [[]],
-        // public allLeaves: Leaf[] = [],
+        // public growingLeavesList: Leaf[] = [],
     ){
         const startTime = Date.now()
         this.allBranches[0] = [new Branch (root, initX, initY, initLen, initAngle, trunkWidth)]   //save trunk as 0lvl branch
@@ -275,7 +275,7 @@ class Leaf {
         public lineWidth: number = 1,
         public xF: number = 0,
         public yF: number  = 0,
-        public maxStages = 30,
+        public maxStages = 50,
         public currentStage = 0,
         public allStages: {stageLen:number, xF: number, yF: number, xFPetiole: number, yFPetiole: number, xR1: number, yR1: number, xL1: number, yL1: number, xR2: number, yR2: number, xL2: number, yL2: number}[] = [],
         public canvas = document.body.appendChild(document.createElement("canvas")), // create canvas
@@ -396,8 +396,8 @@ const root = new Root ()
 const tree = new Tree (canvas.width/2, canvas.height, trunkLen, 0) // initialize tree with trunk params. TRUNK LENGTH HERE
 // tree.drawTheTree() //all at once
 console.log(tree.allBranches)
-console.log(allLeaves)
-console.log('leaves amount = ' + allLeaves.length)
+// console.log(growingLeavesList)
+console.log('leaves amount = ' + growingLeavesList.length)
 
 // const leafTest = new Leaf (250, 200, 150, 180)
 // leafTest.drawLeaf()
@@ -421,6 +421,7 @@ let branchesCompletedThisLvl = 0
 
 // let leavesIndex = 0
 // let thisFrameGrownLeaves = 0
+// let lastFrameGrownLeaves = 0
 // let 
 
 // AT INITIATION OF drawLeafStage APPEND LEAF TO AN Array, THEN LOOP THROUGH N ELEMENTS OF THAT ARRAY
@@ -429,36 +430,40 @@ function animateTheTree(timeStamp: number) {
     const timeDelta = timeStamp - lastTime
     lastTime = timeStamp
 
+    // thisFrameGrownLeaves = 0
     // LEAVES
-    allLeaves.forEach( (leaf) => {
+    growingLeavesList.forEach( (leaf) => {
         // leaf.currentStage > 0 to wait for a segment to rise
-        if (leaf.state === "growing" && leaf.currentStage < leaf.maxStages) {
-            leaf.drawLeafStage()
-        }
-        else if (leaf.currentStage >= leaf.maxStages) {
+        if (leaf.currentStage >= leaf.maxStages) {
             leaf.state === "grown"
             // thisFrameGrownLeaves ++
-            console.log('grwn')
-        } 
+            // console.log('grwn')
+            let spliceIndex = growingLeavesList.indexOf(leaf)
+            // console.log(spliceIndex)
+            // remove already grown leaf from the growing list
+            growingLeavesList.splice(spliceIndex, 1) // 2nd parameter means remove one item only
+        }
+        else if (leaf.state === "growing" && leaf.currentStage < leaf.maxStages) {
+            leaf.drawLeafStage()
+        }
     } )
-    
-    // // BREAK THE LOOP IF REACHED MAX LVL
-    // if (lvl > tree.maxLevel) {
-    //     console.log('___Animation_in___' + timeStamp + 'ms___')
-    //     return
-    // }
+    console.log(growingLeavesList.length)
+    // lastFrameGrownLeaves = thisFrameGrownLeaves
 
-    // BREAK THE LOOP IF REACHED MAX LVL
-    if (lvl > tree.maxLevel) {
+    // BREAK THE LOOP
+    if (lvl > tree.maxLevel && growingLeavesList.length === 0 ) {
         console.log('___Animation_in___' + timeStamp + 'ms___')
+        console.log(growingLeavesList)
         return
     }
 
-    // thisFrameGrownLeaves = 0
-
+    // OR ACCUMULATE PASSED TIME
+    else if (accumulatedTime < timeLimit){
+        accumulatedTime += timeDelta
+    }
 
     // DRAW A FRAME IF TIMELIMIT PASSED
-    if (accumulatedTime >= timeLimit){
+    else if (accumulatedTime >= timeLimit && lvl <= tree.maxLevel){
         //for every branch
         tree.allBranches[lvl].forEach(branch => {
             // if this branch is completly drawn 
@@ -482,10 +487,7 @@ function animateTheTree(timeStamp: number) {
         // console.log('lvl = ' + lvl)
         }
     }
-    //OR ACCUMULATE PASSED TIME
-    else if (accumulatedTime < timeLimit){
-        accumulatedTime += timeDelta
-    }
+
 
     requestAnimationFrame(animateTheTree)
 
