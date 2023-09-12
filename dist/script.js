@@ -9,13 +9,13 @@ window.addEventListener('load', function () {
     // const ctx2 = canvas2.getContext('2d') as CanvasRenderingContext2D
     // const canvas2 = document.body.appendChild(document.createElement("canvas"));
     // ctx.globalAlpha = 0.3;
-    const segmentingLen = 25;
+    const segmentingLen = 100;
     const trunkLen = 200;
     const trunkWidth = 60;
     const lenMultiplier = 0.75;
     const widthMultiplier = 0.7;
-    const rebranchingAngle = 12;
-    const maxLevelGlobal = 5;
+    const rebranchingAngle = 19;
+    const maxLevelGlobal = 4;
     const occasionalBranchesLimit = 0.9;
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
@@ -24,8 +24,9 @@ window.addEventListener('load', function () {
     const axis1LenRatio = -0.15;
     const axis2LenRatio = 0.5;
     const petioleLenRatio = 0.33; //of the whole length
-    const leafyLevels = 2;
-    const leafProbability = 0.15;
+    const leafyLevels = 3;
+    const leafProbability = 0.5;
+    const allLeaves = [];
     //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -44,7 +45,7 @@ window.addEventListener('load', function () {
         yF = 0, level = 0, children = [], // list of children branches
         segments = [], // segments endpoints to draw lines between
         drawnSegments = 0, //to track branch drawing progress
-        occasionalBranches = 0, leaves = []) {
+        occasionalBranches = 0) {
             this.parent = parent;
             this.x0 = x0;
             this.y0 = y0;
@@ -59,7 +60,6 @@ window.addEventListener('load', function () {
             this.segments = segments;
             this.drawnSegments = drawnSegments;
             this.occasionalBranches = occasionalBranches;
-            this.leaves = leaves;
             this.parent = parent;
             // console.log(this.leaves)
             // RECALCULATE LEN AND WIDTH WITH levelShift
@@ -80,7 +80,7 @@ window.addEventListener('load', function () {
             let segAmountByLevel = Math.ceil(((trunkLen * (Math.pow(lenMultiplier, this.level))) / segmentingLen) + (this.level / 2));
             // console.log(segAmountByLevel)
             for (let seg = 0; seg < segAmountByLevel; seg++) {
-                this.segments.push({ x0: 0, y0: 0, xF: 0, yF: 0, width: 100 });
+                this.segments.push({ x0: 0, y0: 0, xF: 0, yF: 0, width: 0, leaves: [] });
                 // Calculate coordinates analogically to branch xF yF, but for shorter lengths. 
                 // segment is in range from (seg/segAmount) to ((seg +1)/segAmount) * len
                 this.segments[seg].x0 = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len * (seg / segAmountByLevel);
@@ -89,18 +89,18 @@ window.addEventListener('load', function () {
                 this.segments[seg].yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len * ((seg + 1) / segAmountByLevel);
                 // linearly change branchWidth for each segment 
                 this.segments[seg].width = this.branchWidth + ((segAmountByLevel - seg + 1) / segAmountByLevel) * (this.branchWidth / widthMultiplier - this.branchWidth); // this.branchWidth/widthMultiplier makes width as +1 lvl
-                // _________________ ADD LEAF _________________
-                if (maxLevelGlobal - leafyLevels < +this.level && Math.random() < leafProbability) {
+                // _________________ ADD LEAVES AT SEGMENTS _________________
+                if (maxLevelGlobal - leafyLevels < this.level && Math.random() < leafProbability) {
                     let segmentWidth = this.segments[seg].width;
                     if (seg % 2 === 0) {
                         //recalculate leaf starting point to match the segment width
                         const x0Leaf = this.segments[seg].x0 - Math.cos(this.angle / 180 * Math.PI) * segmentWidth / 2;
                         const y0Leaf = this.segments[seg].y0 - Math.sin(this.angle / 180 * Math.PI) * segmentWidth / 2;
                         const leafL = new Leaf(this.segments[seg], x0Leaf, y0Leaf, 50, this.angle - 40 - Math.random() * 10);
-                        this.leaves.push(leafL);
-                        // tree.allLeaves.push(leafL)
+                        allLeaves.push(leafL);
                         // leafL.drawLeafStage()
-                        leafL.currentStage++;
+                        // leafL.currentStage ++
+                        this.segments[seg].leaves.push(leafL);
                         // console.log('L ')
                     }
                     else if (seg % 1 === 0) {
@@ -108,10 +108,10 @@ window.addEventListener('load', function () {
                         const x0Leaf = this.segments[seg].x0 + Math.cos(this.angle / 180 * Math.PI) * segmentWidth / 2;
                         const y0Leaf = this.segments[seg].y0 + Math.sin(this.angle / 180 * Math.PI) * segmentWidth / 2;
                         const leafR = new Leaf(this.segments[seg], x0Leaf, y0Leaf, 50, this.angle + 40 + Math.random() * 10);
-                        this.leaves.push(leafR);
-                        // tree.allLeaves.push(leafR)
+                        allLeaves.push(leafR);
                         // leafR.drawLeafStage()
-                        leafR.currentStage++;
+                        // leafR.currentStage ++
+                        this.segments[seg].leaves.push(leafR);
                         // console.log('   R ')
                     }
                 }
@@ -150,12 +150,16 @@ window.addEventListener('load', function () {
         drawBranchBySegments() {
             // gradient color for the whole branch
             const gradient = ctx.createLinearGradient(this.x0, this.y0, this.xF, this.yF);
-            // gradient.addColorStop(0, 'rgb(80,' + (10 + 10*this.level) + ', 0)');
-            // gradient.addColorStop(1, 'rgb(80,' + (20 + 10*this.level) + ', 0)');
+            // gradient.addColorStop(0, 'rgb(80,' + (10 + 10*this.level) + ', 0)')
+            // gradient.addColorStop(1, 'rgb(80,' + (20 + 10*this.level) + ', 0)')
             gradient.addColorStop(0, 'rgb(50,' + (12 * this.parent.level) + ', 0)');
             gradient.addColorStop(1, 'rgb(50,' + (12 * this.level) + ', 0)');
-            // gradient.addColorStop(0, 'rgb(10,' + (10 + 10*this.level) + ',' + (100*this.levelShift) + ')' );
-            // gradient.addColorStop(1, 'rgb(10,' + (20 + 10*this.level) + ',' + (100*this.levelShift) + ')' );
+            // gradient.addColorStop(0, 'rgb(10,' + (10 + 10*this.level) + ',' + (100*this.levelShift) + ')' )
+            // gradient.addColorStop(1, 'rgb(10,' + (20 + 10*this.level) + ',' + (100*this.levelShift) + ')' )
+            // ctx.shadowColor = 'black'
+            // ctx.shadowOffsetX = 10
+            // ctx.shadowOffsetY = 10
+            // ctx.shadowBlur = 5
             ctx.strokeStyle = gradient;
             ctx.lineCap = "round";
             ctx.lineWidth = this.segments[this.drawnSegments].width;
@@ -164,41 +168,16 @@ window.addEventListener('load', function () {
             ctx.lineTo(this.segments[this.drawnSegments].xF, this.segments[this.drawnSegments].yF);
             ctx.stroke();
             ctx.closePath();
-            // ctx.shadowColor = 'black'
-            // ctx.shadowOffsetX = 10
-            // ctx.shadowOffsetY = 10
-            // ctx.shadowBlur = 5
+            if (this.segments[this.drawnSegments].leaves.length > 0) { // if there are any leaves, let them grow from now on
+                this.segments[this.drawnSegments].leaves.forEach((leaf) => { leaf.state = "growing"; });
+            }
             this.drawnSegments++;
-            // // ADD LEAF - many conditions ahead
-            // if (Math.random() < leafProbability && this.level >= tree.maxLevel-1 && this.segments.length > this.drawnSegments) {
-            //     let segmentWidth = this.segments[this.drawnSegments].width
-            //     if (this.drawnSegments % 4 === 0) {
-            //         //recalculate leaf starting point to match the segment width
-            //         const x0Leaf  = this.segments[this.drawnSegments].x0 - Math.cos(this.angle/180* Math.PI) * segmentWidth/2
-            //         const y0Leaf  = this.segments[this.drawnSegments].y0 - Math.sin(this.angle/180* Math.PI) * segmentWidth/2
-            //         const leafL = new Leaf (this.segments[this.drawnSegments], x0Leaf , y0Leaf , 35, this.angle -40 - Math.random()*10)
-            //         this.leaves.push(leafL)
-            //         tree.allLeaves.push(leafL)
-            //         // leafL.drawAllLeafStages()
-            //         leafL.drawLeafStage()
-            //     }
-            //     else if (this.drawnSegments % 2 === 0) {
-            //         //recalculate leaf starting point to match the segment width
-            //         const x0Leaf  = this.segments[this.drawnSegments].x0 + Math.cos(this.angle/180* Math.PI) * segmentWidth/2
-            //         const y0Leaf  = this.segments[this.drawnSegments].y0 + Math.sin(this.angle/180* Math.PI) * segmentWidth/2
-            //         const leafR = new Leaf (this.segments[this.drawnSegments], x0Leaf , y0Leaf , 35, this.angle + 40 + Math.random()*10)
-            //         this.leaves.push(leafR)
-            //         tree.allLeaves.push(leafR)
-            //         // leafR.drawAllLeafStages()
-            //         leafR.drawLeafStage()
-            //     }
-            // }
         }
     }
     // ________________________________________ BRANCH ________________________________________
     // ________________________________________ TREE ________________________________________
     class Tree {
-        constructor(initX, initY, initLen, initAngle, maxLevel = maxLevelGlobal, branchingProbability = 0.8, allBranches = [[]], allLeaves = []) {
+        constructor(initX, initY, initLen, initAngle, maxLevel = maxLevelGlobal, branchingProbability = 0.8, allBranches = [[]]) {
             this.initX = initX;
             this.initY = initY;
             this.initLen = initLen;
@@ -206,7 +185,6 @@ window.addEventListener('load', function () {
             this.maxLevel = maxLevel;
             this.branchingProbability = branchingProbability;
             this.allBranches = allBranches;
-            this.allLeaves = allLeaves;
             const startTime = Date.now();
             this.allBranches[0] = [new Branch(root, initX, initY, initLen, initAngle, trunkWidth)]; //save trunk as 0lvl branch
             // append array for every level ahead. Needed for levelShifted branches
@@ -270,11 +248,11 @@ window.addEventListener('load', function () {
     // ________________________________________ LEAF ________________________________________
     class Leaf {
         constructor(parentSeg, // parent segment
-        x0, y0, len, angle, lineWidth = 1, xF = 0, yF = 0, maxStages = 2, currentStage = 0, allStages = [], canvas = document.body.appendChild(document.createElement("canvas")), // create canvas
+        x0, y0, len, angle, lineWidth = 1, xF = 0, yF = 0, maxStages = 30, currentStage = 0, allStages = [], canvas = document.body.appendChild(document.createElement("canvas")), // create canvas
         ctx = canvas.getContext('2d'), // CHANGE THAT. Initialize something, but maybe not that much
         canvasCoords = { x: 0, y: 0 }, // canvasTopLeftCorner
         x0rel = 0, // relative coordinates (for the leaf canvas positioning)
-        y0rel = 0) {
+        y0rel = 0, state = "hidden") {
             this.parentSeg = parentSeg;
             this.x0 = x0;
             this.y0 = y0;
@@ -291,6 +269,7 @@ window.addEventListener('load', function () {
             this.canvasCoords = canvasCoords;
             this.x0rel = x0rel;
             this.y0rel = y0rel;
+            this.state = state;
             // RESIZE CANVAS (canvasCoords and 0rels depend on it)
             this.canvas.width = this.len;
             this.canvas.height = this.len;
@@ -384,9 +363,9 @@ window.addEventListener('load', function () {
     const root = new Root();
     const tree = new Tree(canvas.width / 2, canvas.height, trunkLen, 0); // initialize tree with trunk params. TRUNK LENGTH HERE
     // tree.drawTheTree() //all at once
-    // console.log(tree.allBranches)
-    console.log(tree.allLeaves);
-    console.log('leaves amount = ' + tree.allLeaves.length);
+    console.log(tree.allBranches);
+    console.log(allLeaves);
+    console.log('leaves amount = ' + allLeaves.length);
     // const leafTest = new Leaf (250, 200, 150, 180)
     // leafTest.drawLeaf()
     // BRANCH COUNTER
@@ -403,15 +382,36 @@ window.addEventListener('load', function () {
     const timeLimit = 10;
     let branchesCompletedThisForEach = 0;
     let branchesCompletedThisLvl = 0;
+    // let leavesIndex = 0
+    // let thisFrameGrownLeaves = 0
+    // let 
     // AT INITIATION OF drawLeafStage APPEND LEAF TO AN Array, THEN LOOP THROUGH N ELEMENTS OF THAT ARRAY
     function animateTheTree(timeStamp) {
         const timeDelta = timeStamp - lastTime;
         lastTime = timeStamp;
+        // LEAVES
+        allLeaves.forEach((leaf) => {
+            // leaf.currentStage > 0 to wait for a segment to rise
+            if (leaf.state === "growing" && leaf.currentStage < leaf.maxStages) {
+                leaf.drawLeafStage();
+            }
+            else if (leaf.currentStage >= leaf.maxStages) {
+                leaf.state === "grown";
+                // thisFrameGrownLeaves ++
+                console.log('grwn');
+            }
+        });
+        // // BREAK THE LOOP IF REACHED MAX LVL
+        // if (lvl > tree.maxLevel) {
+        //     console.log('___Animation_in___' + timeStamp + 'ms___')
+        //     return
+        // }
         // BREAK THE LOOP IF REACHED MAX LVL
         if (lvl > tree.maxLevel) {
             console.log('___Animation_in___' + timeStamp + 'ms___');
             return;
         }
+        // thisFrameGrownLeaves = 0
         // DRAW A FRAME IF TIMELIMIT PASSED
         if (accumulatedTime >= timeLimit) {
             //for every branch
@@ -424,17 +424,6 @@ window.addEventListener('load', function () {
                 else if (branch.drawnSegments < branch.segments.length) {
                     branch.drawBranchBySegments();
                     accumulatedTime = 0;
-                }
-                // LEAVES
-                if (branch.leaves) {
-                    branch.leaves.forEach((leaf) => {
-                        // leaf.currentStage > 0 to wait for a segment to rise
-                        if (leaf.currentStage > 0 && leaf.currentStage < leaf.maxStages) {
-                            leaf.drawLeafStage();
-                        }
-                        else if (leaf.currentStage >= leaf.maxStages) {
-                        }
-                    });
                 }
             }); // forEach end
             branchesCompletedThisLvl = branchesCompletedThisForEach;
@@ -458,4 +447,7 @@ window.addEventListener('load', function () {
     animateTheTree(0);
     // ________________________________________ ANIMATION ________________________________________
 }); //window.addEventListener('load', function(){ }) ends here
+// TOODOO
+// - make leaf lifecycle dependant on current stage: falloff
+// - quicker the leaf appears, the quicker it shall disappear
 //# sourceMappingURL=script.js.map
