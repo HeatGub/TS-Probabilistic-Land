@@ -15,7 +15,7 @@ window.addEventListener('load', function () {
     const lenMultiplier = 0.75;
     const widthMultiplier = 0.7;
     const rebranchingAngle = 19;
-    const maxLevelGlobal = 7;
+    const maxLevelGlobal = 6;
     const occasionalBranchesLimit = 0.9;
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
@@ -24,8 +24,8 @@ window.addEventListener('load', function () {
     const axis1LenRatio = -0.15;
     const axis2LenRatio = 0.5;
     const petioleLenRatio = 0.33; //of the whole length
-    const leafyLevels = 6;
-    const globalLeafProbability = 0.10;
+    const leafyLevels = 4;
+    const globalLeafProbability = 0.2;
     const growingLeavesList = [];
     //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
     canvas.width = window.innerWidth;
@@ -90,7 +90,7 @@ window.addEventListener('load', function () {
                 // linearly change branchWidth for each segment 
                 this.segments[seg].width = this.branchWidth + ((segAmountByLevel - seg + 1) / segAmountByLevel) * (this.branchWidth / widthMultiplier - this.branchWidth); // this.branchWidth/widthMultiplier makes width as +1 lvl
                 // _________________ ADD LEAVES AT SEGMENTS _________________
-                if (maxLevelGlobal - leafyLevels < this.level && Math.random() < globalLeafProbability) {
+                if (maxLevelGlobal - leafyLevels < this.level && Math.random() < globalLeafProbability && seg >= segAmountByLevel / 6) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
                     let segmentWidth = this.segments[seg].width;
                     if (seg % 2 === 0) {
                         //recalculate leaf starting point to match the segment width
@@ -246,7 +246,7 @@ window.addEventListener('load', function () {
     // ________________________________________ LEAF ________________________________________
     class Leaf {
         constructor(parentSeg, // parent segment
-        x0, y0, len, angle, lineWidth = 2, xF = 0, yF = 0, maxStages = -1 + 26, currentStage = 0, allStages = [], canvas = document.body.appendChild(document.createElement("canvas")), // create canvas
+        x0, y0, len, angle, lineWidth = 2, xF = 0, yF = 0, maxStages = -1 + 2, currentStage = 0, allStages = [], canvas = document.body.appendChild(document.createElement("canvas")), // create canvas
         ctx = canvas.getContext('2d'), // CHANGE THAT. Initialize something, but maybe not that much
         canvasCoords = { x: 0, y: 0 }, // canvasTopLeftCorner
         x0rel = 0, // relative coordinates (for the leaf canvas positioning)
@@ -363,7 +363,7 @@ window.addEventListener('load', function () {
     // tree.drawTheTree() //all at once
     console.log(tree.allBranches);
     // console.log(growingLeavesList)
-    console.log('leaves amount = ' + growingLeavesList.length);
+    // console.log('leaves amount = ' + growingLeavesList.length)
     // BRANCH COUNTER
     // let branchesAll = 0
     // tree.allBranches.forEach( level => {
@@ -378,49 +378,44 @@ window.addEventListener('load', function () {
     const timeLimit = 10;
     let branchesCompletedThisForEach = 0;
     let branchesCompletedThisLvl = 0;
-    // const drawLeavesEachFrame = 10  // CONTINUE HERE. MAKE APPROPRIATE FORLOOP INSIDE ANIMATION
+    let whileLoopCounter = 0;
+    const leavesPackSize = 5;
+    let currIndex = 0;
     function animateTheTree(timeStamp) {
         const timeDelta = timeStamp - lastTime;
         lastTime = timeStamp;
-        // LEAVES
-        // for (let i = 0; i*drawLeavesEachFrame < growingLeavesList.length; i++) {
-        // growingLeavesList.forEach( (leaf) => {
-        //     // leaf.currentStage > 0 to wait for a segment to rise
-        //     if (leaf.currentStage >= leaf.maxStages) {
-        //         leaf.drawLeafStage()
-        //         leaf.state === "grown"
-        //         let spliceIndex = growingLeavesList.indexOf(leaf)
-        //         growingLeavesList.splice(spliceIndex, 1) // 2nd parameter means remove one item only
-        //     }
-        //     else if (leaf.state === "growing" && leaf.currentStage < leaf.maxStages) {
-        //         leaf.drawLeafStage()
-        //         leaf.currentStage ++
-        //     }
-        // } )
-        // }
-        // LEAVES
-        growingLeavesList.forEach((leaf) => {
-            // leaf.currentStage > 0 to wait for a segment to rise
+        // TILL whileLoopCounter = leavesPackSize AND growingLeavesList.length = 0
+        while (whileLoopCounter <= leavesPackSize && growingLeavesList.length > 0) {
+            // console.log('len = ' + growingLeavesList.length + ', indx = ' + currIndex)
+            let leaf = growingLeavesList[currIndex];
+            // GROWN - label as grown if maxStage reached
             if (leaf.currentStage >= leaf.maxStages) {
                 leaf.drawLeafStage();
                 leaf.state === "grown";
-                // thisFrameGrownLeaves ++
                 // console.log('grwn')
                 let spliceIndex = growingLeavesList.indexOf(leaf);
-                // console.log(spliceIndex)
                 // remove already grown leaf from the growing list
                 growingLeavesList.splice(spliceIndex, 1); // 2nd parameter means remove one item only
+                // currIndex--
             }
+            // GROWING - draw
             else if (leaf.state === "growing" && leaf.currentStage < leaf.maxStages) {
                 leaf.drawLeafStage();
                 leaf.currentStage++;
+                currIndex++;
             }
-        });
-        console.log(growingLeavesList.length);
+            // RESET currIndex if LAST LEAF from the list was reached
+            if (currIndex === growingLeavesList.length) {
+                currIndex = 0;
+                console.log('currIndex = 0');
+            }
+            whileLoopCounter++;
+        }
+        whileLoopCounter = 0;
         // ________________ BREAK THE LOOP ________________
         if (lvl > tree.maxLevel && growingLeavesList.length === 0) {
             console.log('___Animation_in___' + timeStamp + 'ms___');
-            console.log(growingLeavesList);
+            // console.log(growingLeavesList)
             return;
         }
         // OR ACCUMULATE PASSED TIME
@@ -458,7 +453,23 @@ window.addEventListener('load', function () {
     animateTheTree(0);
     // ________________________________________ ANIMATION ________________________________________
 }); //window.addEventListener('load', function(){ }) ends here
-// TOODOO
-// - make leaf lifecycle dependant on current stage: falloff
-// - quicker the leaf appears, the quicker it shall disappear
+// // LEAVES - JUST DRAW EACH 
+// growingLeavesList.forEach( (leaf) => {
+//     // leaf.currentStage > 0 to wait for a segment to rise
+//     if (leaf.currentStage >= leaf.maxStages) {
+//         leaf.drawLeafStage()
+//         leaf.state === "grown"
+//         // thisFrameGrownLeaves ++
+//         // console.log('grwn')
+//         let spliceIndex = growingLeavesList.indexOf(leaf)
+//         // console.log(spliceIndex)
+//         // remove already grown leaf from the growing list
+//         growingLeavesList.splice(spliceIndex, 1) // 2nd parameter means remove one item only
+//     }
+//     else if (leaf.state === "growing" && leaf.currentStage < leaf.maxStages) {
+//         leaf.drawLeafStage()
+//         leaf.currentStage ++
+//     }
+// } )
+// // console.log(growingLeavesList.length)
 //# sourceMappingURL=script.js.map
