@@ -9,13 +9,13 @@ const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 // const canvas2 = document.body.appendChild(document.createElement("canvas"));
 // ctx.globalAlpha = 0.3;
 
-const segmentingLen = 10
+const segmentingLen = 25
 const trunkLen = 200
 const trunkWidth = 60
 const lenMultiplier = 0.75
 const widthMultiplier = 0.7
 const rebranchingAngle = 19
-const maxLevelGlobal = 6
+const maxLevelGlobal = 2
 const occasionalBranchesLimit = 0.9
 // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
 // ratio is relative to Leaf's this.len
@@ -24,10 +24,12 @@ const axis2WidthRatio  = 0.5
 const axis1LenRatio = -0.15
 const axis2LenRatio = 0.5
 const petioleLenRatio = 0.33 //of the whole length
-const leafyLevels = 10
-const globalLeafProbability = 0.15
 const growingLeavesList: Leaf[] = []
-const leavesGrowingOrder = 0.6
+const leafyLevels = 4
+const leafSize = 25
+const globalLeafProbability = 0.95
+const leavesGrowingOrder = 0.25
+const growLimitingLeavesAmount = 10 // branches drawing will stop when this amount of growing leaves is reached
 
 //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
 canvas.width = window.innerWidth
@@ -96,14 +98,14 @@ class Branch {
             this.segments[seg].width = this.branchWidth + ((segAmountByLevel - seg + 1) / segAmountByLevel) * (this.branchWidth/widthMultiplier - this.branchWidth) // this.branchWidth/widthMultiplier makes width as +1 lvl
 
             // _________________ ADD LEAVES AT SEGMENTS _________________
+
             if (maxLevelGlobal - leafyLevels < this.level && Math.random() < globalLeafProbability && seg >= segAmountByLevel/6) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
                 let segmentWidth = this.segments[seg].width
                 if (seg % 2 === 0) {
-                    //recalculate leaf starting point to match the segment width
+                    // recalculate leaf starting point to match the segment width
                     const x0Leaf  = this.segments[seg].x0 - Math.cos(this.angle/180* Math.PI) * segmentWidth/2
                     const y0Leaf  = this.segments[seg].y0 - Math.sin(this.angle/180* Math.PI) * segmentWidth/2
-                    const leafL = new Leaf (this.segments[seg], x0Leaf , y0Leaf , 30, this.angle -40 - Math.random()*10)
-                    growingLeavesList.push(leafL)
+                    const leafL = new Leaf (x0Leaf , y0Leaf , leafSize, this.angle -40 - Math.random()*10)
                     this.segments[seg].leaves.push(leafL)
                     // console.log('L ')
                 }
@@ -111,8 +113,7 @@ class Branch {
                     //recalculate leaf starting point to match the segment width
                     const x0Leaf  = this.segments[seg].x0 + Math.cos(this.angle/180* Math.PI) * segmentWidth/2
                     const y0Leaf  = this.segments[seg].y0 + Math.sin(this.angle/180* Math.PI) * segmentWidth/2
-                    const leafR = new Leaf (this.segments[seg], x0Leaf , y0Leaf , 30, this.angle + 40 + Math.random()*10)
-                    growingLeavesList.push(leafR)
+                    const leafR = new Leaf (x0Leaf , y0Leaf , leafSize, this.angle + 40 + Math.random()*10)
                     this.segments[seg].leaves.push(leafR)
                     // console.log('   R ')
                 }
@@ -178,7 +179,10 @@ class Branch {
 
         //  CHANGE LEAF STATE TO GROWING
         if (this.segments[this.drawnSegments].leaves.length > 0) { // if there are any leaves on this segment, let them grow from now on
-            this.segments[this.drawnSegments].leaves.forEach( (leaf) => {leaf.state = "growing"} )
+            this.segments[this.drawnSegments].leaves.forEach( (leaf) => {
+                leaf.state = "growing"
+                growingLeavesList.push(leaf) // APPEND TO THE GROWING LEAVES LIST
+            } )
             // console.log("{leaf.state = growing}")
         }
         this.drawnSegments ++
@@ -264,7 +268,7 @@ class Root {
 // ________________________________________ LEAF ________________________________________
 class Leaf {
     constructor (
-        public parentSeg: {x0: number, y0: number, xF: number, yF: number, width: number}, // parent segment
+        // public parentSeg: {x0: number, y0: number, xF: number, yF: number, width: number}, // parent segment
         public x0: number,
         public y0: number,
         public len: number,
@@ -272,7 +276,7 @@ class Leaf {
         public lineWidth: number = 2,
         public xF: number = 0,
         public yF: number  = 0,
-        public maxStages = -1 + 40,
+        public maxStages = -1 + 10,
         public currentStage = 0,
         public allStages: {stageLen:number, xF: number, yF: number, xFPetiole: number, yFPetiole: number, xR1: number, yR1: number, xL1: number, yL1: number, xR2: number, yR2: number, xL2: number, yL2: number}[] = [],
         public canvas = document.body.appendChild(document.createElement("canvas")), // create canvas
@@ -283,6 +287,7 @@ class Leaf {
         public state : "hidden" | "growing" | "grown" = "hidden"
     ) {
         // RESIZE CANVAS (canvasCoords and 0rels depend on it)
+        this.len = this.len*0.8 + this.len*0.2*Math.random() // randomize leaf size
         this.canvas.width = this.len
         this.canvas.height = this.len
         // final len in final stage
@@ -398,13 +403,6 @@ console.log(tree.allBranches)
 // console.log(growingLeavesList)
 // console.log('leaves amount = ' + growingLeavesList.length)
 
-
-// BRANCH COUNTER
-// let branchesAll = 0
-// tree.allBranches.forEach( level => {
-//     branchesAll += level.length
-// } )
-// console.log('branches amount = ' + branchesAll)
 // ________________________________________ INITIATIONS ________________________________________
 
 // ________________________________________ ANIMATION ________________________________________
@@ -418,12 +416,11 @@ let branchesCompletedThisLvl = 0
 
 let whileLoopCounterLeaves = 0
 let currIndexLeaves = 0
-const leavesPackSize = 40
+const leavesPackSize = 10
 
 function animateTheTree(timeStamp: number) {
     const timeDelta = timeStamp - lastTime
     lastTime = timeStamp
-    // shuffleArray(growingLeavesList) // SHUFFLE TO RANDOMIZE GROWING ORDER
 
     // TILL whileLoopCounterLeaves = leavesPackSize AND growingLeavesList.length = 0
     while (whileLoopCounterLeaves <= leavesPackSize && growingLeavesList.length > 0) {
@@ -437,8 +434,6 @@ function animateTheTree(timeStamp: number) {
             currIndexLeaves ++
             if (Math.random() < leavesGrowingOrder) {currIndexLeaves--} // CHANCE TO DRAW THE SAME LEAF AGAIN.
             if (Math.random() < 1/100) {currIndexLeaves = 0} // CHANCE TO RESET INDEX TO 0
-
-            // console.log('else if')
         }
         // GROWN - label as grown if maxStage reached
         else if (leaf.currentStage >= leaf.maxStages) {
@@ -479,7 +474,10 @@ function animateTheTree(timeStamp: number) {
     }
 
     // DRAW A FRAME IF TIMELIMIT PASSED
-    else if (accumulatedTime >= timeLimit && lvl <= tree.maxLevel){
+    // else if (accumulatedTime >= timeLimit && lvl <= tree.maxLevel){
+
+    // WAIT TILL growingLeavesList.length < growgrowLimitingLeavesAmountAmount to draw further segments
+    else if (accumulatedTime >= timeLimit && lvl <= tree.maxLevel && growingLeavesList.length <= growLimitingLeavesAmount){
         //for every branch
         tree.allBranches[lvl].forEach(branch => {
             // if this branch is completly drawn 
@@ -506,9 +504,9 @@ function animateTheTree(timeStamp: number) {
 
     requestAnimationFrame(animateTheTree)
 
-    if (Math.floor(1000/timeDelta) < 50){
-        console.log(Math.floor(1000/timeDelta) + ' FPS!!!') // FPS ALERT
-    }
+    // if (Math.floor(1000/timeDelta) < 50){
+    //     console.log(Math.floor(1000/timeDelta) + ' FPS!!!') // FPS ALERT
+    // }
 }
 animateTheTree(0)
 // ________________________________________ ANIMATION ________________________________________
@@ -551,3 +549,13 @@ animateTheTree(0)
 //         array[j] = temp;
 //     }
 // }
+// shuffleArray(growingLeavesList) // SHUFFLE TO RANDOMIZE GROWING ORDER
+
+
+
+// BRANCH COUNTER
+// let branchesAll = 0
+// tree.allBranches.forEach( level => {
+//     branchesAll += level.length
+// } )
+// console.log('branches amount = ' + branchesAll)
