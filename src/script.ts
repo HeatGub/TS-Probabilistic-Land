@@ -9,7 +9,7 @@ const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 // const canvas2 = document.body.appendChild(document.createElement("canvas"));
 // ctx.globalAlpha = 0.3;
 
-const segmentingLen = 25
+const segmentingLen = 10
 const trunkLen = 200
 const trunkWidth = 60
 const lenMultiplier = 0.75
@@ -24,9 +24,10 @@ const axis2WidthRatio  = 0.5
 const axis1LenRatio = -0.15
 const axis2LenRatio = 0.5
 const petioleLenRatio = 0.33 //of the whole length
-const leafyLevels = 4
-const globalLeafProbability = 0.2
+const leafyLevels = 10
+const globalLeafProbability = 0.15
 const growingLeavesList: Leaf[] = []
+const leavesGrowingOrder = 0.6
 
 //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
 canvas.width = window.innerWidth
@@ -180,7 +181,6 @@ class Branch {
             this.segments[this.drawnSegments].leaves.forEach( (leaf) => {leaf.state = "growing"} )
             // console.log("{leaf.state = growing}")
         }
-
         this.drawnSegments ++
     }
 }
@@ -272,7 +272,7 @@ class Leaf {
         public lineWidth: number = 2,
         public xF: number = 0,
         public yF: number  = 0,
-        public maxStages = -1 + 2,
+        public maxStages = -1 + 40,
         public currentStage = 0,
         public allStages: {stageLen:number, xF: number, yF: number, xFPetiole: number, yFPetiole: number, xR1: number, yR1: number, xL1: number, yL1: number, xR2: number, yR2: number, xL2: number, yL2: number}[] = [],
         public canvas = document.body.appendChild(document.createElement("canvas")), // create canvas
@@ -320,7 +320,9 @@ class Leaf {
             this.allStages[stg].yFPetiole = this.y0rel - Math.cos(this.angle/180* Math.PI) * stageLen * petioleLenRatio
 
             // 0.5 is no rotation. 0-1 range
-            let rotateLeafRightFrom0To1 = 0.35 + Math.random()*0.30 + Math.sin(this.angle/180* Math.PI)*0.3
+            // let rotateLeafRightFrom0To1 = 0.35 + Math.sin(this.angle/180* Math.PI)*0.3 + Math.random()*0.30
+            let rotateLeafRightFrom0To1 = 0.35 + Math.sin(this.angle/180* Math.PI)*0.3
+
 
             // BEZIER CURVES - AXIS 1
             const axis1 = this.calcBezierPointsForPerpendicularAxis(axis1LenRatio, axis1WidthRatio, rotateLeafRightFrom0To1, stg)
@@ -414,51 +416,60 @@ const timeLimit = 10
 let branchesCompletedThisForEach = 0
 let branchesCompletedThisLvl = 0
 
-let whileLoopCounter = 0
-const leavesPackSize = 5
-let currIndex = 0
+let whileLoopCounterLeaves = 0
+let currIndexLeaves = 0
+const leavesPackSize = 40
 
 function animateTheTree(timeStamp: number) {
     const timeDelta = timeStamp - lastTime
     lastTime = timeStamp
+    // shuffleArray(growingLeavesList) // SHUFFLE TO RANDOMIZE GROWING ORDER
 
-    // TILL whileLoopCounter = leavesPackSize AND growingLeavesList.length = 0
-    while (whileLoopCounter <= leavesPackSize && growingLeavesList.length > 0) {
-        // console.log('len = ' + growingLeavesList.length + ', indx = ' + currIndex)
-        let leaf = growingLeavesList[currIndex]
+    // TILL whileLoopCounterLeaves = leavesPackSize AND growingLeavesList.length = 0
+    while (whileLoopCounterLeaves <= leavesPackSize && growingLeavesList.length > 0) {
+        // console.log('len = ' + growingLeavesList.length + ', indx = ' + currIndexLeaves)
+        let leaf = growingLeavesList[currIndexLeaves]
 
-        // GROWN - label as grown if maxStage reached
-        if (leaf.currentStage >= leaf.maxStages) {
+        // GROWING - DRAW
+        if (leaf.state === "growing" && leaf.currentStage < leaf.maxStages) {
             leaf.drawLeafStage()
+            leaf.currentStage ++
+            currIndexLeaves ++
+            if (Math.random() < leavesGrowingOrder) {currIndexLeaves--} // CHANCE TO DRAW THE SAME LEAF AGAIN.
+            if (Math.random() < 1/100) {currIndexLeaves = 0} // CHANCE TO RESET INDEX TO 0
+
+            // console.log('else if')
+        }
+        // GROWN - label as grown if maxStage reached
+        else if (leaf.currentStage >= leaf.maxStages) {
+            leaf.drawLeafStage()
+            leaf.currentStage ++
             leaf.state === "grown"
             // console.log('grwn')
             let spliceIndex = growingLeavesList.indexOf(leaf)
             // remove already grown leaf from the growing list
             growingLeavesList.splice(spliceIndex, 1) // 2nd parameter means remove one item only
-            // currIndex--
+            // currIndexLeaves--
         }
-        // GROWING - draw
-        else if (leaf.state === "growing" && leaf.currentStage < leaf.maxStages) {
-            leaf.drawLeafStage()
-            leaf.currentStage ++
-            currIndex ++
-        }
-        // RESET currIndex if LAST LEAF from the list was reached
-        if (currIndex === growingLeavesList.length) {
-            currIndex = 0
-            console.log('currIndex = 0')
+        // RESET currIndexLeaves if LAST LEAF from the list was reached
+        if (currIndexLeaves === growingLeavesList.length) {
+            currIndexLeaves = 0
+            // console.log('currIndexLeaves = 0')
         }
 
-        whileLoopCounter ++
+        whileLoopCounterLeaves ++
+        
+        // console.log('while here')
+        // console.log(growingLeavesList.length)
 
     }
-    whileLoopCounter = 0
+    whileLoopCounterLeaves = 0
 
 
     // ________________ BREAK THE LOOP ________________
     if (lvl > tree.maxLevel && growingLeavesList.length === 0 ) {
         console.log('___Animation_in___' + timeStamp + 'ms___')
-        // console.log(growingLeavesList)
+        // console.log(growingLeavesList)       
         return
     }
 
@@ -495,9 +506,9 @@ function animateTheTree(timeStamp: number) {
 
     requestAnimationFrame(animateTheTree)
 
-    // if (Math.floor(1000/timeDelta) < 50){
-    //     console.log(Math.floor(1000/timeDelta) + ' FPS!!!') // FPS ALERT
-    // }
+    if (Math.floor(1000/timeDelta) < 50){
+        console.log(Math.floor(1000/timeDelta) + ' FPS!!!') // FPS ALERT
+    }
 }
 animateTheTree(0)
 // ________________________________________ ANIMATION ________________________________________
@@ -529,3 +540,14 @@ animateTheTree(0)
 // } )
 // // console.log(growingLeavesList.length)
 
+
+
+// /* Randomize array in-place using Durstenfeld shuffle algorithm */
+// function shuffleArray(array: Leaf[]) {
+//     for (var i = array.length - 1; i > 0; i--) {
+//         var j = Math.floor(Math.random() * (i + 1));
+//         var temp = array[i];
+//         array[i] = array[j];
+//         array[j] = temp;
+//     }
+// }
