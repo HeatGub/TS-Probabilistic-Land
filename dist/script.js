@@ -15,7 +15,7 @@ window.addEventListener('load', function () {
     const lenMultiplier = 0.75;
     const widthMultiplier = 0.7;
     const rebranchingAngle = 19;
-    const maxLevelGlobal = 2;
+    const maxLevelGlobal = 4;
     const occasionalBranchesLimit = 0.9;
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
@@ -28,8 +28,10 @@ window.addEventListener('load', function () {
     const leafyLevels = 4;
     const leafSize = 25;
     const globalLeafProbability = 0.95;
-    const leavesGrowingOrder = 0.25;
-    const growLimitingLeavesAmount = 10; // branches drawing will stop when this amount of growing leaves is reached
+    const leavesGrowingOrder = 0.5;
+    const growLimitingLeavesAmount = 100; // branches drawing will stop when this amount of growing leaves is reached
+    const leafMaxStageGlobal = 60;
+    const whileLoopRetriesEachFrameLeaves = 100; // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
     //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -251,7 +253,7 @@ window.addEventListener('load', function () {
     class Leaf {
         constructor(
         // public parentSeg: {x0: number, y0: number, xF: number, yF: number, width: number}, // parent segment
-        x0, y0, len, angle, lineWidth = 2, xF = 0, yF = 0, maxStages = -1 + 10, currentStage = 0, allStages = [], canvas = document.body.appendChild(document.createElement("canvas")), // create canvas
+        x0, y0, len, angle, lineWidth = 2, xF = 0, yF = 0, maxStages = -1 + leafMaxStageGlobal, currentStage = 0, allStages = [], canvas = document.body.appendChild(document.createElement("canvas")), // create canvas
         ctx = canvas.getContext('2d'), // CHANGE THAT. Initialize something, but maybe not that much
         canvasCoords = { x: 0, y: 0 }, // canvasTopLeftCorner
         x0rel = 0, // relative coordinates (for the leaf canvas positioning)
@@ -378,14 +380,20 @@ window.addEventListener('load', function () {
     const timeLimit = 10;
     let branchesCompletedThisForEach = 0;
     let branchesCompletedThisLvl = 0;
-    let whileLoopCounterLeaves = 0;
     let currIndexLeaves = 0;
-    const leavesPackSize = 10;
+    let whileLoopCounterLeaves = 0;
+    // TERAZ HERE NOW
+    // RYSOWAC TYLKO OKRESLANA ILOSC GALEZI NA RAZ! 
+    // const arr = [1,2,3]
+    // let splttd = arr.slice(2,5) // can split at index above max length
+    // const arrTree = tree.allBranches[1][0]  // ?????
+    // let splttdTree = arrTree.slice(2,5) // can split at index above max length
+    // console.log(arrTree)
     function animateTheTree(timeStamp) {
         const timeDelta = timeStamp - lastTime;
         lastTime = timeStamp;
-        // TILL whileLoopCounterLeaves = leavesPackSize AND growingLeavesList.length = 0
-        while (whileLoopCounterLeaves <= leavesPackSize && growingLeavesList.length > 0) {
+        // TILL whileLoopCounterLeaves = whileLoopRetriesLeaves AND growingLeavesList.length = 0
+        while (whileLoopCounterLeaves <= whileLoopRetriesEachFrameLeaves && growingLeavesList.length > 0) {
             // console.log('len = ' + growingLeavesList.length + ', indx = ' + currIndexLeaves)
             let leaf = growingLeavesList[currIndexLeaves];
             // GROWING - DRAW
@@ -417,7 +425,6 @@ window.addEventListener('load', function () {
                 // console.log('currIndexLeaves = 0')
             }
             whileLoopCounterLeaves++;
-            // console.log('while here')
             // console.log(growingLeavesList.length)
         }
         whileLoopCounterLeaves = 0;
@@ -435,7 +442,7 @@ window.addEventListener('load', function () {
         // else if (accumulatedTime >= timeLimit && lvl <= tree.maxLevel){
         // WAIT TILL growingLeavesList.length < growgrowLimitingLeavesAmountAmount to draw further segments
         else if (accumulatedTime >= timeLimit && lvl <= tree.maxLevel && growingLeavesList.length <= growLimitingLeavesAmount) {
-            //for every branch
+            // for every branch
             tree.allBranches[lvl].forEach(branch => {
                 // if this branch is completly drawn 
                 if (branch.drawnSegments >= branch.segments.length) {

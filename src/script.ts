@@ -15,7 +15,7 @@ const trunkWidth = 60
 const lenMultiplier = 0.75
 const widthMultiplier = 0.7
 const rebranchingAngle = 19
-const maxLevelGlobal = 2
+const maxLevelGlobal = 4
 const occasionalBranchesLimit = 0.9
 // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
 // ratio is relative to Leaf's this.len
@@ -28,8 +28,12 @@ const growingLeavesList: Leaf[] = []
 const leafyLevels = 4
 const leafSize = 25
 const globalLeafProbability = 0.95
-const leavesGrowingOrder = 0.25
-const growLimitingLeavesAmount = 10 // branches drawing will stop when this amount of growing leaves is reached
+
+const leavesGrowingOrder = 0.5
+const growLimitingLeavesAmount = 100 // branches drawing will stop when this amount of growing leaves is reached
+const leafMaxStageGlobal = 60
+const whileLoopRetriesEachFrameLeaves = 100 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
+
 
 //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
 canvas.width = window.innerWidth
@@ -276,7 +280,7 @@ class Leaf {
         public lineWidth: number = 2,
         public xF: number = 0,
         public yF: number  = 0,
-        public maxStages = -1 + 10,
+        public maxStages = -1 + leafMaxStageGlobal,
         public currentStage = 0,
         public allStages: {stageLen:number, xF: number, yF: number, xFPetiole: number, yFPetiole: number, xR1: number, yR1: number, xL1: number, yL1: number, xR2: number, yR2: number, xL2: number, yL2: number}[] = [],
         public canvas = document.body.appendChild(document.createElement("canvas")), // create canvas
@@ -414,16 +418,24 @@ const timeLimit = 10
 let branchesCompletedThisForEach = 0
 let branchesCompletedThisLvl = 0
 
-let whileLoopCounterLeaves = 0
 let currIndexLeaves = 0
-const leavesPackSize = 10
+let whileLoopCounterLeaves = 0
+
+// TERAZ HERE NOW
+// RYSOWAC TYLKO OKRESLANA ILOSC GALEZI NA RAZ! 
+
+// const arr = [1,2,3]
+// let splttd = arr.slice(2,5) // can split at index above max length
+// const arrTree = tree.allBranches[1][0]  // ?????
+// let splttdTree = arrTree.slice(2,5) // can split at index above max length
+// console.log(arrTree)
 
 function animateTheTree(timeStamp: number) {
     const timeDelta = timeStamp - lastTime
     lastTime = timeStamp
 
-    // TILL whileLoopCounterLeaves = leavesPackSize AND growingLeavesList.length = 0
-    while (whileLoopCounterLeaves <= leavesPackSize && growingLeavesList.length > 0) {
+    // TILL whileLoopCounterLeaves = whileLoopRetriesLeaves AND growingLeavesList.length = 0
+    while (whileLoopCounterLeaves <= whileLoopRetriesEachFrameLeaves && growingLeavesList.length > 0) {
         // console.log('len = ' + growingLeavesList.length + ', indx = ' + currIndexLeaves)
         let leaf = growingLeavesList[currIndexLeaves]
 
@@ -451,12 +463,8 @@ function animateTheTree(timeStamp: number) {
             currIndexLeaves = 0
             // console.log('currIndexLeaves = 0')
         }
-
         whileLoopCounterLeaves ++
-        
-        // console.log('while here')
         // console.log(growingLeavesList.length)
-
     }
     whileLoopCounterLeaves = 0
 
@@ -478,7 +486,8 @@ function animateTheTree(timeStamp: number) {
 
     // WAIT TILL growingLeavesList.length < growgrowLimitingLeavesAmountAmount to draw further segments
     else if (accumulatedTime >= timeLimit && lvl <= tree.maxLevel && growingLeavesList.length <= growLimitingLeavesAmount){
-        //for every branch
+
+        // for every branch
         tree.allBranches[lvl].forEach(branch => {
             // if this branch is completly drawn 
             if (branch.drawnSegments >= branch.segments.length) {
@@ -489,7 +498,6 @@ function animateTheTree(timeStamp: number) {
                 branch.drawBranchBySegments()
                 accumulatedTime = 0
             }
-
         }) // forEach end
         branchesCompletedThisLvl = branchesCompletedThisForEach
         branchesCompletedThisForEach = 0
