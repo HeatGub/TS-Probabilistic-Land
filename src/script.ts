@@ -9,13 +9,13 @@ const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 // const canvas2 = document.body.appendChild(document.createElement("canvas"));
 // ctx.globalAlpha = 0.3;
 
-const segmentingLen = 25
+const segmentingLen = 5
 const trunkLen = 200
 const trunkWidth = 60
 const lenMultiplier = 0.75
 const widthMultiplier = 0.7
 const rebranchingAngle = 19
-const maxLevelGlobal = 4
+const maxLevelGlobal = 8
 const occasionalBranchesLimit = 0.9
 // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
 // ratio is relative to Leaf's this.len
@@ -25,25 +25,22 @@ const axis1LenRatio = -0.15
 const axis2LenRatio = 0.5
 const petioleLenRatio = 0.33 //of the whole length
 const growingLeavesList: Leaf[] = []
-const leafyLevels = 4
+const leafyLevels = 3
+const globalLeafProbability = 0.6 // SAME PROBABILITY FOR EACH SIDE
 const leafSize = 25
-const globalLeafProbability = 0.95
+const minimalDistanceBetweenLeaves = leafSize // doesnt count the distance between leaves of different branches
 
 const leavesGrowingOrder = 0.5
 const growLimitingLeavesAmount = 100 // branches drawing will stop when this amount of growing leaves is reached
-const leafMaxStageGlobal = 60
+const leafMaxStageGlobal = 10
 const whileLoopRetriesEachFrameLeaves = 100 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
-
 
 //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight
-
 window.addEventListener('resize', function() {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
-    // canvasContainer.style.width = window.innerWidth + 'px'
-    // canvasContainer.style.height = window.innerHeight + 'px'
     tree.drawTheTree() // tree possibly not ready at resize
 })
 // ________________________________________ GLOBALS ________________________________________
@@ -87,8 +84,8 @@ class Branch {
         this.yF = this.y0 - Math.cos(this.angle/180* Math.PI) * this.len
 
         // ____________ SEGMENTING A BRANCH ____________
-        let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / segmentingLen) + (this.level/2) )
-        // console.log(segAmountByLevel)
+        // let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / segmentingLen) + (this.level) )
+        let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / segmentingLen) + (this.level*4) )
 
         for (let seg=0; seg < segAmountByLevel; seg++){
             this.segments.push({x0: 0, y0: 0, xF: 0, yF: 0, width: 0, leaves: []})
@@ -100,24 +97,45 @@ class Branch {
             this.segments[seg].yF = this.y0 - Math.cos(this.angle/180* Math.PI) * this.len * ((seg +1)/segAmountByLevel)
             // linearly change branchWidth for each segment 
             this.segments[seg].width = this.branchWidth + ((segAmountByLevel - seg + 1) / segAmountByLevel) * (this.branchWidth/widthMultiplier - this.branchWidth) // this.branchWidth/widthMultiplier makes width as +1 lvl
-
+            const singleSegmentLength = this.len * (1/segAmountByLevel)
+            const spawnLeafEverySegments = Math.ceil(minimalDistanceBetweenLeaves / singleSegmentLength)
+            
             // _________________ ADD LEAVES AT SEGMENTS _________________
+            // if (maxLevelGlobal - leafyLevels < this.level && seg >= segAmountByLevel/6 && seg % spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
 
-            if (maxLevelGlobal - leafyLevels < this.level && Math.random() < globalLeafProbability && seg >= segAmountByLevel/6) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
+            if (maxLevelGlobal-leafyLevels < this.level  &&  seg%spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
                 let segmentWidth = this.segments[seg].width
-                if (seg % 2 === 0) {
+                // let spawnLeftMiddleOrRight = Math.round(Math.random()*2)
+                const thisLeafSize = leafSize*0.7  + leafSize*0.3*Math.random() // randomize leaf size
+                const leafProbabilityByLevel = globalLeafProbability - globalLeafProbability*((maxLevelGlobal-this.level)/leafyLevels/2) // linearly change probability with level from around globalLeafProbability/2 to globalLeafProbability (for leafy levels)
+                // console.log(leafProbabilityByLevel)
+    
+                // LEFT LEAF
+                if (Math.random() < leafProbabilityByLevel) {
                     // recalculate leaf starting point to match the segment width
                     const x0Leaf  = this.segments[seg].x0 - Math.cos(this.angle/180* Math.PI) * segmentWidth/2
                     const y0Leaf  = this.segments[seg].y0 - Math.sin(this.angle/180* Math.PI) * segmentWidth/2
-                    const leafL = new Leaf (x0Leaf , y0Leaf , leafSize, this.angle -40 - Math.random()*10)
+                    const leafL = new Leaf (x0Leaf , y0Leaf , thisLeafSize*0.9, this.angle -40 - Math.random()*10)
                     this.segments[seg].leaves.push(leafL)
                     // console.log('L ')
                 }
-                else if (seg % 1 === 0) {
+                // MIDDLE LEAF
+                if (Math.random() < leafProbabilityByLevel) {
+                    //recalculate leaf starting point to match the segment width
+                    // const x0Leaf  = this.segments[seg].x0
+                    const x0Leaf  = this.segments[seg].x0 - (Math.cos(this.angle/180* Math.PI) * segmentWidth/4) + Math.random()*(Math.cos(this.angle/180* Math.PI) * segmentWidth/2) // randomize to range 1/4 - 3/4 of segWidth
+                    // const y0Leaf  = this.segments[seg].y0 + Math.random()*(Math.sin(this.angle/180* Math.PI) * minimalDistanceBetweenLeaves/2) // randomized
+                    const y0Leaf  = this.segments[seg].y0
+                    const leafM = new Leaf (x0Leaf , y0Leaf , thisLeafSize, this.angle -10 + Math.random()*20) // slightly bigger than side leaves
+                    this.segments[seg].leaves.push(leafM)
+                    // console.log(' M ')
+                }
+                // RIGHT LEAF
+                if (Math.random() < leafProbabilityByLevel) {
                     //recalculate leaf starting point to match the segment width
                     const x0Leaf  = this.segments[seg].x0 + Math.cos(this.angle/180* Math.PI) * segmentWidth/2
                     const y0Leaf  = this.segments[seg].y0 + Math.sin(this.angle/180* Math.PI) * segmentWidth/2
-                    const leafR = new Leaf (x0Leaf , y0Leaf , leafSize, this.angle + 40 + Math.random()*10)
+                    const leafR = new Leaf (x0Leaf , y0Leaf , thisLeafSize*0.9, this.angle + 40 + Math.random()*10)
                     this.segments[seg].leaves.push(leafR)
                     // console.log('   R ')
                 }
@@ -291,9 +309,8 @@ class Leaf {
         public state : "hidden" | "growing" | "grown" = "hidden"
     ) {
         // RESIZE CANVAS (canvasCoords and 0rels depend on it)
-        this.len = this.len*0.8 + this.len*0.2*Math.random() // randomize leaf size
-        this.canvas.width = this.len
-        this.canvas.height = this.len
+        this.canvas.width = this.len*1.4
+        this.canvas.height = this.len*1.4
         // final len in final stage
         this.xF = this.x0 + Math.sin(this.angle/180* Math.PI) * this.len
         this.yF = this.y0 - Math.cos(this.angle/180* Math.PI) * this.len
@@ -523,28 +540,6 @@ animateTheTree(0)
 
 
 
-
-
-
-// // LEAVES - JUST DRAW EACH 
-// growingLeavesList.forEach( (leaf) => {
-//     // leaf.currentStage > 0 to wait for a segment to rise
-//     if (leaf.currentStage >= leaf.maxStages) {
-//         leaf.drawLeafStage()
-//         leaf.state === "grown"
-//         // thisFrameGrownLeaves ++
-//         // console.log('grwn')
-//         let spliceIndex = growingLeavesList.indexOf(leaf)
-//         // console.log(spliceIndex)
-//         // remove already grown leaf from the growing list
-//         growingLeavesList.splice(spliceIndex, 1) // 2nd parameter means remove one item only
-//     }
-//     else if (leaf.state === "growing" && leaf.currentStage < leaf.maxStages) {
-//         leaf.drawLeafStage()
-//         leaf.currentStage ++
-//     }
-// } )
-// // console.log(growingLeavesList.length)
 
 
 
