@@ -9,7 +9,7 @@ const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 // const canvas2 = document.body.appendChild(document.createElement("canvas"));
 // ctx.globalAlpha = 0.3;
 
-const segmentingLen = 5
+const initialsegmentingLen = 10
 const trunkLen = 200
 const trunkWidth = 60
 const lenMultiplier = 0.75
@@ -31,9 +31,9 @@ const leafSize = 25
 const minimalDistanceBetweenLeaves = leafSize // doesnt count the distance between leaves of different branches
 
 const leavesGrowingOrder = 0.5
-const growLimitingLeavesAmount = 100 // branches drawing will stop when this amount of growing leaves is reached
-const leafMaxStageGlobal = 10
-const whileLoopRetriesEachFrameLeaves = 100 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
+const growLimitingLeavesAmount = 10 // branches drawing will stop when this amount of growing leaves is reached
+const leafMaxStageGlobal = 100
+const whileLoopRetriesEachFrameLeaves = 1000 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
 
 //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
 canvas.width = window.innerWidth
@@ -84,8 +84,8 @@ class Branch {
         this.yF = this.y0 - Math.cos(this.angle/180* Math.PI) * this.len
 
         // ____________ SEGMENTING A BRANCH ____________
-        // let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / segmentingLen) + (this.level) )
-        let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / segmentingLen) + (this.level*4) )
+        // let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level) )
+        let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level*4) )
 
         for (let seg=0; seg < segAmountByLevel; seg++){
             this.segments.push({x0: 0, y0: 0, xF: 0, yF: 0, width: 0, leaves: []})
@@ -438,15 +438,6 @@ let branchesCompletedThisLvl = 0
 let currIndexLeaves = 0
 let whileLoopCounterLeaves = 0
 
-// TERAZ HERE NOW
-// RYSOWAC TYLKO OKRESLANA ILOSC GALEZI NA RAZ! 
-
-// const arr = [1,2,3]
-// let splttd = arr.slice(2,5) // can split at index above max length
-// const arrTree = tree.allBranches[1][0]  // ?????
-// let splttdTree = arrTree.slice(2,5) // can split at index above max length
-// console.log(arrTree)
-
 function animateTheTree(timeStamp: number) {
     const timeDelta = timeStamp - lastTime
     lastTime = timeStamp
@@ -502,8 +493,7 @@ function animateTheTree(timeStamp: number) {
     // else if (accumulatedTime >= timeLimit && lvl <= tree.maxLevel){
 
     // WAIT TILL growingLeavesList.length < growgrowLimitingLeavesAmountAmount to draw further segments
-    else if (accumulatedTime >= timeLimit && lvl <= tree.maxLevel && growingLeavesList.length <= growLimitingLeavesAmount){
-
+    else if (accumulatedTime >= timeLimit  &&  lvl <= tree.maxLevel  &&  growingLeavesList.length <= growLimitingLeavesAmount){
         // for every branch
         tree.allBranches[lvl].forEach(branch => {
             // if this branch is completly drawn 
@@ -538,21 +528,96 @@ animateTheTree(0)
 
 }) //window.addEventListener('load', function(){ }) ends here
 
+// ________________________________________ SIDEBAR ________________________________________
+const CATEGORY1 = document.getElementById('category1') as HTMLElement
+const CATEGORY2 = document.getElementById('category2') as HTMLElement
+
+const parametersObjectsList = [] 
+type parameterObject = {name: string, category: string, min: number, max: number, value:number}
+for (let i=0; i< 10; i++){
+    let ctgr = CATEGORY1
+    if (i>3) {
+        ctgr = CATEGORY2
+    }
+    const obj = {name: String(i), category: ctgr, min: i, max: i*2, value: (i+i*2)/2 }
+    parametersObjectsList.push(obj)
+}
+
+function createSliderWithTextInput (name: string, category: HTMLElement, min: number, max: number, value: number) {
+    const sidebarElement = document.createElement("div")
+    sidebarElement.classList.add("sidebarElement")
+    // console.log(sidebarElement)
+    category.appendChild(sidebarElement)
+    const namePar = document.createElement("p")
+    namePar.innerText = name
+    sidebarElement.appendChild(namePar)
+
+    const span = document.createElement("span")
+    sidebarElement.appendChild(span)
+
+    const slider = document.createElement("input") // create canvas
+    slider.type = 'range';
+    slider.classList.add("sliderClass")
+    slider.setAttribute('data-slider', 'dejtaset' + name)
+    slider.id = name + 'RangeInput'
+    slider.min = String(min)
+    slider.max = String(max)
+    slider.step = String(0.1)
+    slider.value = String(value)
+    span.appendChild(slider)
+
+    const sliderText = document.createElement("input")
+    sliderText.setAttribute('data-sliderText', 'dejtaset' + name)
+    slider.id = name + 'TextInput'
+    sliderText.type = 'text';
+    sliderText.value = String(value)
+    span.appendChild(sliderText)
+}
+
+// __________ CREATE SLIDERS __________
+let category = CATEGORY1
+parametersObjectsList.forEach ( element => {
+    createSliderWithTextInput(element.name, element.category, element.min, element.max, element.value)
+})
+const rangeInputs = document.querySelectorAll('.sidebarElement input[type="range"]')
+const textInputs = document.querySelectorAll('.sidebarElement input[type="text"]')
+// __________ CREATE SLIDERS __________
+
+// UPDATE NUMBER INPUT BY SLIDER
+rangeInputs.forEach((rangeInput) => {
+    rangeInput.addEventListener("input", (event) => {
+        const eventTarget = event.target as HTMLInputElement
+        const dataOf = eventTarget.dataset.slider
+        const sliderText = document.querySelector(`[data-sliderText="${dataOf}"]`) as HTMLInputElement
+        sliderText.value = String(eventTarget.value)
+    });
+});
+
+// UPDATE SLIDER BY NUMBER INPUT
+textInputs.forEach((textInput) => {
+    textInput.addEventListener("change", (event) => {
+        const eventTarget = event.target as HTMLInputElement
+        const dataOf = eventTarget.dataset.slidertext
+        const slider = document.querySelector(`[data-slider="${dataOf}"]`) as HTMLInputElement
+        slider.value = String(eventTarget.value)
+    });
+});
+
+// SNAP PARAMETERS
+function snapCurrentParameters () {
+    rangeInputs.forEach((rangeInput) => {
+        const inputElement = rangeInput as HTMLInputElement  // because (rangeInput: HTMLInputElement) was not accepted by TS
+        console.log(inputElement.dataset.slider, inputElement.value)
+    })
+}
+snapCurrentParameters()
+// ________________________________________ SIDEBAR ________________________________________
 
 
 
 
 
-// /* Randomize array in-place using Durstenfeld shuffle algorithm */
-// function shuffleArray(array: Leaf[]) {
-//     for (var i = array.length - 1; i > 0; i--) {
-//         var j = Math.floor(Math.random() * (i + 1));
-//         var temp = array[i];
-//         array[i] = array[j];
-//         array[j] = temp;
-//     }
-// }
-// shuffleArray(growingLeavesList) // SHUFFLE TO RANDOMIZE GROWING ORDER
+
 
 
 
