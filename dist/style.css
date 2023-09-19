@@ -1,12 +1,14 @@
 :root {
     background: rgb(0, 0, 0);
 }
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
     overflow: hidden; /* hides elements from the window's outside so the scrollbar is not needed */
 }
+
 .canvas {
     overflow: hidden;
     width: 100%;
@@ -19,6 +21,7 @@
     z-index: 0;
     /* image-rendering: smooth; */
 }
+
 /* #canvasBranches { 
     display: none;
 } */
@@ -37,7 +40,6 @@
     height: 100%;
     background-color: rgba(0, 51, 255, 0.356);
     z-index: 100;
-
 }
 
 #sidebar > * {
@@ -61,8 +63,19 @@
 input[type="range"]{
     width: 90%;
 }
+
 input[type="text"]{
     font-size: 10px;
     width: 20px;
+}
+
+#closeSidebarButton {
+    position: absolute;
+    height: 30px;
+    width: 15px;
+    top: 50%;
+    left: 500px;
+    background-color: rgba(0, 51, 255, 0.419);
+    z-index: 100;
 }
 /* ___________________________ SIDEBAR ___________________________*/

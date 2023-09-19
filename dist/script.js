@@ -2,20 +2,17 @@
 // START ON LOAD
 window.addEventListener('load', function () {
     // ________________________________________ GLOBALS ________________________________________
-    const canvas = document.getElementById('canvasBranches');
-    const ctx = canvas.getContext('2d');
+    const canvasBranches = document.getElementById('canvasBranches');
+    const ctx = canvasBranches.getContext('2d');
     // const canvasContainer = document.getElementById('canvasContainer')as HTMLCanvasElement
-    // const canvas2 = document.getElementById('canvas2') as HTMLCanvasElement;
-    // const ctx2 = canvas2.getContext('2d') as CanvasRenderingContext2D
-    // const canvas2 = document.body.appendChild(document.createElement("canvas"));
     // ctx.globalAlpha = 0.3;
-    const initialsegmentingLen = 10;
+    const initialsegmentingLen = 100;
     const trunkLen = 200;
     const trunkWidth = 60;
     const lenMultiplier = 0.75;
     const widthMultiplier = 0.7;
     const rebranchingAngle = 19;
-    const maxLevelGlobal = 8;
+    const maxLevelGlobal = 2;
     const occasionalBranchesLimit = 0.9;
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
@@ -34,11 +31,11 @@ window.addEventListener('load', function () {
     const leafMaxStageGlobal = 100;
     const whileLoopRetriesEachFrameLeaves = 1000; // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
     //  SET CANVAS SIZES AND CHANGE THEM AT WINDOW RESIZE
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvasBranches.width = window.innerWidth;
+    canvasBranches.height = window.innerHeight;
     window.addEventListener('resize', function () {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        canvasBranches.width = window.innerWidth;
+        canvasBranches.height = window.innerHeight;
         tree.drawTheTree(); // tree possibly not ready at resize
     });
     // ________________________________________ GLOBALS ________________________________________
@@ -208,6 +205,7 @@ window.addEventListener('load', function () {
             this.maxLevel = maxLevel;
             this.branchingProbability = branchingProbability;
             this.allBranches = allBranches;
+            const root = new Root();
             const startTime = Date.now();
             this.allBranches[0] = [new Branch(root, initX, initY, initLen, initAngle, trunkWidth)]; //save trunk as 0lvl branch
             // append array for every level ahead. Needed for levelShifted branches
@@ -384,10 +382,9 @@ window.addEventListener('load', function () {
     // _________ INITIALIZE THE TREE _________
     // Root just acts as a parent element for the trunk. 
     // With the root there is no need for checking for parent element in Branch constructor
-    const root = new Root();
-    const tree = new Tree(canvas.width / 2, canvas.height - 60, trunkLen, 0); // initialize tree with trunk params. TRUNK LENGTH HERE
+    const tree = new Tree(canvasBranches.width / 2, canvasBranches.height - 60, trunkLen, 0); // initialize tree with trunk params. TRUNK LENGTH HERE
     // tree.drawTheTree() //all at once
-    console.log(tree.allBranches);
+    // console.log(tree.allBranches)
     // console.log(growingLeavesList)
     // console.log('leaves amount = ' + growingLeavesList.length)
     // ________________________________________ INITIATIONS ________________________________________
@@ -555,6 +552,20 @@ function snapCurrentParameters() {
     });
 }
 snapCurrentParameters();
+// SIDEBAR OPENINIG AND CLOSING
+const closeSidebarButton = document.getElementById('closeSidebarButton');
+closeSidebarButton.addEventListener("click", () => {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar.style.display === 'none') {
+        console.log('String(500)');
+        closeSidebarButton.style.left = String(500) + 'px';
+        sidebar.style.display = 'block';
+    }
+    else if (sidebar.style.display != 'none') {
+        closeSidebarButton.style.left = String(0);
+        sidebar.style.display = 'none';
+    }
+});
 // ________________________________________ SIDEBAR ________________________________________
 // BRANCH COUNTER
 // let branchesAll = 0
