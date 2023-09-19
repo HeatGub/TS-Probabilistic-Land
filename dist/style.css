@@ -22,9 +22,6 @@
     /* image-rendering: smooth; */
 }
 
-/* #canvasBranches { 
-    display: none;
-} */
 .leafCanvas {
     /* overflow: hidden; */
     position: absolute;
@@ -74,7 +71,7 @@ input[type="text"]{
     height: 30px;
     width: 15px;
     top: 50%;
-    left: 500px;
+    /* left: 500px; */
     background-color: rgba(0, 51, 255, 0.419);
     z-index: 100;
 }
