@@ -11,9 +11,12 @@ const trunkWidth = 60
 const lenMultiplier = 0.75
 const widthMultiplier = 0.7
 const rebranchingAngle = 19
-const maxLevelGlobal = 5
+const maxLevelGlobal = 8
 const occasionalBranchesLimit = 1
-const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is point shadow, 
+// const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is point shadow, 
+const shadowSpread = 0.4 // -1 to 0 is shrinked shadow, 0 is point shadow, 
+
+const shadowColor = 'rgba(50, 50, 50, 1)'
 
 // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
 // ratio is relative to Leaf's this.len
@@ -24,7 +27,7 @@ const axis2LenRatio = 0.5
 const petioleLenRatio = 0.2 //of the whole length
 const growingLeavesList: Leaf[] = []
 const leafyLevels = 3
-const globalLeafProbability = 0.42 // SAME PROBABILITY FOR EACH SIDE
+const globalLeafProbability = 0.2 // SAME PROBABILITY FOR EACH SIDE
 const leafSize = 25
 const minimalDistanceBetweenLeaves = leafSize // doesnt count the distance between leaves of different branches
 
@@ -68,8 +71,6 @@ class Branch {
 
         // RECALCULATE LEN AND WIDTH WITH levelShift
         this.level = this.parent.level + 1 + this.levelShift
-        // if (this.levelShift > 0) console.log(this.levelShift)
-        if (this.level > maxLevelGlobal) console.log(this.level)
 
         // Occasional branch length (or width) = orig.len * lenMultipl^levelShift
         this.branchWidth = this.branchWidth * Math.pow(widthMultiplier, this.levelShift)
@@ -211,21 +212,17 @@ class Branch {
     }
 
     drawSegmentShadow() {
-
-        this.tree.ctxShadows.strokeStyle = 'rgba(50, 50, 50, 1)'
-
+        this.tree.ctxShadows.strokeStyle = shadowColor
         this.tree.ctxShadows.lineCap = "round"
         this.tree.ctxShadows.lineWidth = this.segments[this.drawnSegments].width
         this.tree.ctxShadows.beginPath();
         // X AXIS SHADOW IS LESS AFFECTED 
-        let x0Shadow = this.segments[this.drawnSegments].x0 - (this.tree.initX - this.segments[this.drawnSegments].x0) * shadowSpread/2
+        let x0Shadow = this.segments[this.drawnSegments].x0 - (this.tree.initX - this.segments[this.drawnSegments].x0) * shadowSpread
         let y0Shadow = this.segments[this.drawnSegments].y0 - (this.tree.initY - this.segments[this.drawnSegments].y0) * shadowSpread
-        let xFShadow = this.segments[this.drawnSegments].xF - (this.tree.initX - this.segments[this.drawnSegments].xF) * shadowSpread/2
+        let xFShadow = this.segments[this.drawnSegments].xF - (this.tree.initX - this.segments[this.drawnSegments].xF) * shadowSpread
         let yFShadow = this.segments[this.drawnSegments].yF - (this.tree.initY - this.segments[this.drawnSegments].yF) * shadowSpread
         this.tree.ctxShadows.moveTo(x0Shadow, y0Shadow)
         this.tree.ctxShadows.lineTo(xFShadow, yFShadow)
-        // this.tree.ctxShadows.moveTo(this.segments[this.drawnSegments].x0+10, this.segments[this.drawnSegments].y0-10)
-        // this.tree.ctxShadows.lineTo(this.segments[this.drawnSegments].xF+10, this.segments[this.drawnSegments].yF-10)
         this.tree.ctxShadows.stroke()
         this.tree.ctxShadows.closePath()
     }
@@ -349,6 +346,8 @@ class Leaf {
         public y0rel = 0,
         public state : "hidden" | "growing" | "grown" = "hidden",
         public tree: Tree = parentBranch.tree,
+        public canvasShadow = canvasContainer.appendChild(document.createElement("canvas")),
+        public ctxShadow = canvasShadow.getContext('2d') as CanvasRenderingContext2D,
     ) {
         // RESIZE CANVAS (canvasCoords and 0rels depend on it)
         this.canvas.width = this.len*1.4
@@ -369,6 +368,15 @@ class Leaf {
         this.canvas.classList.add('leafCanvas')
         // this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
         this.ctx.lineWidth = this.lineWidth
+
+        // _____________________________ LEAF SHADOW _____________________________
+        this.canvasShadow.style.left = (this.canvasCoords.x  - (this.tree.initX - this.x0) * shadowSpread) + 'px'
+        this.canvasShadow.style.top = (this.canvasCoords.y - (this.tree.initY - this.y0) * shadowSpread) + 'px'
+        this.canvasShadow.width = this.len*1.4
+        this.canvasShadow.height = this.len*1.4
+        this.canvasShadow.classList.add('leafShadowCanvas')
+        // _____________________________ LEAF SHADOW _____________________________
+
 
         // LEAF STAGES
         for (let stg=0; stg <= this.maxStages; stg++) {
@@ -445,6 +453,35 @@ class Leaf {
         this.ctx.fillStyle = 'rgba(10,' + greenish + ',0, 0.9)'
         this.ctx.fill()
         this.ctx.stroke()
+
+        this.drawLeafShadow()
+    }
+
+    drawLeafShadow () {
+        // clear whole previous frame
+        this.ctxShadow.clearRect(0, 0, this.canvasShadow.width, this.canvasShadow.height)
+        
+        this.ctxShadow.beginPath();
+        this.ctxShadow.strokeStyle = shadowColor
+        //MAIN NERVE
+        this.ctxShadow.moveTo(this.x0rel, this.y0rel)
+        this.ctxShadow.lineTo(this.allStages[this.currentStage].xF, this.allStages[this.currentStage].yF)
+        this.ctxShadow.stroke()
+        this.ctxShadow.closePath()
+
+        // BEZIER CURVES FOR BOTH SIDES OF A LEAF
+        this.ctxShadow.beginPath();
+        this.ctxShadow.moveTo(this.allStages[this.currentStage].xFPetiole, this.allStages[this.currentStage].yFPetiole)
+        // right side of a leaf
+        this.ctxShadow.bezierCurveTo(this.allStages[this.currentStage].xR1, this.allStages[this.currentStage].yR1, this.allStages[this.currentStage].xR2, this.allStages[this.currentStage].yR2, this.allStages[this.currentStage].xF, this.allStages[this.currentStage].yF)
+        this.ctxShadow.moveTo(this.allStages[this.currentStage].xFPetiole, this.allStages[this.currentStage].yFPetiole)
+        // left side of a leaf
+        this.ctxShadow.bezierCurveTo(this.allStages[this.currentStage].xL1, this.allStages[this.currentStage].yL1, this.allStages[this.currentStage].xL2, this.allStages[this.currentStage].yL2, this.allStages[this.currentStage].xF, this.allStages[this.currentStage].yF)
+        this.ctxShadow.closePath()
+        // let greenish = 70 + ((this.maxStages-this.currentStage)/this.maxStages)*180
+        this.ctxShadow.fillStyle = shadowColor
+        this.ctxShadow.fill()
+        this.ctxShadow.stroke()
         // console.log('drawLeafStage')
     }
 }

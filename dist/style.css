@@ -23,14 +23,6 @@
     /* image-rendering: smooth; */
 }
 
-.leafCanvas {
-    /* overflow: hidden; */
-    position: absolute;
-    z-index: 100;
-    /* border: 1px solid rgba(76, 162, 6, 0.5); */
-    /* transform: translate(-50%, -50%); */
-}
-
 .canvasShadows {
     overflow: hidden;
     width: 100%;
@@ -42,6 +34,22 @@
     transform: translate(-50%, -50%);
 
     z-index: 0;
+}
+
+.leafCanvas {
+    /* overflow: hidden; */
+    position: absolute;
+    z-index: 100;
+    /* border: 1px solid rgba(76, 162, 6, 0.5); */
+    /* transform: translate(-50%, -50%); */
+}
+
+.leafShadowCanvas {
+    /* overflow: hidden; */
+    position: absolute;
+    z-index: 0;
+    /* border: 1px solid rgba(6, 126, 162, 0.5); */
+    /* transform: translate(-50%, -50%); */
 }
 
 /* ___________________________ SIDEBAR ___________________________*/
