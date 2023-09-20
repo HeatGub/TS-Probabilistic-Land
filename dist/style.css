@@ -18,16 +18,30 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 0;
+
+    z-index: 50;
     /* image-rendering: smooth; */
 }
 
 .leafCanvas {
     /* overflow: hidden; */
     position: absolute;
-    z-index: 0;
+    z-index: 100;
     /* border: 1px solid rgba(76, 162, 6, 0.5); */
     /* transform: translate(-50%, -50%); */
+}
+
+.canvasShadows {
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    border: 2px solid rgba(4, 98, 92, 0.305);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    z-index: 0;
 }
 
 /* ___________________________ SIDEBAR ___________________________*/

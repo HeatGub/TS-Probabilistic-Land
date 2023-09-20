@@ -11,8 +11,10 @@ const trunkWidth = 60
 const lenMultiplier = 0.75
 const widthMultiplier = 0.7
 const rebranchingAngle = 19
-const maxLevelGlobal = 3
+const maxLevelGlobal = 5
 const occasionalBranchesLimit = 1
+const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is point shadow, 
+
 // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
 // ratio is relative to Leaf's this.len
 const axis1WidthRatio = 1
@@ -22,7 +24,7 @@ const axis2LenRatio = 0.5
 const petioleLenRatio = 0.2 //of the whole length
 const growingLeavesList: Leaf[] = []
 const leafyLevels = 3
-const globalLeafProbability = 0.6 // SAME PROBABILITY FOR EACH SIDE
+const globalLeafProbability = 0.42 // SAME PROBABILITY FOR EACH SIDE
 const leafSize = 25
 const minimalDistanceBetweenLeaves = leafSize // doesnt count the distance between leaves of different branches
 
@@ -112,7 +114,7 @@ class Branch {
                     // recalculate leaf starting point to match the segment width
                     const x0Leaf  = this.segments[seg].x0 - Math.cos(this.angle/180* Math.PI) * segmentWidth/2
                     const y0Leaf  = this.segments[seg].y0 - Math.sin(this.angle/180* Math.PI) * segmentWidth/2
-                    const leafL = new Leaf (x0Leaf , y0Leaf , thisLeafSize*0.9, this.angle -40 - Math.random()*10)
+                    const leafL = new Leaf (this, x0Leaf , y0Leaf , thisLeafSize*0.9, this.angle -40 - Math.random()*10)
                     this.segments[seg].leaves.push(leafL)
                     // console.log('L ')
                 }
@@ -123,7 +125,7 @@ class Branch {
                     const x0Leaf  = this.segments[seg].x0 - (Math.cos(this.angle/180* Math.PI) * segmentWidth/4) + Math.random()*(Math.cos(this.angle/180* Math.PI) * segmentWidth/2) // randomize to range 1/4 - 3/4 of segWidth
                     // const y0Leaf  = this.segments[seg].y0 + Math.random()*(Math.sin(this.angle/180* Math.PI) * minimalDistanceBetweenLeaves/2) // randomized
                     const y0Leaf  = this.segments[seg].y0
-                    const leafM = new Leaf (x0Leaf , y0Leaf , thisLeafSize, this.angle -10 + Math.random()*20) // slightly bigger than side leaves
+                    const leafM = new Leaf (this, x0Leaf , y0Leaf , thisLeafSize, this.angle -10 + Math.random()*20) // slightly bigger than side leaves
                     this.segments[seg].leaves.push(leafM)
                     // console.log(' M ')
                 }
@@ -132,7 +134,7 @@ class Branch {
                     //recalculate leaf starting point to match the segment width
                     const x0Leaf  = this.segments[seg].x0 + Math.cos(this.angle/180* Math.PI) * segmentWidth/2
                     const y0Leaf  = this.segments[seg].y0 + Math.sin(this.angle/180* Math.PI) * segmentWidth/2
-                    const leafR = new Leaf (x0Leaf , y0Leaf , thisLeafSize*0.9, this.angle + 40 + Math.random()*10)
+                    const leafR = new Leaf (this, x0Leaf , y0Leaf , thisLeafSize*0.9, this.angle + 40 + Math.random()*10)
                     this.segments[seg].leaves.push(leafR)
                     // console.log('   R ')
                 }
@@ -154,7 +156,7 @@ class Branch {
         this.children.push(grandChildBranch)
         return grandChildBranch
     }
-
+ 
     drawBranch() {
         // Add the gradient 
         const gradient = this.tree.ctx.createLinearGradient(this.x0, this.y0, this.xF, this.yF)
@@ -180,15 +182,15 @@ class Branch {
         // gradient.addColorStop(1, 'rgb(80,' + (20 + 10*this.level) + ', 0)')
         gradient.addColorStop(0, 'rgb(50,' + (12*this.parent.level) + ', 0)')
         gradient.addColorStop(1, 'rgb(50,' + (12*this.level) + ', 0)')
-        // gradient.addColorStop(0, 'rgb(10,' + (10 + 10*this.level) + ',' + (100*this.levelShift) + ')' )
-        // gradient.addColorStop(1, 'rgb(10,' + (20 + 10*this.level) + ',' + (100*this.levelShift) + ')' )
-        // ctx.shadowColor = 'black'
-        // ctx.shadowOffsetX = 10
-        // ctx.shadowOffsetY = 10
-        // ctx.shadowBlur = 5
         this.tree.ctx.strokeStyle = gradient
         this.tree.ctx.lineCap = "round"
 
+        // // shadow on the same canvas - overlapping
+        // this.tree.ctx.shadowColor = 'white'
+        // this.tree.ctx.shadowOffsetX = (this.tree.initX - this.segments[this.drawnSegments].x0)/10
+        // this.tree.ctx.shadowOffsetY = -(this.tree.initY - this.segments[this.drawnSegments].y0)/10
+        // this.tree.ctx.shadowBlur = 0
+                
         this.tree.ctx.lineWidth = this.segments[this.drawnSegments].width
         this.tree.ctx.beginPath();
         this.tree.ctx.moveTo(this.segments[this.drawnSegments].x0, this.segments[this.drawnSegments].y0)
@@ -204,8 +206,30 @@ class Branch {
             } )
             // console.log("{leaf.state = growing}")
         }
+        this.drawSegmentShadow()
         this.drawnSegments ++
     }
+
+    drawSegmentShadow() {
+
+        this.tree.ctxShadows.strokeStyle = 'rgba(50, 50, 50, 1)'
+
+        this.tree.ctxShadows.lineCap = "round"
+        this.tree.ctxShadows.lineWidth = this.segments[this.drawnSegments].width
+        this.tree.ctxShadows.beginPath();
+        // X AXIS SHADOW IS LESS AFFECTED 
+        let x0Shadow = this.segments[this.drawnSegments].x0 - (this.tree.initX - this.segments[this.drawnSegments].x0) * shadowSpread/2
+        let y0Shadow = this.segments[this.drawnSegments].y0 - (this.tree.initY - this.segments[this.drawnSegments].y0) * shadowSpread
+        let xFShadow = this.segments[this.drawnSegments].xF - (this.tree.initX - this.segments[this.drawnSegments].xF) * shadowSpread/2
+        let yFShadow = this.segments[this.drawnSegments].yF - (this.tree.initY - this.segments[this.drawnSegments].yF) * shadowSpread
+        this.tree.ctxShadows.moveTo(x0Shadow, y0Shadow)
+        this.tree.ctxShadows.lineTo(xFShadow, yFShadow)
+        // this.tree.ctxShadows.moveTo(this.segments[this.drawnSegments].x0+10, this.segments[this.drawnSegments].y0-10)
+        // this.tree.ctxShadows.lineTo(this.segments[this.drawnSegments].xF+10, this.segments[this.drawnSegments].yF-10)
+        this.tree.ctxShadows.stroke()
+        this.tree.ctxShadows.closePath()
+    }
+
 }
 // ________________________________________ BRANCH ________________________________________
 
@@ -223,13 +247,21 @@ class Tree {
         // public canvas = document.getElementById('canvasBranches') as HTMLCanvasElement,
         public canvas = canvasContainer.appendChild(document.createElement("canvas")), // create canvas
         public ctx = canvas.getContext('2d') as CanvasRenderingContext2D,
+        public canvasShadows = canvasContainer.appendChild(document.createElement("canvas")), // create canvas for tree shadow
+        public ctxShadows = canvasShadows.getContext('2d') as CanvasRenderingContext2D,
     ){
-        // SET INITIAL CANVAS SIZE
+        // SET INITIAL CANVASES SIZE
         this.canvas.classList.add('canvas')
         this.canvas.width = window.innerWidth
         this.canvas.height = window.innerHeight
         globalCanvasesList.push(this.canvas)
-        
+        //  SHADOWS CANVAS
+        this.canvasShadows.classList.add('canvasShadows')
+        this.canvasShadows.width = window.innerWidth
+        this.canvasShadows.height = window.innerHeight
+        // this.ctxShadows.filter = "blur(4px)"; // SHADOW BLUR VALUE
+        globalCanvasesList.push(this.canvasShadows)
+
         const root = new Root (this)
         const startTime = Date.now()
         this.allBranches[0] = [new Branch (root, initX, initY, initLen, initAngle, trunkWidth)]   //save trunk as 0lvl branch
@@ -299,6 +331,7 @@ class Root {
 class Leaf {
     constructor (
         // public parentSeg: {x0: number, y0: number, xF: number, yF: number, width: number}, // parent segment
+        public parentBranch: Branch,
         public x0: number,
         public y0: number,
         public len: number,
@@ -314,7 +347,8 @@ class Leaf {
         public canvasCoords = {x: 0, y: 0}, // canvasTopLeftCorner
         public x0rel = 0, // relative coordinates (for the leaf canvas positioning)
         public y0rel = 0,
-        public state : "hidden" | "growing" | "grown" = "hidden"
+        public state : "hidden" | "growing" | "grown" = "hidden",
+        public tree: Tree = parentBranch.tree,
     ) {
         // RESIZE CANVAS (canvasCoords and 0rels depend on it)
         this.canvas.width = this.len*1.4
@@ -357,7 +391,6 @@ class Leaf {
             // let rotateLeafRightFrom0To1 = 0.35 + Math.sin(this.angle/180* Math.PI)*0.3 + Math.random()*0.30
             let rotateLeafRightFrom0To1 = 0.35 + Math.sin(this.angle/180* Math.PI)*0.3
 
-
             // BEZIER CURVES - AXIS 1
             const axis1 = this.calcBezierPointsForPerpendicularAxis(axis1LenRatio, axis1WidthRatio, rotateLeafRightFrom0To1, stg)
             // BEZIER CURVES - AXIS 2
@@ -392,7 +425,7 @@ class Leaf {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
         
         this.ctx.beginPath();
-        this.ctx.strokeStyle = 'rgb(10,30,0)'
+        this.ctx.strokeStyle = 'rgba(10, 30, 0, 0.9)'
         //MAIN NERVE
         this.ctx.moveTo(this.x0rel, this.y0rel)
         this.ctx.lineTo(this.allStages[this.currentStage].xF, this.allStages[this.currentStage].yF)
@@ -408,49 +441,12 @@ class Leaf {
         // left side of a leaf
         this.ctx.bezierCurveTo(this.allStages[this.currentStage].xL1, this.allStages[this.currentStage].yL1, this.allStages[this.currentStage].xL2, this.allStages[this.currentStage].yL2, this.allStages[this.currentStage].xF, this.allStages[this.currentStage].yF)
         this.ctx.closePath()
-
         let greenish = 70 + ((this.maxStages-this.currentStage)/this.maxStages)*180
-
-        this.ctx.fillStyle = 'rgb(10,' + greenish + ',0)'
+        this.ctx.fillStyle = 'rgba(10,' + greenish + ',0, 0.9)'
         this.ctx.fill()
         this.ctx.stroke()
-
         // console.log('drawLeafStage')
     }
-    // DO IT NOW - draw Leaf On Tree Canvas at the last stage 
-
-    drawLeafOnTreeCanvas () {
-        // clear whole previous frame
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
-        
-        // this.parent.tree.ctx.beginPath()
-        this.ctx.strokeStyle = 'rgb(10,30,0)'
-        //MAIN NERVE
-        this.ctx.moveTo(this.x0rel, this.y0rel)
-        this.ctx.lineTo(this.allStages[this.currentStage].xF, this.allStages[this.currentStage].yF)
-        this.ctx.stroke()
-        this.ctx.closePath()
-
-        // BEZIER CURVES FOR BOTH SIDES OF A LEAF
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.allStages[this.currentStage].xFPetiole, this.allStages[this.currentStage].yFPetiole)
-        // right side of a leaf
-        this.ctx.bezierCurveTo(this.allStages[this.currentStage].xR1, this.allStages[this.currentStage].yR1, this.allStages[this.currentStage].xR2, this.allStages[this.currentStage].yR2, this.allStages[this.currentStage].xF, this.allStages[this.currentStage].yF)
-        this.ctx.moveTo(this.allStages[this.currentStage].xFPetiole, this.allStages[this.currentStage].yFPetiole)
-        // left side of a leaf
-        this.ctx.bezierCurveTo(this.allStages[this.currentStage].xL1, this.allStages[this.currentStage].yL1, this.allStages[this.currentStage].xL2, this.allStages[this.currentStage].yL2, this.allStages[this.currentStage].xF, this.allStages[this.currentStage].yF)
-        this.ctx.closePath()
-
-        let greenish = 70 + ((this.maxStages-this.currentStage)/this.maxStages)*180
-
-        this.ctx.fillStyle = 'rgb(10,' + greenish + ',0)'
-        this.ctx.fill()
-        this.ctx.stroke()
-
-        // console.log('drawLeafStage')
-    }
-
-
 }
 // ________________________________________ LEAF ________________________________________
 
