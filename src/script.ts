@@ -5,18 +5,20 @@ window.addEventListener('load', function() {
 const globalCanvasesList = [] as HTMLCanvasElement[]
 const canvasContainer = document.getElementById('canvasContainer') as HTMLBodyElement
 
-const initialsegmentingLen = 100
+// create Branch public shadowSegments, 
+
+const initialsegmentingLen = 20
 const trunkLen = 200
 const trunkWidth = 60
 const lenMultiplier = 0.75
 const widthMultiplier = 0.7
 const rebranchingAngle = 19
-const maxLevelGlobal = 8
+const maxLevelGlobal = 5
 const occasionalBranchesLimit = 1
-// const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is point shadow, 
-const shadowSpread = 0.4 // -1 to 0 is shrinked shadow, 0 is point shadow, 
-
+// const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
+const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
 const shadowColor = 'rgba(50, 50, 50, 1)'
+const horizontalSpread = 190 // wrong name - change later
 
 // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
 // ratio is relative to Leaf's this.len
@@ -34,7 +36,7 @@ const minimalDistanceBetweenLeaves = leafSize // doesnt count the distance betwe
 const leavesGrowingOrder = 0.5
 const growLimitingLeavesAmount = 10 // branches drawing will stop when this amount of growing leaves is reached
 const leafMaxStageGlobal = 100
-const whileLoopRetriesEachFrameLeaves = 1000 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
+const whileLoopRetriesEachFrameLeaves = 100 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
 
 //  SET CANVASES SIZES AND CHANGE THEM AT WINDOW RESIZE
 window.addEventListener('resize', function() {
@@ -64,6 +66,7 @@ class Branch {
         public drawnSegments: number = 0, //to track branch drawing progress
         public occasionalBranches = 0,
         public tree: Tree = parent.tree,
+        public shadowSegments: { x0: number, y0: number, xF: number, yF: number, width: number}[] = []
         // public leaves: Leaf[] = []
     ){
         this.parent = parent
@@ -97,11 +100,19 @@ class Branch {
             this.segments[seg].yF = this.y0 - Math.cos(this.angle/180* Math.PI) * this.len * ((seg +1)/segAmountByLevel)
             // linearly change branchWidth for each segment 
             this.segments[seg].width = this.branchWidth + ((segAmountByLevel - seg + 1) / segAmountByLevel) * (this.branchWidth/widthMultiplier - this.branchWidth) // this.branchWidth/widthMultiplier makes width as +1 lvl
-            const singleSegmentLength = this.len * (1/segAmountByLevel)
-            const spawnLeafEverySegments = Math.ceil(minimalDistanceBetweenLeaves / singleSegmentLength)
-            
+
+            // // SHADOW SEGMENTS
+            this.shadowSegments.push({x0: 0, y0: 0, xF: 0, yF: 0, width: 0})
+            this.shadowSegments[seg].x0 = this.segments[seg].x0 - (this.tree.initX - this.segments[seg].x0) * shadowSpread
+            this.shadowSegments[seg].y0 = this.segments[seg].y0 - (this.tree.initY - this.segments[seg].y0) * shadowSpread
+            this.shadowSegments[seg].xF = this.segments[seg].xF - (this.tree.initX - this.segments[seg].xF) * shadowSpread
+            this.shadowSegments[seg].yF = this.segments[seg].yF - (this.tree.initY - this.segments[seg].yF) * shadowSpread
+            this.shadowSegments[seg].width = this.segments[this.drawnSegments].width + ((this.tree.initY - this.segments[this.drawnSegments].y0)/horizontalSpread)
+
             // _________________ ADD LEAVES AT SEGMENTS _________________
             // if (maxLevelGlobal - leafyLevels < this.level && seg >= segAmountByLevel/6 && seg % spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
+            const singleSegmentLength = this.len * (1/segAmountByLevel)
+            const spawnLeafEverySegments = Math.ceil(minimalDistanceBetweenLeaves / singleSegmentLength)
 
             if (maxLevelGlobal-leafyLevels < this.level  &&  seg%spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
                 let segmentWidth = this.segments[seg].width
@@ -185,13 +196,7 @@ class Branch {
         gradient.addColorStop(1, 'rgb(50,' + (12*this.level) + ', 0)')
         this.tree.ctx.strokeStyle = gradient
         this.tree.ctx.lineCap = "round"
-
-        // // shadow on the same canvas - overlapping
-        // this.tree.ctx.shadowColor = 'white'
-        // this.tree.ctx.shadowOffsetX = (this.tree.initX - this.segments[this.drawnSegments].x0)/10
-        // this.tree.ctx.shadowOffsetY = -(this.tree.initY - this.segments[this.drawnSegments].y0)/10
-        // this.tree.ctx.shadowBlur = 0
-                
+               
         this.tree.ctx.lineWidth = this.segments[this.drawnSegments].width
         this.tree.ctx.beginPath();
         this.tree.ctx.moveTo(this.segments[this.drawnSegments].x0, this.segments[this.drawnSegments].y0)
@@ -205,7 +210,6 @@ class Branch {
                 leaf.state = "growing"
                 growingLeavesList.push(leaf) // APPEND TO THE GROWING LEAVES LIST
             } )
-            // console.log("{leaf.state = growing}")
         }
         this.drawSegmentShadow()
         this.drawnSegments ++
@@ -214,15 +218,10 @@ class Branch {
     drawSegmentShadow() {
         this.tree.ctxShadows.strokeStyle = shadowColor
         this.tree.ctxShadows.lineCap = "round"
-        this.tree.ctxShadows.lineWidth = this.segments[this.drawnSegments].width
+        this.tree.ctxShadows.lineWidth = this.shadowSegments[this.drawnSegments].width
         this.tree.ctxShadows.beginPath();
-        // X AXIS SHADOW IS LESS AFFECTED 
-        let x0Shadow = this.segments[this.drawnSegments].x0 - (this.tree.initX - this.segments[this.drawnSegments].x0) * shadowSpread
-        let y0Shadow = this.segments[this.drawnSegments].y0 - (this.tree.initY - this.segments[this.drawnSegments].y0) * shadowSpread
-        let xFShadow = this.segments[this.drawnSegments].xF - (this.tree.initX - this.segments[this.drawnSegments].xF) * shadowSpread
-        let yFShadow = this.segments[this.drawnSegments].yF - (this.tree.initY - this.segments[this.drawnSegments].yF) * shadowSpread
-        this.tree.ctxShadows.moveTo(x0Shadow, y0Shadow)
-        this.tree.ctxShadows.lineTo(xFShadow, yFShadow)
+        this.tree.ctxShadows.moveTo(this.shadowSegments[this.drawnSegments].x0, this.shadowSegments[this.drawnSegments].y0)
+        this.tree.ctxShadows.lineTo(this.shadowSegments[this.drawnSegments].xF, this.shadowSegments[this.drawnSegments].yF)
         this.tree.ctxShadows.stroke()
         this.tree.ctxShadows.closePath()
     }
