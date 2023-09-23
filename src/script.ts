@@ -7,18 +7,17 @@ const canvasContainer = document.getElementById('canvasContainer') as HTMLBodyEl
 
 // create Branch public shadowSegments, 
 
-const initialsegmentingLen = 20
-const trunkLen = 200
-const trunkWidth = 60
-const lenMultiplier = 0.75
+const initialsegmentingLen = 100
+const trunkLen = 100
+const trunkWidth = 20
+const lenMultiplier = 0.8
 const widthMultiplier = 0.7
 const rebranchingAngle = 19
 const maxLevelGlobal = 8
 const occasionalBranchesLimit = 1
 // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
-const shadowSpread = 0.4 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
+const shadowSpread = 0.5
 const shadowColor = 'rgba(50, 50, 50, 1)'
-const horizontalSpread = 100 // wrong name - change later
 
 // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
 // ratio is relative to Leaf's this.len
@@ -35,7 +34,7 @@ const minimalDistanceBetweenLeaves = leafSize // doesnt count the distance betwe
 
 const leavesGrowingOrder = 0.5
 const growLimitingLeavesAmount = 10 // branches drawing will stop when this amount of growing leaves is reached
-const leafMaxStageGlobal = 100
+const leafMaxStageGlobal = 10
 const whileLoopRetriesEachFrameLeaves = 100 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
 
 //  SET CANVASES SIZES AND CHANGE THEM AT WINDOW RESIZE
@@ -88,7 +87,7 @@ class Branch {
 
         // ____________ SEGMENTING A BRANCH ____________
         // let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level) )
-        let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level*4) )
+        let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level) )
 
         for (let seg=0; seg < segAmountByLevel; seg++){
             this.segments.push({x0: 0, y0: 0, xF: 0, yF: 0, width: 0, leaves: []})
@@ -107,7 +106,7 @@ class Branch {
             this.shadowSegments[seg].y0 = this.segments[seg].y0 - (this.tree.initY - this.segments[seg].y0) * shadowSpread
             this.shadowSegments[seg].xF = this.segments[seg].xF - (this.tree.initX - this.segments[seg].xF) * shadowSpread
             this.shadowSegments[seg].yF = this.segments[seg].yF - (this.tree.initY - this.segments[seg].yF) * shadowSpread
-            this.shadowSegments[seg].width = this.segments[this.drawnSegments].width + ((this.tree.initY - this.segments[this.drawnSegments].y0)/horizontalSpread)
+            this.shadowSegments[seg].width = this.segments[this.drawnSegments].width + Math.abs((this.tree.initY - this.segments[this.drawnSegments].y0)*(shadowSpread/50)) + Math.abs((this.tree.initX - this.segments[this.drawnSegments].x0)*(shadowSpread/50))
 
             // _________________ ADD LEAVES AT SEGMENTS _________________
             // if (maxLevelGlobal - leafyLevels < this.level && seg >= segAmountByLevel/6 && seg % spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
@@ -381,9 +380,9 @@ class Leaf {
         this.ctx.lineWidth = this.lineWidth
 
         // _____________________________ LEAF SHADOW _____________________________
-        this.shadowLen = this.len + (this.tree.initY - this.x0LeafShadow) * shadowSpread/20 // HERE, CHANGE THAT NOW 
-        this.canvasShadow.width = this.shadowLen * 3.5
-        this.canvasShadow.height = this.shadowLen * 3.5
+        this.shadowLen = this.len + (this.tree.initY-this.y0LeafShadow)*shadowSpread/50 + Math.abs((this.tree.initX-this.x0LeafShadow)*shadowSpread/50) // shadow len depends on x and y distance from the tree init coords
+        this.canvasShadow.width = this.shadowLen * 1.4
+        this.canvasShadow.height = this.shadowLen * 1.4
         // final len in final stage
         this.xFLeafShadow = this.x0LeafShadow + Math.sin(this.angle/180* Math.PI) * this.shadowLen
         this.yFLeafShadow = this.y0LeafShadow - Math.cos(this.angle/180* Math.PI) * this.shadowLen
@@ -397,7 +396,7 @@ class Leaf {
         this.canvasShadow.style.top = this.shadowCanvasCoords.y + 'px'
         this.canvasShadow.classList.add('leafShadowCanvas')
         // CHECK LENGTH
-        console.log(this.len, Math.sqrt((this.xFLeafShadow-this.x0LeafShadow)**2 + (this.yFLeafShadow-this.y0LeafShadow)**2))
+        // console.log(this.len, Math.sqrt((this.xFLeafShadow-this.x0LeafShadow)**2 + (this.yFLeafShadow-this.y0LeafShadow)**2))
         // _____________________________ LEAF SHADOW _____________________________
 
         // _____________________________ LEAF STAGES _____________________________
@@ -452,8 +451,6 @@ class Leaf {
             this.shadowStages[stg].yL2 = axis2Shadow.yL
         }
         // _____________________________ LEAF STAGES _____________________________
-
-        // console.log(this)
     } //Leaf constructor
 
     calcBezierPointsForPerpendicularAxis (axisLenRatio: number, axisWidthRatio: number, moveAxis:number, index: number) {
@@ -510,8 +507,9 @@ class Leaf {
     drawLeafShadow () {
         // clear whole previous frame
         this.ctxShadow.clearRect(0, 0, this.canvasShadow.width, this.canvasShadow.height)
+        this.ctxShadow.lineWidth = this.lineWidth + (this.tree.initY-this.y0LeafShadow)*shadowSpread/500 + Math.abs((this.tree.initX-this.x0LeafShadow)*shadowSpread/500)
+
         
-        this.ctxShadow.lineWidth = 1 // move up this line
         this.ctxShadow.beginPath()
         this.ctxShadow.strokeStyle = shadowColor
         // this.ctxShadow.strokeStyle = 'blue'
@@ -534,48 +532,7 @@ class Leaf {
         this.ctxShadow.fill()
         this.ctxShadow.stroke()
 
-        // // TREE CANVAS - TESTS
-        // this.tree.ctxShadows.lineWidth = 10
-        // this.tree.ctxShadows.beginPath();
-        // this.tree.ctxShadows.strokeStyle = 'red'
-        // this.tree.ctxShadows.moveTo(this.x0LeafShadow, this.y0LeafShadow)
-        // this.tree.ctxShadows.lineTo(this.x0LeafShadow, this.y0LeafShadow)
-        // this.tree.ctxShadows.moveTo(this.shadowCanvasCoords.x, this.shadowCanvasCoords.y)
-        // this.tree.ctxShadows.lineTo(this.shadowCanvasCoords.x, this.shadowCanvasCoords.y)
-        // this.tree.ctxShadows.stroke()
-        // this.tree.ctxShadows.closePath()
     }
-
-    // drawLeafShadow () {
-    //     // clear whole previous frame
-    //     this.ctxShadow.clearRect(0, 0, this.canvasShadow.width, this.canvasShadow.height)
-        
-    //     this.ctxShadow.beginPath();
-    //     // this.ctxShadow.strokeStyle = shadowColor
-    //     this.ctxShadow.strokeStyle = 'blue'
-
-    //     //MAIN NERVE
-    //     this.ctxShadow.moveTo(this.x0rel, this.y0rel)
-    //     this.ctxShadow.lineTo(this.growthStages[this.currentStage].xF, this.growthStages[this.currentStage].yF)
-    //     this.ctxShadow.stroke()
-    //     this.ctxShadow.closePath()
-
-    //     // BEZIER CURVES FOR BOTH SIDES OF A LEAF
-    //     this.ctxShadow.beginPath();
-    //     this.ctxShadow.moveTo(this.growthStages[this.currentStage].xFPetiole, this.growthStages[this.currentStage].yFPetiole)
-    //     // right side of a leaf
-    //     this.ctxShadow.bezierCurveTo(this.growthStages[this.currentStage].xR1, this.growthStages[this.currentStage].yR1, this.growthStages[this.currentStage].xR2, this.growthStages[this.currentStage].yR2, this.growthStages[this.currentStage].xF, this.growthStages[this.currentStage].yF)
-    //     this.ctxShadow.moveTo(this.growthStages[this.currentStage].xFPetiole, this.growthStages[this.currentStage].yFPetiole)
-    //     // left side of a leaf
-    //     this.ctxShadow.bezierCurveTo(this.growthStages[this.currentStage].xL1, this.growthStages[this.currentStage].yL1, this.growthStages[this.currentStage].xL2, this.growthStages[this.currentStage].yL2, this.growthStages[this.currentStage].xF, this.growthStages[this.currentStage].yF)
-    //     this.ctxShadow.closePath()
-    //     // let greenish = 70 + ((this.maxStages-this.currentStage)/this.maxStages)*180
-    //     // this.ctxShadow.fillStyle = shadowColor
-    //     this.ctxShadow.fillStyle = 'blue'
-    //     this.ctxShadow.fill()
-    //     this.ctxShadow.stroke()
-    //     // console.log('drawLeafStage')
-    // }
 }
 // ________________________________________ LEAF ________________________________________
 
@@ -583,7 +540,7 @@ class Leaf {
 // _________ INITIALIZE THE TREE _________
 // Root just acts as a parent element for the trunk. 
 // With the root there is no need for checking for parent element in Branch constructor
-const tree = new Tree (window.innerWidth/2, window.innerHeight-60, trunkLen, 0) // initialize tree with trunk params. TRUNK LENGTH HERE
+const tree = new Tree (window.innerWidth/2, window.innerHeight-500, trunkLen, 0) // initialize tree with trunk params. TRUNK LENGTH HERE
 // tree.drawTheTree() //all at once
 // console.log(tree.allBranches)
 // console.log(growingLeavesList)
@@ -691,14 +648,12 @@ function animateTheTree(timeStamp: number) {
 animateTheTree(0)
 // ________________________________________ ANIMATION ________________________________________
 
-}) //window.addEventListener('load', function(){ }) ends here
-
 // ________________________________________ SIDEBAR ________________________________________
 const CATEGORY1 = document.getElementById('category1') as HTMLElement
 const CATEGORY2 = document.getElementById('category2') as HTMLElement
 
 const parametersObjectsList = [] 
-type parameterObject = {name: string, category: string, min: number, max: number, value:number}
+// type parameterObject = {name: string, category: string, min: number, max: number, value:number}
 for (let i=0; i< 10; i++){
     let ctgr = CATEGORY1
     if (i>3) {
@@ -767,13 +722,13 @@ textInputs.forEach((textInput) => {
     })
 })
 
-// SNAP PARAMETERS
-function snapCurrentParameters () {
-    rangeInputs.forEach((rangeInput) => {
-        const inputElement = rangeInput as HTMLInputElement  // because (rangeInput: HTMLInputElement) was not accepted by TS
-        console.log(inputElement.dataset.slider, inputElement.value)
-    })
-}
+// // SNAP PARAMETERS
+// function snapCurrentParameters () {
+//     rangeInputs.forEach((rangeInput) => {
+//         const inputElement = rangeInput as HTMLInputElement  // because (rangeInput: HTMLInputElement) was not accepted by TS
+//         console.log(inputElement.dataset.slider, inputElement.value)
+//     })
+// }
 // snapCurrentParameters()
 
 // SIDEBAR OPENINIG AND CLOSING
@@ -791,6 +746,10 @@ closeSidebarButton.addEventListener("click", () => {
     }
 });
 // ________________________________________ SIDEBAR ________________________________________
+
+}) //window.addEventListener('load', function(){ }) ends here
+
+
 
 
 

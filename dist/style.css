@@ -21,6 +21,8 @@
     transform: translate(-50%, -50%);
 
     z-index: 40;
+    /* display: none; */
+
 }
 
 .canvasShadows {
@@ -34,6 +36,8 @@
     transform: translate(-50%, -50%);
 
     z-index: 10;
+    /* display: none; */
+
 }
 
 .leafCanvas {

@@ -6,18 +6,17 @@ window.addEventListener('load', function () {
     const globalCanvasesList = [];
     const canvasContainer = document.getElementById('canvasContainer');
     // create Branch public shadowSegments, 
-    const initialsegmentingLen = 20;
-    const trunkLen = 200;
-    const trunkWidth = 60;
-    const lenMultiplier = 0.75;
+    const initialsegmentingLen = 100;
+    const trunkLen = 100;
+    const trunkWidth = 20;
+    const lenMultiplier = 0.8;
     const widthMultiplier = 0.7;
     const rebranchingAngle = 19;
     const maxLevelGlobal = 8;
     const occasionalBranchesLimit = 1;
     // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
-    const shadowSpread = 0.4; // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
+    const shadowSpread = 0.5;
     const shadowColor = 'rgba(50, 50, 50, 1)';
-    const horizontalSpread = 100; // wrong name - change later
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
     const axis1WidthRatio = 1;
@@ -32,7 +31,7 @@ window.addEventListener('load', function () {
     const minimalDistanceBetweenLeaves = leafSize; // doesnt count the distance between leaves of different branches
     const leavesGrowingOrder = 0.5;
     const growLimitingLeavesAmount = 10; // branches drawing will stop when this amount of growing leaves is reached
-    const leafMaxStageGlobal = 100;
+    const leafMaxStageGlobal = 10;
     const whileLoopRetriesEachFrameLeaves = 100; // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
     //  SET CANVASES SIZES AND CHANGE THEM AT WINDOW RESIZE
     window.addEventListener('resize', function () {
@@ -84,7 +83,7 @@ window.addEventListener('load', function () {
             this.yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len;
             // ____________ SEGMENTING A BRANCH ____________
             // let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level) )
-            let segAmountByLevel = Math.ceil(((trunkLen * (Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level * 4));
+            let segAmountByLevel = Math.ceil(((trunkLen * (Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level));
             for (let seg = 0; seg < segAmountByLevel; seg++) {
                 this.segments.push({ x0: 0, y0: 0, xF: 0, yF: 0, width: 0, leaves: [] });
                 // Calculate coordinates analogically to branch xF yF, but for shorter lengths. 
@@ -101,7 +100,7 @@ window.addEventListener('load', function () {
                 this.shadowSegments[seg].y0 = this.segments[seg].y0 - (this.tree.initY - this.segments[seg].y0) * shadowSpread;
                 this.shadowSegments[seg].xF = this.segments[seg].xF - (this.tree.initX - this.segments[seg].xF) * shadowSpread;
                 this.shadowSegments[seg].yF = this.segments[seg].yF - (this.tree.initY - this.segments[seg].yF) * shadowSpread;
-                this.shadowSegments[seg].width = this.segments[this.drawnSegments].width + ((this.tree.initY - this.segments[this.drawnSegments].y0) / horizontalSpread);
+                this.shadowSegments[seg].width = this.segments[this.drawnSegments].width + Math.abs((this.tree.initY - this.segments[this.drawnSegments].y0) * (shadowSpread / 50)) + Math.abs((this.tree.initX - this.segments[this.drawnSegments].x0) * (shadowSpread / 50));
                 // _________________ ADD LEAVES AT SEGMENTS _________________
                 // if (maxLevelGlobal - leafyLevels < this.level && seg >= segAmountByLevel/6 && seg % spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
                 const singleSegmentLength = this.len * (1 / segAmountByLevel);
@@ -364,9 +363,9 @@ window.addEventListener('load', function () {
             this.canvas.classList.add('leafCanvas');
             this.ctx.lineWidth = this.lineWidth;
             // _____________________________ LEAF SHADOW _____________________________
-            this.shadowLen = this.len + (this.tree.initY - this.x0LeafShadow) * shadowSpread / 20; // HERE, CHANGE THAT NOW 
-            this.canvasShadow.width = this.shadowLen * 3.5;
-            this.canvasShadow.height = this.shadowLen * 3.5;
+            this.shadowLen = this.len + (this.tree.initY - this.y0LeafShadow) * shadowSpread / 50 + Math.abs((this.tree.initX - this.x0LeafShadow) * shadowSpread / 50); // shadow len depends on x and y distance from the tree init coords
+            this.canvasShadow.width = this.shadowLen * 1.4;
+            this.canvasShadow.height = this.shadowLen * 1.4;
             // final len in final stage
             this.xFLeafShadow = this.x0LeafShadow + Math.sin(this.angle / 180 * Math.PI) * this.shadowLen;
             this.yFLeafShadow = this.y0LeafShadow - Math.cos(this.angle / 180 * Math.PI) * this.shadowLen;
@@ -380,7 +379,7 @@ window.addEventListener('load', function () {
             this.canvasShadow.style.top = this.shadowCanvasCoords.y + 'px';
             this.canvasShadow.classList.add('leafShadowCanvas');
             // CHECK LENGTH
-            console.log(this.len, Math.sqrt((this.xFLeafShadow - this.x0LeafShadow) ** 2 + (this.yFLeafShadow - this.y0LeafShadow) ** 2));
+            // console.log(this.len, Math.sqrt((this.xFLeafShadow-this.x0LeafShadow)**2 + (this.yFLeafShadow-this.y0LeafShadow)**2))
             // _____________________________ LEAF SHADOW _____________________________
             // _____________________________ LEAF STAGES _____________________________
             for (let stg = 0; stg <= this.maxStages; stg++) {
@@ -432,7 +431,6 @@ window.addEventListener('load', function () {
                 this.shadowStages[stg].yL2 = axis2Shadow.yL;
             }
             // _____________________________ LEAF STAGES _____________________________
-            // console.log(this)
         } //Leaf constructor
         calcBezierPointsForPerpendicularAxis(axisLenRatio, axisWidthRatio, moveAxis, index) {
             let x0Axis = this.x0rel + Math.sin(this.angle / 180 * Math.PI) * this.growthStages[index].stageLen * axisLenRatio;
@@ -482,7 +480,7 @@ window.addEventListener('load', function () {
         drawLeafShadow() {
             // clear whole previous frame
             this.ctxShadow.clearRect(0, 0, this.canvasShadow.width, this.canvasShadow.height);
-            this.ctxShadow.lineWidth = 1; // move up this line
+            this.ctxShadow.lineWidth = this.lineWidth + (this.tree.initY - this.y0LeafShadow) * shadowSpread / 500 + Math.abs((this.tree.initX - this.x0LeafShadow) * shadowSpread / 500);
             this.ctxShadow.beginPath();
             this.ctxShadow.strokeStyle = shadowColor;
             // this.ctxShadow.strokeStyle = 'blue'
@@ -503,16 +501,6 @@ window.addEventListener('load', function () {
             this.ctxShadow.fillStyle = shadowColor;
             this.ctxShadow.fill();
             this.ctxShadow.stroke();
-            // // TREE CANVAS - TESTS
-            // this.tree.ctxShadows.lineWidth = 10
-            // this.tree.ctxShadows.beginPath();
-            // this.tree.ctxShadows.strokeStyle = 'red'
-            // this.tree.ctxShadows.moveTo(this.x0LeafShadow, this.y0LeafShadow)
-            // this.tree.ctxShadows.lineTo(this.x0LeafShadow, this.y0LeafShadow)
-            // this.tree.ctxShadows.moveTo(this.shadowCanvasCoords.x, this.shadowCanvasCoords.y)
-            // this.tree.ctxShadows.lineTo(this.shadowCanvasCoords.x, this.shadowCanvasCoords.y)
-            // this.tree.ctxShadows.stroke()
-            // this.tree.ctxShadows.closePath()
         }
     }
     // ________________________________________ LEAF ________________________________________
@@ -520,7 +508,7 @@ window.addEventListener('load', function () {
     // _________ INITIALIZE THE TREE _________
     // Root just acts as a parent element for the trunk. 
     // With the root there is no need for checking for parent element in Branch constructor
-    const tree = new Tree(window.innerWidth / 2, window.innerHeight - 60, trunkLen, 0); // initialize tree with trunk params. TRUNK LENGTH HERE
+    const tree = new Tree(window.innerWidth / 2, window.innerHeight - 500, trunkLen, 0); // initialize tree with trunk params. TRUNK LENGTH HERE
     // tree.drawTheTree() //all at once
     // console.log(tree.allBranches)
     // console.log(growingLeavesList)
@@ -616,94 +604,95 @@ window.addEventListener('load', function () {
     }
     animateTheTree(0);
     // ________________________________________ ANIMATION ________________________________________
-}); //window.addEventListener('load', function(){ }) ends here
-// ________________________________________ SIDEBAR ________________________________________
-const CATEGORY1 = document.getElementById('category1');
-const CATEGORY2 = document.getElementById('category2');
-const parametersObjectsList = [];
-for (let i = 0; i < 10; i++) {
-    let ctgr = CATEGORY1;
-    if (i > 3) {
-        ctgr = CATEGORY2;
+    // ________________________________________ SIDEBAR ________________________________________
+    const CATEGORY1 = document.getElementById('category1');
+    const CATEGORY2 = document.getElementById('category2');
+    const parametersObjectsList = [];
+    // type parameterObject = {name: string, category: string, min: number, max: number, value:number}
+    for (let i = 0; i < 10; i++) {
+        let ctgr = CATEGORY1;
+        if (i > 3) {
+            ctgr = CATEGORY2;
+        }
+        const obj = { name: String(i), category: ctgr, min: i, max: i * 2, value: (i + i * 2) / 2 };
+        parametersObjectsList.push(obj);
     }
-    const obj = { name: String(i), category: ctgr, min: i, max: i * 2, value: (i + i * 2) / 2 };
-    parametersObjectsList.push(obj);
-}
-function createSliderWithTextInput(name, category, min, max, value) {
-    const sidebarElement = document.createElement("div");
-    sidebarElement.classList.add("sidebarElement");
-    // console.log(sidebarElement)
-    category.appendChild(sidebarElement);
-    const namePar = document.createElement("p");
-    namePar.innerText = name;
-    sidebarElement.appendChild(namePar);
-    const span = document.createElement("span");
-    sidebarElement.appendChild(span);
-    const slider = document.createElement("input"); // create canvas
-    slider.type = 'range';
-    slider.classList.add("sliderClass");
-    slider.setAttribute('data-slider', 'dejtaset' + name);
-    slider.id = name + 'RangeInput';
-    slider.min = String(min);
-    slider.max = String(max);
-    slider.step = String(0.1);
-    slider.value = String(value);
-    span.appendChild(slider);
-    const sliderText = document.createElement("input");
-    sliderText.setAttribute('data-sliderText', 'dejtaset' + name);
-    slider.id = name + 'TextInput';
-    sliderText.type = 'text';
-    sliderText.value = String(value);
-    span.appendChild(sliderText);
-}
-// __________ CREATE SLIDERS __________
-parametersObjectsList.forEach(element => {
-    createSliderWithTextInput(element.name, element.category, element.min, element.max, element.value);
-});
-const rangeInputs = document.querySelectorAll('.sidebarElement input[type="range"]');
-const textInputs = document.querySelectorAll('.sidebarElement input[type="text"]');
-// __________ CREATE SLIDERS __________
-// UPDATE NUMBER INPUT BY SLIDER
-rangeInputs.forEach((rangeInput) => {
-    rangeInput.addEventListener("input", (event) => {
-        const eventTarget = event.target;
-        const dataOf = eventTarget.dataset.slider;
-        const sliderText = document.querySelector(`[data-sliderText="${dataOf}"]`);
-        sliderText.value = String(eventTarget.value);
+    function createSliderWithTextInput(name, category, min, max, value) {
+        const sidebarElement = document.createElement("div");
+        sidebarElement.classList.add("sidebarElement");
+        // console.log(sidebarElement)
+        category.appendChild(sidebarElement);
+        const namePar = document.createElement("p");
+        namePar.innerText = name;
+        sidebarElement.appendChild(namePar);
+        const span = document.createElement("span");
+        sidebarElement.appendChild(span);
+        const slider = document.createElement("input"); // create canvas
+        slider.type = 'range';
+        slider.classList.add("sliderClass");
+        slider.setAttribute('data-slider', 'dejtaset' + name);
+        slider.id = name + 'RangeInput';
+        slider.min = String(min);
+        slider.max = String(max);
+        slider.step = String(0.1);
+        slider.value = String(value);
+        span.appendChild(slider);
+        const sliderText = document.createElement("input");
+        sliderText.setAttribute('data-sliderText', 'dejtaset' + name);
+        slider.id = name + 'TextInput';
+        sliderText.type = 'text';
+        sliderText.value = String(value);
+        span.appendChild(sliderText);
+    }
+    // __________ CREATE SLIDERS __________
+    parametersObjectsList.forEach(element => {
+        createSliderWithTextInput(element.name, element.category, element.min, element.max, element.value);
     });
-});
-// UPDATE SLIDER BY NUMBER INPUT
-textInputs.forEach((textInput) => {
-    textInput.addEventListener("change", (event) => {
-        const eventTarget = event.target;
-        const dataOf = eventTarget.dataset.slidertext;
-        const slider = document.querySelector(`[data-slider="${dataOf}"]`);
-        slider.value = String(eventTarget.value);
-    });
-});
-// SNAP PARAMETERS
-function snapCurrentParameters() {
+    const rangeInputs = document.querySelectorAll('.sidebarElement input[type="range"]');
+    const textInputs = document.querySelectorAll('.sidebarElement input[type="text"]');
+    // __________ CREATE SLIDERS __________
+    // UPDATE NUMBER INPUT BY SLIDER
     rangeInputs.forEach((rangeInput) => {
-        const inputElement = rangeInput; // because (rangeInput: HTMLInputElement) was not accepted by TS
-        console.log(inputElement.dataset.slider, inputElement.value);
+        rangeInput.addEventListener("input", (event) => {
+            const eventTarget = event.target;
+            const dataOf = eventTarget.dataset.slider;
+            const sliderText = document.querySelector(`[data-sliderText="${dataOf}"]`);
+            sliderText.value = String(eventTarget.value);
+        });
     });
-}
-// snapCurrentParameters()
-// SIDEBAR OPENINIG AND CLOSING
-const closeSidebarButton = document.getElementById('closeSidebarButton');
-const sidebar = document.getElementById('sidebar');
-sidebar.style.display = 'none';
-closeSidebarButton.addEventListener("click", () => {
-    if (sidebar.style.display == 'none') {
-        closeSidebarButton.style.left = String(500) + 'px';
-        sidebar.style.display = 'block';
-    }
-    else if (sidebar.style.display != 'none') {
-        closeSidebarButton.style.left = String(0);
-        sidebar.style.display = 'none';
-    }
-});
-// ________________________________________ SIDEBAR ________________________________________
+    // UPDATE SLIDER BY NUMBER INPUT
+    textInputs.forEach((textInput) => {
+        textInput.addEventListener("change", (event) => {
+            const eventTarget = event.target;
+            const dataOf = eventTarget.dataset.slidertext;
+            const slider = document.querySelector(`[data-slider="${dataOf}"]`);
+            slider.value = String(eventTarget.value);
+        });
+    });
+    // // SNAP PARAMETERS
+    // function snapCurrentParameters () {
+    //     rangeInputs.forEach((rangeInput) => {
+    //         const inputElement = rangeInput as HTMLInputElement  // because (rangeInput: HTMLInputElement) was not accepted by TS
+    //         console.log(inputElement.dataset.slider, inputElement.value)
+    //     })
+    // }
+    // snapCurrentParameters()
+    // SIDEBAR OPENINIG AND CLOSING
+    const closeSidebarButton = document.getElementById('closeSidebarButton');
+    const sidebar = document.getElementById('sidebar');
+    sidebar.style.display = 'none';
+    closeSidebarButton.addEventListener("click", () => {
+        if (sidebar.style.display == 'none') {
+            closeSidebarButton.style.left = String(500) + 'px';
+            sidebar.style.display = 'block';
+        }
+        else if (sidebar.style.display != 'none') {
+            closeSidebarButton.style.left = String(0);
+            sidebar.style.display = 'none';
+        }
+    });
+    // ________________________________________ SIDEBAR ________________________________________
+}); //window.addEventListener('load', function(){ }) ends here
 // BRANCH COUNTER
 // let branchesAll = 0
 // tree.allBranches.forEach( level => {
