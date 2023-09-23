@@ -16,8 +16,8 @@ window.addEventListener('load', function () {
     const occasionalBranchesLimit = 1;
     const shadowColor = 'rgba(50, 50, 50, 1)';
     // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
-    const shadowSpread = 1; // > 0 for now
-    const blurStrength = 10;
+    const shadowSpread = 0.8; // > 0 for now
+    const blurStrength = 20;
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
     const axis1WidthRatio = 1;
@@ -94,13 +94,16 @@ window.addEventListener('load', function () {
                 // linearly change branchWidth for each segment 
                 this.segments[seg].width = this.branchWidth + ((segAmountByLevel - seg + 1) / segAmountByLevel) * (this.branchWidth / widthMultiplier - this.branchWidth); // this.branchWidth/widthMultiplier makes width as +1 lvl
                 // // SHADOW SEGMENTS
-                this.shadowSegments.push({ x0: 0, y0: 0, xF: 0, yF: 0, width: 0 });
+                this.shadowSegments.push({ x0: 0, y0: 0, xF: 0, yF: 0, width: 0, blur: 0 });
                 this.shadowSegments[seg].x0 = this.segments[seg].x0 - (this.tree.initX - this.segments[seg].x0) * shadowSpread / 4; // less than spread of Y
                 this.shadowSegments[seg].y0 = this.tree.initY + (this.tree.initY - this.segments[seg].y0) * shadowSpread;
                 this.shadowSegments[seg].xF = this.segments[seg].xF - (this.tree.initX - this.segments[seg].xF) * shadowSpread / 4;
                 this.shadowSegments[seg].yF = this.tree.initY + (this.tree.initY - this.segments[seg].yF) * shadowSpread;
                 this.shadowSegments[seg].width = this.segments[this.drawnSegments].width + ((this.tree.initY - this.segments[this.drawnSegments].y0) * (shadowSpread / 100)) + (Math.abs((this.tree.initX - this.segments[this.drawnSegments].x0))) * (shadowSpread / 100);
-                // console.log(this.shadowSegments[seg].width)
+                this.shadowSegments[seg].blur = (this.tree.initY - this.segments[this.drawnSegments].y0) / this.tree.canvas.height * blurStrength;
+                this.segments[seg].leaves.forEach((leaf) => {
+                    leaf.blur = this.shadowSegments[seg].blur;
+                });
                 // _________________ ADD LEAVES AT SEGMENTS _________________
                 // if (maxLevelGlobal - leafyLevels < this.level && seg >= segAmountByLevel/6 && seg % spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
                 const singleSegmentLength = this.len * (1 / segAmountByLevel);
@@ -206,10 +209,7 @@ window.addEventListener('load', function () {
             this.tree.ctxShadows.strokeStyle = shadowColor;
             this.tree.ctxShadows.lineCap = "round";
             this.tree.ctxShadows.lineWidth = this.shadowSegments[this.drawnSegments].width;
-            // SHADOW BLUR
-            let blur = (this.tree.initY - this.segments[this.drawnSegments].y0) / this.tree.canvas.height * blurStrength;
-            // console.log(blur)
-            this.tree.ctxShadows.filter = 'blur(' + blur + 'px)';
+            this.tree.ctxShadows.filter = 'blur(' + this.shadowSegments[this.drawnSegments].blur + 'px)';
             this.tree.ctxShadows.beginPath();
             this.tree.ctxShadows.moveTo(this.shadowSegments[this.drawnSegments].x0, this.shadowSegments[this.drawnSegments].y0);
             this.tree.ctxShadows.lineTo(this.shadowSegments[this.drawnSegments].xF, this.shadowSegments[this.drawnSegments].yF);
@@ -318,7 +318,7 @@ window.addEventListener('load', function () {
         x0rel = 0, // relative coordinates (for the leaf canvas positioning)
         y0rel = 0, state = "hidden", tree = parentBranch.tree, canvasShadow = canvasContainer.appendChild(document.createElement("canvas")), ctxShadow = canvasShadow.getContext('2d'), shadowStages = [], xFLeafShadow = 0, yFLeafShadow = 0, shadowCanvasCoords = { x: 0, y: 0 }, // canvasTopLeftCorner
         x0relShadow = 0, // relative coordinates (for the leaf canvas positioning)
-        y0relShadow = 0, shadowLen = 0) {
+        y0relShadow = 0, shadowLen = 0, blur = 0) {
             this.parentBranch = parentBranch;
             this.x0 = x0;
             this.y0 = y0;
@@ -348,6 +348,7 @@ window.addEventListener('load', function () {
             this.x0relShadow = x0relShadow;
             this.y0relShadow = y0relShadow;
             this.shadowLen = shadowLen;
+            this.blur = blur;
             // RESIZE CANVAS (canvasCoords and 0rels depend on it)
             this.canvas.width = this.len * 1.4;
             this.canvas.height = this.len * 1.4;
@@ -489,11 +490,8 @@ window.addEventListener('load', function () {
             this.ctxShadow.clearRect(0, 0, this.canvasShadow.width, this.canvasShadow.height);
             // petiole's shadow width
             this.ctxShadow.lineWidth = this.lineWidth * (this.tree.initY - this.y0LeafShadow) * -shadowSpread / 1000 + Math.abs((this.tree.initX - this.x0LeafShadow) * shadowSpread / 1000);
-            // LEAF SHADOW BLUR
             let blur = (this.tree.initY - this.y0) / this.tree.canvas.height * blurStrength;
-            console.log(blur);
             this.ctxShadow.filter = 'blur(' + blur + 'px)';
-            // let blur = (this.tree.initY - this.segments[this.drawnSegments].y0) / this.tree.canvas.height* blurStrength
             // this.shadowStages[stg].stageLen * petioleLenRatio
             this.ctxShadow.beginPath();
             this.ctxShadow.strokeStyle = shadowColor;
