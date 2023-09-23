@@ -6,17 +6,18 @@ window.addEventListener('load', function () {
     const globalCanvasesList = [];
     const canvasContainer = document.getElementById('canvasContainer');
     // create Branch public shadowSegments, 
-    const initialsegmentingLen = 100;
-    const trunkLen = 100;
-    const trunkWidth = 20;
+    const initialsegmentingLen = 25;
+    const trunkLen = 150;
+    const trunkWidth = 25;
     const lenMultiplier = 0.8;
     const widthMultiplier = 0.7;
     const rebranchingAngle = 19;
-    const maxLevelGlobal = 8;
+    const maxLevelGlobal = 6;
     const occasionalBranchesLimit = 1;
-    // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
-    const shadowSpread = 0.5;
     const shadowColor = 'rgba(50, 50, 50, 1)';
+    // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
+    const shadowSpread = 1; // > 0 for now
+    const blurStrength = 10;
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
     const axis1WidthRatio = 1;
@@ -25,9 +26,9 @@ window.addEventListener('load', function () {
     const axis2LenRatio = 0.5;
     const petioleLenRatio = 0.2; //of the whole length
     const growingLeavesList = [];
-    const leafyLevels = 3;
-    const globalLeafProbability = 0.2; // SAME PROBABILITY FOR EACH SIDE
-    const leafSize = 25;
+    const leafyLevels = 5;
+    const globalLeafProbability = 0.4; // SAME PROBABILITY FOR EACH SIDE
+    const leafSize = 35;
     const minimalDistanceBetweenLeaves = leafSize; // doesnt count the distance between leaves of different branches
     const leavesGrowingOrder = 0.5;
     const growLimitingLeavesAmount = 10; // branches drawing will stop when this amount of growing leaves is reached
@@ -49,9 +50,7 @@ window.addEventListener('load', function () {
         yF = 0, level = 0, children = [], // list of children branches
         segments = [], // segments endpoints to draw lines between
         drawnSegments = 0, //to track branch drawing progress
-        occasionalBranches = 0, tree = parent.tree, shadowSegments = []
-        // public leaves: Leaf[] = []
-        ) {
+        occasionalBranches = 0, tree = parent.tree, shadowSegments = []) {
             this.parent = parent;
             this.x0 = x0;
             this.y0 = y0;
@@ -96,11 +95,12 @@ window.addEventListener('load', function () {
                 this.segments[seg].width = this.branchWidth + ((segAmountByLevel - seg + 1) / segAmountByLevel) * (this.branchWidth / widthMultiplier - this.branchWidth); // this.branchWidth/widthMultiplier makes width as +1 lvl
                 // // SHADOW SEGMENTS
                 this.shadowSegments.push({ x0: 0, y0: 0, xF: 0, yF: 0, width: 0 });
-                this.shadowSegments[seg].x0 = this.segments[seg].x0 - (this.tree.initX - this.segments[seg].x0) * shadowSpread;
-                this.shadowSegments[seg].y0 = this.segments[seg].y0 - (this.tree.initY - this.segments[seg].y0) * shadowSpread;
-                this.shadowSegments[seg].xF = this.segments[seg].xF - (this.tree.initX - this.segments[seg].xF) * shadowSpread;
-                this.shadowSegments[seg].yF = this.segments[seg].yF - (this.tree.initY - this.segments[seg].yF) * shadowSpread;
-                this.shadowSegments[seg].width = this.segments[this.drawnSegments].width + Math.abs((this.tree.initY - this.segments[this.drawnSegments].y0) * (shadowSpread / 50)) + Math.abs((this.tree.initX - this.segments[this.drawnSegments].x0) * (shadowSpread / 50));
+                this.shadowSegments[seg].x0 = this.segments[seg].x0 - (this.tree.initX - this.segments[seg].x0) * shadowSpread / 4; // less than spread of Y
+                this.shadowSegments[seg].y0 = this.tree.initY + (this.tree.initY - this.segments[seg].y0) * shadowSpread;
+                this.shadowSegments[seg].xF = this.segments[seg].xF - (this.tree.initX - this.segments[seg].xF) * shadowSpread / 4;
+                this.shadowSegments[seg].yF = this.tree.initY + (this.tree.initY - this.segments[seg].yF) * shadowSpread;
+                this.shadowSegments[seg].width = this.segments[this.drawnSegments].width + ((this.tree.initY - this.segments[this.drawnSegments].y0) * (shadowSpread / 100)) + (Math.abs((this.tree.initX - this.segments[this.drawnSegments].x0))) * (shadowSpread / 100);
+                // console.log(this.shadowSegments[seg].width)
                 // _________________ ADD LEAVES AT SEGMENTS _________________
                 // if (maxLevelGlobal - leafyLevels < this.level && seg >= segAmountByLevel/6 && seg % spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
                 const singleSegmentLength = this.len * (1 / segAmountByLevel);
@@ -115,7 +115,7 @@ window.addEventListener('load', function () {
                         const x0Leaf = this.segments[seg].x0 - Math.cos(this.angle / 180 * Math.PI) * this.segments[seg].width / 2;
                         const y0Leaf = this.segments[seg].y0 - Math.sin(this.angle / 180 * Math.PI) * this.segments[seg].width / 2;
                         const x0LeafShadow = this.shadowSegments[seg].x0 - Math.cos(this.angle / 180 * Math.PI) * this.shadowSegments[seg].width / 2;
-                        const y0LeafShadow = this.shadowSegments[seg].y0 - Math.sin(this.angle / 180 * Math.PI) * this.shadowSegments[seg].width / 2;
+                        const y0LeafShadow = this.shadowSegments[seg].y0 + Math.sin(this.angle / 180 * Math.PI) * this.shadowSegments[seg].width / 2; // opposite sign to (y0Leaf) because shadow leaves are rotated
                         const leafL = new Leaf(this, x0Leaf, y0Leaf, thisLeafSize * 0.9, this.angle - 40 - Math.random() * 10, x0LeafShadow, y0LeafShadow);
                         this.segments[seg].leaves.push(leafL);
                         // console.log('L ')
@@ -139,7 +139,7 @@ window.addEventListener('load', function () {
                         const x0Leaf = this.segments[seg].x0 + Math.cos(this.angle / 180 * Math.PI) * this.segments[seg].width / 2;
                         const y0Leaf = this.segments[seg].y0 + Math.sin(this.angle / 180 * Math.PI) * this.segments[seg].width / 2;
                         const x0LeafShadow = this.shadowSegments[seg].x0 + Math.cos(this.angle / 180 * Math.PI) * this.shadowSegments[seg].width / 2;
-                        const y0LeafShadow = this.shadowSegments[seg].y0 + Math.sin(this.angle / 180 * Math.PI) * this.shadowSegments[seg].width / 2;
+                        const y0LeafShadow = this.shadowSegments[seg].y0 - Math.sin(this.angle / 180 * Math.PI) * this.shadowSegments[seg].width / 2; // opposite sign
                         const leafR = new Leaf(this, x0Leaf, y0Leaf, thisLeafSize * 0.9, this.angle + 40 + Math.random() * 10, x0LeafShadow, y0LeafShadow);
                         this.segments[seg].leaves.push(leafR);
                         // console.log('   R ')
@@ -206,6 +206,10 @@ window.addEventListener('load', function () {
             this.tree.ctxShadows.strokeStyle = shadowColor;
             this.tree.ctxShadows.lineCap = "round";
             this.tree.ctxShadows.lineWidth = this.shadowSegments[this.drawnSegments].width;
+            // SHADOW BLUR
+            let blur = (this.tree.initY - this.segments[this.drawnSegments].y0) / this.tree.canvas.height * blurStrength;
+            // console.log(blur)
+            this.tree.ctxShadows.filter = 'blur(' + blur + 'px)';
             this.tree.ctxShadows.beginPath();
             this.tree.ctxShadows.moveTo(this.shadowSegments[this.drawnSegments].x0, this.shadowSegments[this.drawnSegments].y0);
             this.tree.ctxShadows.lineTo(this.shadowSegments[this.drawnSegments].xF, this.shadowSegments[this.drawnSegments].yF);
@@ -242,7 +246,6 @@ window.addEventListener('load', function () {
             this.canvasShadows.classList.add('canvasShadows');
             this.canvasShadows.width = window.innerWidth;
             this.canvasShadows.height = window.innerHeight;
-            // this.ctxShadows.filter = "blur(4px)"; // SHADOW BLUR VALUE
             globalCanvasesList.push(this.canvasShadows);
             const root = new Root(this);
             const startTime = Date.now();
@@ -361,14 +364,16 @@ window.addEventListener('load', function () {
             this.canvas.style.left = this.canvasCoords.x + 'px';
             this.canvas.style.top = this.canvasCoords.y + 'px';
             this.canvas.classList.add('leafCanvas');
-            this.ctx.lineWidth = this.lineWidth;
+            this.ctx.lineWidth = this.lineWidth; // petiole width
             // _____________________________ LEAF SHADOW _____________________________
-            this.shadowLen = this.len + (this.tree.initY - this.y0LeafShadow) * shadowSpread / 50 + Math.abs((this.tree.initX - this.x0LeafShadow) * shadowSpread / 50); // shadow len depends on x and y distance from the tree init coords
+            // this.shadowLen = this.len + (this.tree.initY+this.y0LeafShadow)*shadowSpread/100 + Math.abs((this.tree.initX-this.x0LeafShadow)*shadowSpread/100) // shadow len depends on x and y distance from the tree init coords
+            this.shadowLen = this.len + (this.tree.initY - this.y0LeafShadow) * -shadowSpread / 100 + Math.abs((this.tree.initX - this.x0LeafShadow) * shadowSpread / 100);
+            // console.log(-(this.tree.initY - this.y0LeafShadow ))
             this.canvasShadow.width = this.shadowLen * 1.4;
             this.canvasShadow.height = this.shadowLen * 1.4;
             // final len in final stage
             this.xFLeafShadow = this.x0LeafShadow + Math.sin(this.angle / 180 * Math.PI) * this.shadowLen;
-            this.yFLeafShadow = this.y0LeafShadow - Math.cos(this.angle / 180 * Math.PI) * this.shadowLen;
+            this.yFLeafShadow = this.y0LeafShadow + Math.cos(this.angle / 180 * Math.PI) * this.shadowLen;
             // top left corner of the canvas
             this.shadowCanvasCoords.x = (this.x0LeafShadow + this.xFLeafShadow) / 2 - this.canvasShadow.width / 2;
             this.shadowCanvasCoords.y = (this.y0LeafShadow + this.yFLeafShadow) / 2 - this.canvasShadow.height / 2;
@@ -378,6 +383,7 @@ window.addEventListener('load', function () {
             this.canvasShadow.style.left = this.shadowCanvasCoords.x + 'px';
             this.canvasShadow.style.top = this.shadowCanvasCoords.y + 'px';
             this.canvasShadow.classList.add('leafShadowCanvas');
+            this.ctxShadow.lineCap = "round";
             // CHECK LENGTH
             // console.log(this.len, Math.sqrt((this.xFLeafShadow-this.x0LeafShadow)**2 + (this.yFLeafShadow-this.y0LeafShadow)**2))
             // _____________________________ LEAF SHADOW _____________________________
@@ -412,10 +418,11 @@ window.addEventListener('load', function () {
                 this.shadowStages.push({ stageLen: 0, xF: 0, yF: 0, xFPetiole: 0, yFPetiole: 0, xR1: 0, yR1: 0, xL1: 0, yL1: 0, xR2: 0, yR2: 0, xL2: 0, yL2: 0 });
                 this.shadowStages[stg].stageLen = this.shadowLen * ((stg + 1) / (this.maxStages + 1));
                 this.shadowStages[stg].xF = this.x0relShadow + Math.sin(this.angle / 180 * Math.PI) * this.shadowStages[stg].stageLen;
-                this.shadowStages[stg].yF = this.y0relShadow - Math.cos(this.angle / 180 * Math.PI) * this.shadowStages[stg].stageLen;
+                this.shadowStages[stg].yF = this.y0relShadow + Math.cos(this.angle / 180 * Math.PI) * this.shadowStages[stg].stageLen;
                 // PETIOLE'S END COORDS
                 this.shadowStages[stg].xFPetiole = this.x0relShadow + Math.sin(this.angle / 180 * Math.PI) * this.shadowStages[stg].stageLen * petioleLenRatio;
-                this.shadowStages[stg].yFPetiole = this.y0relShadow - Math.cos(this.angle / 180 * Math.PI) * this.shadowStages[stg].stageLen * petioleLenRatio;
+                this.shadowStages[stg].yFPetiole = this.y0relShadow + Math.cos(this.angle / 180 * Math.PI) * this.shadowStages[stg].stageLen * petioleLenRatio;
+                // let shadowRotateLeafRightFrom0To1 = 0.35 + Math.sin(this.angle/180* Math.PI)*0.3 // move up this line or add randomization
                 // BEZIER CURVES - AXIS 1
                 const axis1Shadow = this.calcBezierPointsForPerpendicularAxisShadow(axis1LenRatio, axis1WidthRatio, rotateLeafRightFrom0To1, stg);
                 // BEZIER CURVES - AXIS 2
@@ -444,12 +451,12 @@ window.addEventListener('load', function () {
         }
         calcBezierPointsForPerpendicularAxisShadow(axisLenRatio, axisWidthRatio, moveAxis, index) {
             let x0Axis = this.x0relShadow + Math.sin(this.angle / 180 * Math.PI) * this.shadowStages[index].stageLen * axisLenRatio;
-            let y0Axis = this.y0relShadow - Math.cos(this.angle / 180 * Math.PI) * this.shadowStages[index].stageLen * axisLenRatio;
+            let y0Axis = this.y0relShadow + Math.cos(this.angle / 180 * Math.PI) * this.shadowStages[index].stageLen * axisLenRatio;
             // calculate points on line perpendiuclar to the main nerve
             let xR = x0Axis + Math.sin((90 + this.angle) / 180 * Math.PI) * this.shadowStages[index].stageLen * axisWidthRatio * (moveAxis); // /2 because its only one half
-            let yR = y0Axis - Math.cos((90 + this.angle) / 180 * Math.PI) * this.shadowStages[index].stageLen * axisWidthRatio * (moveAxis);
+            let yR = y0Axis + Math.cos((90 + this.angle) / 180 * Math.PI) * this.shadowStages[index].stageLen * axisWidthRatio * (moveAxis);
             let xL = x0Axis + Math.sin((-90 + this.angle) / 180 * Math.PI) * this.shadowStages[index].stageLen * axisWidthRatio * (1 - moveAxis);
-            let yL = y0Axis - Math.cos((-90 + this.angle) / 180 * Math.PI) * this.shadowStages[index].stageLen * axisWidthRatio * (1 - moveAxis);
+            let yL = y0Axis + Math.cos((-90 + this.angle) / 180 * Math.PI) * this.shadowStages[index].stageLen * axisWidthRatio * (1 - moveAxis);
             return { xR: xR, yR: yR, xL: xL, yL: yL };
         }
         drawLeafStage() {
@@ -480,7 +487,14 @@ window.addEventListener('load', function () {
         drawLeafShadow() {
             // clear whole previous frame
             this.ctxShadow.clearRect(0, 0, this.canvasShadow.width, this.canvasShadow.height);
-            this.ctxShadow.lineWidth = this.lineWidth + (this.tree.initY - this.y0LeafShadow) * shadowSpread / 500 + Math.abs((this.tree.initX - this.x0LeafShadow) * shadowSpread / 500);
+            // petiole's shadow width
+            this.ctxShadow.lineWidth = this.lineWidth * (this.tree.initY - this.y0LeafShadow) * -shadowSpread / 1000 + Math.abs((this.tree.initX - this.x0LeafShadow) * shadowSpread / 1000);
+            // LEAF SHADOW BLUR
+            let blur = (this.tree.initY - this.y0) / this.tree.canvas.height * blurStrength;
+            console.log(blur);
+            this.ctxShadow.filter = 'blur(' + blur + 'px)';
+            // let blur = (this.tree.initY - this.segments[this.drawnSegments].y0) / this.tree.canvas.height* blurStrength
+            // this.shadowStages[stg].stageLen * petioleLenRatio
             this.ctxShadow.beginPath();
             this.ctxShadow.strokeStyle = shadowColor;
             // this.ctxShadow.strokeStyle = 'blue'
@@ -508,7 +522,7 @@ window.addEventListener('load', function () {
     // _________ INITIALIZE THE TREE _________
     // Root just acts as a parent element for the trunk. 
     // With the root there is no need for checking for parent element in Branch constructor
-    const tree = new Tree(window.innerWidth / 2, window.innerHeight - 500, trunkLen, 0); // initialize tree with trunk params. TRUNK LENGTH HERE
+    const tree = new Tree(window.innerWidth / 2, window.innerHeight - 1000, trunkLen, 0); // initialize tree with trunk params. TRUNK LENGTH HERE
     // tree.drawTheTree() //all at once
     // console.log(tree.allBranches)
     // console.log(growingLeavesList)
