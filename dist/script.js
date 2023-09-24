@@ -8,8 +8,8 @@ window.addEventListener('load', function () {
     // create Branch public shadowSegments, 
     const initialsegmentingLen = 20;
     const trunkLen = 150;
-    const trunkWidth = 25;
     const lenMultiplier = 0.8;
+    const trunkWidth = 50;
     const widthMultiplier = 0.7;
     const rebranchingAngle = 19;
     const maxLevelGlobal = 6;
@@ -39,7 +39,7 @@ window.addEventListener('load', function () {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         });
-        tree.drawTheTree(); // tree possibly not ready at resize
+        // tree.drawTheTree() // tree possibly not ready at resize
     });
     // ________________________________________ GLOBALS ________________________________________
     // ________________________________________ BRANCH ________________________________________
@@ -219,7 +219,7 @@ window.addEventListener('load', function () {
     // ________________________________________ BRANCH ________________________________________
     // ________________________________________ TREE ________________________________________
     class Tree {
-        constructor(initX, initY, initLen, initAngle, maxLevel = maxLevelGlobal, branchingProbability = 0.8, allBranches = [[]], 
+        constructor(initX, initY, initLen, initAngle = 0, maxLevel = maxLevelGlobal, branchingProbability = 0.8, allBranches = [[]], 
         // public growingLeavesList: Leaf[] = [],
         // public canvas = document.getElementById('canvasBranches') as HTMLCanvasElement,
         canvas = canvasContainer.appendChild(document.createElement("canvas")), // create canvas
@@ -251,10 +251,9 @@ window.addEventListener('load', function () {
             const startTime = Date.now();
             this.allBranches[0] = [new Branch(root, initX, initY, initLen, initAngle, trunkWidth)]; //save trunk as 0lvl branch
             // append array for every level ahead. Needed for levelShifted branches
-            for (let lvl = 0; lvl < this.maxLevel; lvl++) {
+            for (let i = 0; i < this.maxLevel; i++) {
                 this.allBranches.push([]); //
             }
-            // console.log(this.allBranches)
             for (let currLvl = 0; currLvl < this.maxLevel; currLvl++) {
                 // prob should = 1 for level 0 (trunk) 
                 // this variable lowers branching probability with level. In range from 1 to branchingProbability linearly
@@ -520,14 +519,24 @@ window.addEventListener('load', function () {
     // _________ INITIALIZE THE TREE _________
     // Root just acts as a parent element for the trunk. 
     // With the root there is no need for checking for parent element in Branch constructor
-    const tree = new Tree(window.innerWidth / 2, window.innerHeight * 0.25, trunkLen, 0); // initialize tree with trunk params. TRUNK LENGTH HERE
+    // const tree = new Tree (window.innerWidth/2, window.innerHeight*0.35, trunkLen) // initialize tree with trunk params. TRUNK LENGTH HERE
     // tree.drawTheTree() //all at once
     // console.log(tree.allBranches)
     // console.log(growingLeavesList)
     // console.log('leaves amount = ' + growingLeavesList.length)
+    let alreadyAnimating = false;
+    // SPAWN TREE AT CLICK COORDS
+    addEventListener("click", (event) => {
+        if (alreadyAnimating === false) {
+            console.log(event.x, event.y);
+            const tree = new Tree(event.x, event.y, trunkLen);
+            animateTheTree(tree);
+        }
+    });
     // ________________________________________ INITIATIONS ________________________________________
     // ________________________________________ ANIMATION ________________________________________
     function animateTheTree(tree) {
+        alreadyAnimating = true;
         let lvl = 0;
         let lastTime = 0;
         let accumulatedTime = 0;
@@ -578,7 +587,8 @@ window.addEventListener('load', function () {
             // ________________ BREAK THE LOOP ________________
             if (lvl > tree.maxLevel && tree.growingLeavesList.length === 0) {
                 console.log('___Animation_in___' + timeStamp + 'ms___');
-                // console.log(growingLeavesList)       
+                // console.log(growingLeavesList)
+                alreadyAnimating = false;
                 return;
             }
             // OR ACCUMULATE PASSED TIME
@@ -611,13 +621,12 @@ window.addEventListener('load', function () {
                 }
             }
             requestAnimationFrame(animate);
-            // if (Math.floor(1000/timeDelta) < 50){
-            //     console.log(Math.floor(1000/timeDelta) + ' FPS!!!') // FPS ALERT
-            // }
+            if (Math.floor(1000 / timeDelta) < 50) {
+                console.log(Math.floor(1000 / timeDelta) + ' FPS!!!'); // FPS ALERT
+            }
         }
         animate(0);
     }
-    animateTheTree(tree);
     // ________________________________________ ANIMATION ________________________________________
     // ________________________________________ SIDEBAR ________________________________________
     const CATEGORY1 = document.getElementById('category1');
