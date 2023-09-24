@@ -3,6 +3,7 @@
     /* background: rgb(255,241,0); */
     /* background: linear-gradient(90deg, rgba(255,241,0,1) 9%, rgba(255,233,0,1) 12%, rgba(0,212,255,1) 21%); */
     --horizonHeight: 50%;
+    image-rendering: optimizeSpeed; /* keep it or not? */
 }
 
 * {
@@ -55,7 +56,6 @@
 }
 
 .canvas {
-    /* image-rendering: smooth; */
     overflow: hidden;
     width: 100%;
     height: 100%;

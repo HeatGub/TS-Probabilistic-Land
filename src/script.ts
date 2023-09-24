@@ -5,20 +5,21 @@ window.addEventListener('load', function() {
 const globalCanvasesList = [] as HTMLCanvasElement[]
 const canvasContainer = document.getElementById('canvasContainer') as HTMLBodyElement
 
+// HORIZON HEIGHT
+const horizonHeight = canvasContainer.clientHeight*0.4
+document.documentElement.style.cssText = "--horizonHeight:" + horizonHeight + "px"
+
 // create Branch public shadowSegments, 
 const initialsegmentingLen = 20
 const trunkLen = 100
 const lenMultiplier = 0.9
 const trunkWidthAsPartOfLen = 0.3
 const widthMultiplier = 0.7
-const rebranchingAngle = 25
+const rebranchingAngle = 18
 const maxLevelGlobal = 5
-const occasionalBranchesLimit = 1
-const treeDistanceScaling = 3 // don't exceed 2
-
-// HORIZON HEIGHT
-let horizonHeight = canvasContainer.clientHeight/4
-document.documentElement.style.cssText = "--horizonHeight:" + horizonHeight + "px"
+const branchingProbabilityBooster = 1
+const occasionalBranchesLimit = 0
+const treeDistanceScaling = 0.7 // 0-1
 
 // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
 const shadowColor = 'rgba(10, 10, 10, 1)'
@@ -37,7 +38,7 @@ const petioleLenRatio = 0.2 //of the whole length
 const leafyLevels = 3
 const globalLeafProbability = 0.45 // SAME PROBABILITY FOR EACH SIDE
 const leafLineWidthAsPartOfLeafLen = 0.05
-const leafLenScaling = 2
+const leafLenScaling = 1.2
 
 const leavesGrowingOrder = 0.25
 const growLimitingLeavesAmount = 10 // branches drawing will stop when this amount of growing leaves is reached
@@ -100,6 +101,7 @@ class Branch {
             if (this.level > 0 && seg >= 1  &&  this.segments[seg-1].y0 > (this.tree.initY-this.tree.trunkLen/10) || this.level > 0 && seg >= 1  &&  this.segments[seg-1].yF > (this.tree.initY-this.tree.trunkLen/10)) {
                 return
             }
+
             this.segments.push({x0: 0, y0: 0, xF: 0, yF: 0, width: 0, leaves: []})
             // Calculate coordinates analogically to branch xF yF, but for shorter lengths. 
             // segment is in range from (seg/segAmount) to ((seg +1)/segAmount) * len
@@ -112,8 +114,6 @@ class Branch {
 
             // // SHADOW SEGMENT
             this.shadowSegments.push({x0: 0, y0: 0, xF: 0, yF: 0, width: 0, blur: 0})
-            // this.shadowSegments[seg].x0 = this.segments[seg].x0 - (this.tree.initX - this.segments[seg].x0) * shadowSpread/2 // less than spread of Y
-            // this.shadowSegments[seg].xF = this.segments[seg].xF - (this.tree.initX - this.segments[seg].xF) * shadowSpread/2
             this.shadowSegments[seg].y0 = this.tree.initY + (this.tree.initY - this.segments[seg].y0) * shadowSpread
             this.shadowSegments[seg].yF = this.tree.initY + (this.tree.initY - this.segments[seg].yF) * shadowSpread
             this.shadowSegments[seg].x0 = this.segments[seg].x0 + (this.tree.initY - this.segments[seg].y0) * shadowSpread * this.tree.shadowAngle
@@ -259,7 +259,7 @@ class Tree {
         readonly trunkWidth = trunkLen * trunkWidthAsPartOfLen,
         readonly initAngle: number = 0,
         readonly maxLevel: number = maxLevelGlobal,
-        readonly branchingProbability: number = 0.8,
+        readonly branchingProbability: number = branchingProbabilityBooster,
         public allBranches: [Branch[]] = [[]],
         public growingLeavesList: Leaf[] = [],
         // public canvas = document.getElementById('canvasBranches') as HTMLCanvasElement,
@@ -293,6 +293,7 @@ class Tree {
             // prob should = 1 for level 0 (trunk) 
             // this variable lowers branching probability with level. In range from 1 to branchingProbability linearly
             let branchingProbabilityByLevel = this.branchingProbability + ( (1-branchingProbability) * ((this.maxLevel-currLvl)/this.maxLevel) )
+            // console.log(branchingProbabilityByLevel)
             let occasionalBranchingProbability = ((this.maxLevel-currLvl+1)/this.maxLevel) // always spawn at lvl 0
             // console.log(branchingProbabilityByLevel, currLvl)
             // this.allBranches.push([]) // push empty array to fill it by the forEach loop
@@ -584,11 +585,20 @@ class Leaf {
 let alreadyAnimating = false
 // PLANT (SPAWN) TREE AT CLICK COORDS
 canvasContainer.addEventListener("click", (event) => {
-    if (alreadyAnimating === false) {
+    if (alreadyAnimating === false && event.y > horizonHeight) {
         // console.log(event.x, event.y)
         // TREE DISTANCE SCALING
         let shadowAngle = - (window.innerWidth/2 - event.x) / window.innerWidth * shadowAngleMultiplier
-        let treeTrunkScaledLength = trunkLen + trunkLen * ((event.y - window.innerHeight/2)/ window.innerHeight) * treeDistanceScaling // normal scale at the half of window height
+        // let treeTrunkScaledLength = trunkLen + trunkLen * ((event.y - window.innerHeight/2)/ window.innerHeight) * treeDistanceScaling // normal scale at the half of window height
+        
+        
+        let groundHeight = window.innerHeight - horizonHeight
+        let groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight)/2
+        
+        let scaleByTheGroundPosition = (event.y - groundMiddle)/groundHeight*2 // in range -1 to 1
+        console.log(scaleByTheGroundPosition)
+        
+        let treeTrunkScaledLength = trunkLen + trunkLen * scaleByTheGroundPosition * treeDistanceScaling // normal scale at the half of ground canvas
         const tree = new Tree (event.x, event.y, treeTrunkScaledLength, shadowAngle)
         animateTheTree(tree)
     }
@@ -802,13 +812,6 @@ closeSidebarButton.addEventListener("click", () => {
 // ________________________________________ SIDEBAR ________________________________________
 
 }) //window.addEventListener('load', function(){ }) ends here
-
-
-// TOODOO LIST
-// limit tree spawning to under the horizon and 
-// recalc the shadow len accordingly, counting the horizon as max height
-
-
 
 
 
