@@ -6,17 +6,20 @@ window.addEventListener('load', function () {
     const globalCanvasesList = [];
     const canvasContainer = document.getElementById('canvasContainer');
     // create Branch public shadowSegments, 
-    const initialsegmentingLen = 100;
+    const initialsegmentingLen = 20;
     const trunkLen = 100;
-    const lenMultiplier = 0.8;
-    const trunkWidthAsPartOfLen = 0.5;
+    const lenMultiplier = 0.9;
+    const trunkWidthAsPartOfLen = 0.3;
     const widthMultiplier = 0.7;
     const rebranchingAngle = 25;
-    const maxLevelGlobal = 3;
+    const maxLevelGlobal = 5;
     const occasionalBranchesLimit = 1;
-    const treeDistanceScaling = 1.8; // don't exceed 2
+    const treeDistanceScaling = 3; // don't exceed 2
+    // HORIZON HEIGHT
+    let horizonHeight = canvasContainer.clientHeight / 4;
+    document.documentElement.style.cssText = "--horizonHeight:" + horizonHeight + "px";
     // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
-    const shadowColor = 'rgba(50, 50, 50, 1)';
+    const shadowColor = 'rgba(10, 10, 10, 1)';
     // const shadowAngle = -1 // range -1 to +1 works fine. 1 gives 45 angle
     const shadowAngleMultiplier = 5;
     const shadowSpread = 1; // > 0 for now
@@ -29,9 +32,9 @@ window.addEventListener('load', function () {
     const axis2LenRatio = 0.5;
     const petioleLenRatio = 0.2; //of the whole length
     const leafyLevels = 3;
-    const globalLeafProbability = 0.1; // SAME PROBABILITY FOR EACH SIDE
+    const globalLeafProbability = 0.45; // SAME PROBABILITY FOR EACH SIDE
     const leafLineWidthAsPartOfLeafLen = 0.05;
-    const leafLenScaling = 1.5;
+    const leafLenScaling = 2;
     const leavesGrowingOrder = 0.25;
     const growLimitingLeavesAmount = 10; // branches drawing will stop when this amount of growing leaves is reached
     const leafMaxStageGlobal = 10;
@@ -89,7 +92,6 @@ window.addEventListener('load', function () {
                 // EXIT LOOP IF SEGMENT IS NEARLY TOUCHING THE GROUND (this.tree.initY-this.tree.trunkLen/10)
                 // this.level > 0 not to affect the trunk
                 if (this.level > 0 && seg >= 1 && this.segments[seg - 1].y0 > (this.tree.initY - this.tree.trunkLen / 10) || this.level > 0 && seg >= 1 && this.segments[seg - 1].yF > (this.tree.initY - this.tree.trunkLen / 10)) {
-                    // console.log('rtrn seg')
                     return;
                 }
                 this.segments.push({ x0: 0, y0: 0, xF: 0, yF: 0, width: 0, leaves: [] });
@@ -335,7 +337,7 @@ window.addEventListener('load', function () {
         x0rel = 0, // relative coordinates (for the leaf canvas positioning)
         y0rel = 0, state = "hidden", tree = parentBranch.tree, canvasShadow = canvasContainer.appendChild(document.createElement("canvas")), ctxShadow = canvasShadow.getContext('2d'), shadowStages = [], xFLeafShadow = 0, yFLeafShadow = 0, shadowCanvasCoords = { x: 0, y: 0 }, // canvasTopLeftCorner
         x0relShadow = 0, // relative coordinates (for the leaf canvas positioning)
-        y0relShadow = 0, shadowLen = 0, blur = 0) {
+        y0relShadow = 0, shadowLen = 0, blur = 0, colors = { r: 0, g: 0, b: 0 }) {
             this.parentBranch = parentBranch;
             this.x0 = x0;
             this.y0 = y0;
@@ -366,6 +368,7 @@ window.addEventListener('load', function () {
             this.y0relShadow = y0relShadow;
             this.shadowLen = shadowLen;
             this.blur = blur;
+            this.colors = colors;
             // RESIZE CANVAS (canvasCoords and 0rels depend on it)
             this.canvas.width = this.len * 1.4;
             this.canvas.height = this.len * 1.4;
@@ -558,6 +561,7 @@ window.addEventListener('load', function () {
     // ________________________________________ INITIATIONS ________________________________________
     // ________________________________________ ANIMATION ________________________________________
     function animateTheTree(tree) {
+        document.body.style.cursor = 'wait'; // waiting cursor
         alreadyAnimating = true;
         let lvl = 0;
         let lastTime = 0;
@@ -611,6 +615,7 @@ window.addEventListener('load', function () {
                 console.log('___Animation_in___' + timeStamp + 'ms___');
                 // console.log(growingLeavesList)
                 alreadyAnimating = false;
+                document.body.style.cursor = 'auto'; // waiting cursor
                 return;
             }
             // OR ACCUMULATE PASSED TIME
@@ -739,6 +744,9 @@ window.addEventListener('load', function () {
     });
     // ________________________________________ SIDEBAR ________________________________________
 }); //window.addEventListener('load', function(){ }) ends here
+// TOODOO LIST
+// limit tree spawning to under the horizon and 
+// recalc the shadow len accordingly, counting the horizon as max height
 // BRANCH COUNTER
 // let branchesAll = 0
 // tree.allBranches.forEach( level => {

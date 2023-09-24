@@ -1,5 +1,8 @@
 :root {
     background: rgb(64, 64, 64);
+    /* background: rgb(255,241,0); */
+    /* background: linear-gradient(90deg, rgba(255,241,0,1) 9%, rgba(255,233,0,1) 12%, rgba(0,212,255,1) 21%); */
+    --horizonHeight: 50%;
 }
 
 * {
@@ -18,15 +21,44 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-
     z-index: 90;
+}
+
+#skyCanvas{
+    position: absolute;
+    background: rgb(17, 2, 80);
+    width: 100%;
+    height: calc(var(--horizonHeight)*1.01); /* to overlap the ground*/
+    z-index: 0;
+}
+
+#lightSourceCanvas{
+    height: calc(var(--horizonHeight)*1.01); /* to overlap the ground*/
+    width: calc(var(--horizonHeight)*1.01); 
+    position: absolute;
+    left: 50%;
+    left: calc(50% - var(--horizonHeight)*1.01/2); 
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.848) 45%, rgb(17, 2, 80) 50%);
+    z-index: 1;
+    /* border: 5px solid rgba(238, 138, 6, 0.305); */
+}
+
+#groundCanvas{
+    position: absolute;
+    /* background: radial-gradient(circle, rgba(255,241,0,1) 9%, rgba(255,241,0,1) 15%, rgba(0,212,255,1) 21%); */
+    background: linear-gradient(rgb(38, 60, 38) 18%, rgb(11, 20, 11) 93%);
+    width: 100%;
+    top: var(--horizonHeight);
+    height: 75%;
+    height: calc(100% - var(--horizonHeight));
+    z-index: 2;
 }
 
 .canvas {
     /* image-rendering: smooth; */
-    /* overflow: hidden; */
-    /* width: 100%; */
-    /* height: 100%; */
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
     position: absolute;
     /* border: 2px solid rgba(4, 98, 92, 0.305); */
     top: 50%;
@@ -36,6 +68,7 @@
     /* display: none; */
 
 }
+
 
 .canvasShadows {
     overflow: hidden;
@@ -47,7 +80,7 @@
     left: 50%;
     transform: translate(-50%, -50%);
 
-    z-index: 0;
+    z-index: 10;
     /* display: none; */
 
 }
@@ -61,7 +94,7 @@
 .leafShadowCanvas {
     position: absolute;
     /* border: 1px solid rgba(6, 162, 162, 0.5); */
-    z-index: 0;
+    z-index: 10;
     /* display: none; */
 }
 
