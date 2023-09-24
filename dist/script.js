@@ -6,16 +6,17 @@ window.addEventListener('load', function () {
     const globalCanvasesList = [];
     const canvasContainer = document.getElementById('canvasContainer');
     // create Branch public shadowSegments, 
-    const initialsegmentingLen = 20;
-    const trunkLen = 150;
+    const initialsegmentingLen = 10;
+    const trunkLen = 100;
     const lenMultiplier = 0.8;
-    const trunkWidth = 50;
+    const trunkWidthAsPartOfLen = 0.4;
     const widthMultiplier = 0.7;
     const rebranchingAngle = 19;
-    const maxLevelGlobal = 6;
+    const maxLevelGlobal = 5;
     const occasionalBranchesLimit = 1;
-    const shadowColor = 'rgba(50, 50, 50, 1)';
+    const treeDistanceScaling = 1.8; // don't exceed 2
     // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
+    const shadowColor = 'rgba(50, 50, 50, 1)';
     const shadowSpread = 0.5; // > 0 for now
     const blurStrength = 0;
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
@@ -27,8 +28,8 @@ window.addEventListener('load', function () {
     const petioleLenRatio = 0.2; //of the whole length
     const leafyLevels = 3;
     const globalLeafProbability = 0.2; // SAME PROBABILITY FOR EACH SIDE
-    const leafSize = 35;
-    const minimalDistanceBetweenLeaves = leafSize; // doesnt count the distance between leaves of different branches
+    const leafLineWidthAsPartOfLeafLen = 0.05;
+    const leafLenScaling = 1.5;
     const leavesGrowingOrder = 0.25;
     const growLimitingLeavesAmount = 10; // branches drawing will stop when this amount of growing leaves is reached
     const leafMaxStageGlobal = 20;
@@ -106,9 +107,9 @@ window.addEventListener('load', function () {
                 // _________________ ADD LEAVES AT SEGMENTS _________________
                 // if (maxLevelGlobal - leafyLevels < this.level && seg >= segAmountByLevel/6 && seg % spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
                 const singleSegmentLength = this.len * (1 / segAmountByLevel);
-                const spawnLeafEverySegments = Math.ceil(minimalDistanceBetweenLeaves / singleSegmentLength);
+                const spawnLeafEverySegments = Math.ceil(this.tree.minimalDistanceBetweenLeaves / singleSegmentLength);
                 if (maxLevelGlobal - leafyLevels < this.level && seg % spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
-                    const thisLeafSize = leafSize * 0.7 + leafSize * 0.3 * Math.random(); // randomize leaf size
+                    const thisLeafSize = (this.tree.averageLeafSize * 0.7 + this.tree.averageLeafSize * 0.3 * Math.random()) * leafLenScaling; // randomize leaf size
                     const leafProbabilityByLevel = globalLeafProbability - globalLeafProbability * ((maxLevelGlobal - this.level) / leafyLevels / 2); // linearly change probability with level from around globalLeafProbability/2 to globalLeafProbability (for leafy levels)
                     // console.log(leafProbabilityByLevel)
                     // LEFT LEAF
@@ -219,15 +220,16 @@ window.addEventListener('load', function () {
     // ________________________________________ BRANCH ________________________________________
     // ________________________________________ TREE ________________________________________
     class Tree {
-        constructor(initX, initY, initLen, initAngle = 0, maxLevel = maxLevelGlobal, branchingProbability = 0.8, allBranches = [[]], 
+        constructor(initX, initY, trunkLen, trunkWidth = trunkLen * trunkWidthAsPartOfLen, initAngle = 0, maxLevel = maxLevelGlobal, branchingProbability = 0.8, allBranches = [[]], 
         // public growingLeavesList: Leaf[] = [],
         // public canvas = document.getElementById('canvasBranches') as HTMLCanvasElement,
         canvas = canvasContainer.appendChild(document.createElement("canvas")), // create canvas
         ctx = canvas.getContext('2d'), canvasShadows = canvasContainer.appendChild(document.createElement("canvas")), // create canvas for tree shadow
-        ctxShadows = canvasShadows.getContext('2d'), growingLeavesList = []) {
+        ctxShadows = canvasShadows.getContext('2d'), growingLeavesList = [], averageLeafSize = trunkLen / 5, minimalDistanceBetweenLeaves = averageLeafSize) {
             this.initX = initX;
             this.initY = initY;
-            this.initLen = initLen;
+            this.trunkLen = trunkLen;
+            this.trunkWidth = trunkWidth;
             this.initAngle = initAngle;
             this.maxLevel = maxLevel;
             this.branchingProbability = branchingProbability;
@@ -237,6 +239,9 @@ window.addEventListener('load', function () {
             this.canvasShadows = canvasShadows;
             this.ctxShadows = ctxShadows;
             this.growingLeavesList = growingLeavesList;
+            this.averageLeafSize = averageLeafSize;
+            this.minimalDistanceBetweenLeaves = minimalDistanceBetweenLeaves;
+            this.canvas.style.zIndex = String(initY); // higher z-index makes element appear on top
             // SET INITIAL CANVASES SIZE
             this.canvas.classList.add('canvas');
             this.canvas.width = window.innerWidth;
@@ -249,7 +254,7 @@ window.addEventListener('load', function () {
             globalCanvasesList.push(this.canvasShadows);
             const root = new Root(this);
             const startTime = Date.now();
-            this.allBranches[0] = [new Branch(root, initX, initY, initLen, initAngle, trunkWidth)]; //save trunk as 0lvl branch
+            this.allBranches[0] = [new Branch(root, this.initX, this.initY, this.trunkLen, this.initAngle, this.trunkWidth)]; //save trunk as 0lvl branch
             // append array for every level ahead. Needed for levelShifted branches
             for (let i = 0; i < this.maxLevel; i++) {
                 this.allBranches.push([]); //
@@ -312,7 +317,7 @@ window.addEventListener('load', function () {
     class Leaf {
         constructor(
         // public parentSeg: {x0: number, y0: number, xF: number, yF: number, width: number}, // parent segment
-        parentBranch, x0, y0, len, angle, x0LeafShadow, y0LeafShadow, lineWidth = 4, xF = 0, yF = 0, maxStages = -1 + leafMaxStageGlobal, currentStage = 0, growthStages = [], canvas = canvasContainer.appendChild(document.createElement("canvas")), // create canvas
+        parentBranch, x0, y0, len, angle, x0LeafShadow, y0LeafShadow, lineWidth = len * leafLineWidthAsPartOfLeafLen, xF = 0, yF = 0, maxStages = -1 + leafMaxStageGlobal, currentStage = 0, growthStages = [], canvas = canvasContainer.appendChild(document.createElement("canvas")), // create canvas
         ctx = canvas.getContext('2d'), canvasCoords = { x: 0, y: 0 }, // canvasTopLeftCorner
         x0rel = 0, // relative coordinates (for the leaf canvas positioning)
         y0rel = 0, state = "hidden", tree = parentBranch.tree, canvasShadow = canvasContainer.appendChild(document.createElement("canvas")), ctxShadow = canvasShadow.getContext('2d'), shadowStages = [], xFLeafShadow = 0, yFLeafShadow = 0, shadowCanvasCoords = { x: 0, y: 0 }, // canvasTopLeftCorner
@@ -363,6 +368,7 @@ window.addEventListener('load', function () {
             // MOVE CANVAS
             this.canvas.style.left = this.canvasCoords.x + 'px';
             this.canvas.style.top = this.canvasCoords.y + 'px';
+            this.canvas.style.zIndex = String(this.tree.initY + 1); // z-index of its tree +1
             this.canvas.classList.add('leafCanvas');
             this.ctx.lineWidth = this.lineWidth; // petiole width
             // _____________________________ LEAF SHADOW _____________________________
@@ -525,11 +531,13 @@ window.addEventListener('load', function () {
     // console.log(growingLeavesList)
     // console.log('leaves amount = ' + growingLeavesList.length)
     let alreadyAnimating = false;
-    // SPAWN TREE AT CLICK COORDS
-    addEventListener("click", (event) => {
+    // PLANT (SPAWN) TREE AT CLICK COORDS
+    canvasContainer.addEventListener("click", (event) => {
         if (alreadyAnimating === false) {
-            console.log(event.x, event.y);
-            const tree = new Tree(event.x, event.y, trunkLen);
+            // console.log(event.x, event.y)
+            // TREE DISTANCE SCALING
+            let treeTrunkScaledLength = trunkLen + trunkLen * ((event.y - window.innerHeight / 2) / window.innerHeight) * treeDistanceScaling; // normal scale at the half of window height
+            const tree = new Tree(event.x, event.y, treeTrunkScaledLength);
             animateTheTree(tree);
         }
     });
