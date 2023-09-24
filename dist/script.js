@@ -7,12 +7,12 @@ window.addEventListener('load', function () {
     const canvasContainer = document.getElementById('canvasContainer');
     // create Branch public shadowSegments, 
     const initialsegmentingLen = 10;
-    const trunkLen = 100;
-    const lenMultiplier = 0.8;
-    const trunkWidthAsPartOfLen = 0.4;
+    const trunkLen = 50;
+    const lenMultiplier = 0.99;
+    const trunkWidthAsPartOfLen = 0.5;
     const widthMultiplier = 0.7;
     const rebranchingAngle = 19;
-    const maxLevelGlobal = 5;
+    const maxLevelGlobal = 8;
     const occasionalBranchesLimit = 1;
     const treeDistanceScaling = 1.8; // don't exceed 2
     // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
@@ -27,13 +27,13 @@ window.addEventListener('load', function () {
     const axis2LenRatio = 0.5;
     const petioleLenRatio = 0.2; //of the whole length
     const leafyLevels = 3;
-    const globalLeafProbability = 0.2; // SAME PROBABILITY FOR EACH SIDE
+    const globalLeafProbability = 0; // SAME PROBABILITY FOR EACH SIDE
     const leafLineWidthAsPartOfLeafLen = 0.05;
-    const leafLenScaling = 1.5;
+    const leafLenScaling = 1;
     const leavesGrowingOrder = 0.25;
     const growLimitingLeavesAmount = 10; // branches drawing will stop when this amount of growing leaves is reached
     const leafMaxStageGlobal = 20;
-    const whileLoopRetriesEachFrameLeaves = 100; // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
+    const whileLoopRetriesEachFrameLeaves = 10; // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
     //  SET CANVASES SIZES AND CHANGE THEM AT WINDOW RESIZE
     window.addEventListener('resize', function () {
         globalCanvasesList.forEach((canvas) => {
@@ -84,6 +84,11 @@ window.addEventListener('load', function () {
             // let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level) )
             let segAmountByLevel = Math.ceil(((trunkLen * (Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level));
             for (let seg = 0; seg < segAmountByLevel; seg++) {
+                // EXIT LOOP IF SEGMENT IS TOUCHING THE GROUND (tree.initY)
+                if (seg >= 1 && this.segments[seg - 1].y0 > this.tree.initY || seg >= 1 && this.segments[seg - 1].yF > this.tree.initY) {
+                    // console.log('rtrn seg')
+                    return;
+                }
                 this.segments.push({ x0: 0, y0: 0, xF: 0, yF: 0, width: 0, leaves: [] });
                 // Calculate coordinates analogically to branch xF yF, but for shorter lengths. 
                 // segment is in range from (seg/segAmount) to ((seg +1)/segAmount) * len
@@ -93,7 +98,7 @@ window.addEventListener('load', function () {
                 this.segments[seg].yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len * ((seg + 1) / segAmountByLevel);
                 // linearly change branchWidth for each segment 
                 this.segments[seg].width = this.branchWidth + ((segAmountByLevel - seg + 1) / segAmountByLevel) * (this.branchWidth / widthMultiplier - this.branchWidth); // this.branchWidth/widthMultiplier makes width as +1 lvl
-                // // SHADOW SEGMENTS
+                // // SHADOW SEGMENT
                 this.shadowSegments.push({ x0: 0, y0: 0, xF: 0, yF: 0, width: 0, blur: 0 });
                 this.shadowSegments[seg].x0 = this.segments[seg].x0 - (this.tree.initX - this.segments[seg].x0) * shadowSpread / 2; // less than spread of Y
                 this.shadowSegments[seg].y0 = this.tree.initY + (this.tree.initY - this.segments[seg].y0) * shadowSpread;
@@ -104,7 +109,7 @@ window.addEventListener('load', function () {
                 this.segments[seg].leaves.forEach((leaf) => {
                     leaf.blur = this.shadowSegments[seg].blur;
                 });
-                // _________________ ADD LEAVES AT SEGMENTS _________________
+                // _________________ ADD LEAVES AT SEGMENT _________________
                 // if (maxLevelGlobal - leafyLevels < this.level && seg >= segAmountByLevel/6 && seg % spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
                 const singleSegmentLength = this.len * (1 / segAmountByLevel);
                 const spawnLeafEverySegments = Math.ceil(this.tree.minimalDistanceBetweenLeaves / singleSegmentLength);
@@ -220,12 +225,11 @@ window.addEventListener('load', function () {
     // ________________________________________ BRANCH ________________________________________
     // ________________________________________ TREE ________________________________________
     class Tree {
-        constructor(initX, initY, trunkLen, trunkWidth = trunkLen * trunkWidthAsPartOfLen, initAngle = 0, maxLevel = maxLevelGlobal, branchingProbability = 0.8, allBranches = [[]], 
-        // public growingLeavesList: Leaf[] = [],
+        constructor(initX, initY, trunkLen, trunkWidth = trunkLen * trunkWidthAsPartOfLen, initAngle = 0, maxLevel = maxLevelGlobal, branchingProbability = 0.8, allBranches = [[]], growingLeavesList = [], 
         // public canvas = document.getElementById('canvasBranches') as HTMLCanvasElement,
         canvas = canvasContainer.appendChild(document.createElement("canvas")), // create canvas
         ctx = canvas.getContext('2d'), canvasShadows = canvasContainer.appendChild(document.createElement("canvas")), // create canvas for tree shadow
-        ctxShadows = canvasShadows.getContext('2d'), growingLeavesList = [], averageLeafSize = trunkLen / 5, minimalDistanceBetweenLeaves = averageLeafSize) {
+        ctxShadows = canvasShadows.getContext('2d'), averageLeafSize = trunkLen / 5, minimalDistanceBetweenLeaves = averageLeafSize) {
             this.initX = initX;
             this.initY = initY;
             this.trunkLen = trunkLen;
@@ -234,11 +238,11 @@ window.addEventListener('load', function () {
             this.maxLevel = maxLevel;
             this.branchingProbability = branchingProbability;
             this.allBranches = allBranches;
+            this.growingLeavesList = growingLeavesList;
             this.canvas = canvas;
             this.ctx = ctx;
             this.canvasShadows = canvasShadows;
             this.ctxShadows = ctxShadows;
-            this.growingLeavesList = growingLeavesList;
             this.averageLeafSize = averageLeafSize;
             this.minimalDistanceBetweenLeaves = minimalDistanceBetweenLeaves;
             this.canvas.style.zIndex = String(initY); // higher z-index makes element appear on top
@@ -267,23 +271,26 @@ window.addEventListener('load', function () {
                 // console.log(branchingProbabilityByLevel, currLvl)
                 // this.allBranches.push([]) // push empty array to fill it by the forEach loop
                 this.allBranches[currLvl].forEach(element => {
-                    // MAKE BRANCHES
-                    if (Math.random() < branchingProbabilityByLevel) {
-                        this.allBranches[currLvl + 1].push(element.makeChildBranch(rebranchingAngle + Math.random() * rebranchingAngle, 0));
-                    }
-                    if (Math.random() < branchingProbabilityByLevel) {
-                        this.allBranches[currLvl + 1].push(element.makeChildBranch(-rebranchingAngle - Math.random() * rebranchingAngle, 0));
-                    }
-                    // OCCASIONAL BRANCHING WITH LEVEL SHIFT (children level is not parent level + 1)
-                    // compare occasionalBranches to occasionalBranchesLimit  
-                    if (Math.random() < occasionalBranchingProbability && element.occasionalBranches <= occasionalBranchesLimit) {
-                        // random level shift
-                        let levelShift = 1 + Math.round(Math.random() * 2);
-                        // console.log('occasional branching')
-                        if (element.level + 1 + levelShift < this.maxLevel) {
-                            const occasionalBranch = element.makeGrandChildBranch(-rebranchingAngle + Math.random() * 2 * rebranchingAngle, levelShift);
-                            this.allBranches[currLvl + 1 + levelShift].push(occasionalBranch);
-                            // console.log('occasional, lvl =' + (currLvl+levelShift))
+                    // MAKE BRANCHES IF
+                    if (element.yF < this.initY) { // IF PARENT'S END IS NOT ON THE GROUND LEVEL
+                        // branchingProbabilityByLevel check
+                        if (Math.random() < branchingProbabilityByLevel) {
+                            this.allBranches[currLvl + 1].push(element.makeChildBranch(rebranchingAngle + Math.random() * rebranchingAngle, 0));
+                        }
+                        if (Math.random() < branchingProbabilityByLevel) {
+                            this.allBranches[currLvl + 1].push(element.makeChildBranch(-rebranchingAngle - Math.random() * rebranchingAngle, 0));
+                        }
+                        // OCCASIONAL BRANCHING WITH LEVEL SHIFT (children level is not parent level + 1)
+                        // compare occasionalBranches to occasionalBranchesLimit  
+                        if (Math.random() < occasionalBranchingProbability && element.occasionalBranches <= occasionalBranchesLimit) {
+                            // random level shift
+                            let levelShift = 1 + Math.round(Math.random() * 2);
+                            // console.log('occasional branching')
+                            if (element.level + 1 + levelShift < this.maxLevel) {
+                                const occasionalBranch = element.makeGrandChildBranch(-rebranchingAngle + Math.random() * 2 * rebranchingAngle, levelShift);
+                                this.allBranches[currLvl + 1 + levelShift].push(occasionalBranch);
+                                // console.log('occasional, lvl =' + (currLvl+levelShift))
+                            }
                         }
                     }
                 });
@@ -469,7 +476,7 @@ window.addEventListener('load', function () {
             // clear whole previous frame
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.ctx.beginPath();
-            this.ctx.strokeStyle = 'rgba(10, 30, 0, 0.9)';
+            this.ctx.strokeStyle = 'rgba(10, 30, 0, 1)';
             //MAIN NERVE
             this.ctx.moveTo(this.x0rel, this.y0rel);
             this.ctx.lineTo(this.growthStages[this.currentStage].xF, this.growthStages[this.currentStage].yF);
@@ -485,7 +492,7 @@ window.addEventListener('load', function () {
             this.ctx.bezierCurveTo(this.growthStages[this.currentStage].xL1, this.growthStages[this.currentStage].yL1, this.growthStages[this.currentStage].xL2, this.growthStages[this.currentStage].yL2, this.growthStages[this.currentStage].xF, this.growthStages[this.currentStage].yF);
             this.ctx.closePath();
             let greenish = 70 + ((this.maxStages - this.currentStage) / this.maxStages) * 180;
-            this.ctx.fillStyle = 'rgba(10,' + greenish + ',0, 0.9)';
+            this.ctx.fillStyle = 'rgba(10,' + greenish + ',0, 1)';
             this.ctx.fill();
             this.ctx.stroke();
             this.drawLeafShadow();
@@ -629,9 +636,9 @@ window.addEventListener('load', function () {
                 }
             }
             requestAnimationFrame(animate);
-            if (Math.floor(1000 / timeDelta) < 50) {
-                console.log(Math.floor(1000 / timeDelta) + ' FPS!!!'); // FPS ALERT
-            }
+            // if (Math.floor(1000/timeDelta) < 50){
+            //     console.log(Math.floor(1000/timeDelta) + ' FPS!!!') // FPS ALERT
+            // }
         }
         animate(0);
     }
