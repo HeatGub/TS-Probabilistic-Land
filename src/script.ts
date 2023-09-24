@@ -6,19 +6,21 @@ const globalCanvasesList = [] as HTMLCanvasElement[]
 const canvasContainer = document.getElementById('canvasContainer') as HTMLBodyElement
 
 // create Branch public shadowSegments, 
-const initialsegmentingLen = 10
-const trunkLen = 50
-const lenMultiplier = 0.99
+const initialsegmentingLen = 100
+const trunkLen = 100
+const lenMultiplier = 0.8
 const trunkWidthAsPartOfLen = 0.5
 const widthMultiplier = 0.7
-const rebranchingAngle = 19
-const maxLevelGlobal = 8
+const rebranchingAngle = 25
+const maxLevelGlobal = 3
 const occasionalBranchesLimit = 1
 const treeDistanceScaling = 1.8 // don't exceed 2
 
 // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
 const shadowColor = 'rgba(50, 50, 50, 1)'
-const shadowSpread = 0.5 // > 0 for now
+// const shadowAngle = -1 // range -1 to +1 works fine. 1 gives 45 angle
+const shadowAngleMultiplier = 5
+const shadowSpread = 1 // > 0 for now
 const blurStrength = 0
 
 // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
@@ -29,13 +31,13 @@ const axis1LenRatio = -0.15
 const axis2LenRatio = 0.5
 const petioleLenRatio = 0.2 //of the whole length
 const leafyLevels = 3
-const globalLeafProbability = 0 // SAME PROBABILITY FOR EACH SIDE
+const globalLeafProbability = 0.1 // SAME PROBABILITY FOR EACH SIDE
 const leafLineWidthAsPartOfLeafLen = 0.05
-const leafLenScaling = 1
+const leafLenScaling = 1.5
 
 const leavesGrowingOrder = 0.25
 const growLimitingLeavesAmount = 10 // branches drawing will stop when this amount of growing leaves is reached
-const leafMaxStageGlobal = 20
+const leafMaxStageGlobal = 10
 const whileLoopRetriesEachFrameLeaves = 10 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
 
 //  SET CANVASES SIZES AND CHANGE THEM AT WINDOW RESIZE
@@ -89,8 +91,9 @@ class Branch {
         let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level) )
 
         for (let seg=0; seg < segAmountByLevel; seg++){
-            // EXIT LOOP IF SEGMENT IS TOUCHING THE GROUND (tree.initY)
-            if (seg >= 1 && this.segments[seg-1].y0 > this.tree.initY || seg >= 1 && this.segments[seg-1].yF > this.tree.initY) {
+            // EXIT LOOP IF SEGMENT IS NEARLY TOUCHING THE GROUND (this.tree.initY-this.tree.trunkLen/10)
+            // this.level > 0 not to affect the trunk
+            if (this.level > 0 && seg >= 1  &&  this.segments[seg-1].y0 > (this.tree.initY-this.tree.trunkLen/10) || this.level > 0 && seg >= 1  &&  this.segments[seg-1].yF > (this.tree.initY-this.tree.trunkLen/10)) {
                 // console.log('rtrn seg')
                 return
             }
@@ -106,10 +109,12 @@ class Branch {
 
             // // SHADOW SEGMENT
             this.shadowSegments.push({x0: 0, y0: 0, xF: 0, yF: 0, width: 0, blur: 0})
-            this.shadowSegments[seg].x0 = this.segments[seg].x0 - (this.tree.initX - this.segments[seg].x0) * shadowSpread/2 // less than spread of Y
+            // this.shadowSegments[seg].x0 = this.segments[seg].x0 - (this.tree.initX - this.segments[seg].x0) * shadowSpread/2 // less than spread of Y
+            // this.shadowSegments[seg].xF = this.segments[seg].xF - (this.tree.initX - this.segments[seg].xF) * shadowSpread/2
             this.shadowSegments[seg].y0 = this.tree.initY + (this.tree.initY - this.segments[seg].y0) * shadowSpread
-            this.shadowSegments[seg].xF = this.segments[seg].xF - (this.tree.initX - this.segments[seg].xF) * shadowSpread/2
             this.shadowSegments[seg].yF = this.tree.initY + (this.tree.initY - this.segments[seg].yF) * shadowSpread
+            this.shadowSegments[seg].x0 = this.segments[seg].x0 + (this.tree.initY - this.segments[seg].y0) * shadowSpread * this.tree.shadowAngle
+            this.shadowSegments[seg].xF = this.segments[seg].xF + (this.tree.initY - this.segments[seg].yF) * shadowSpread * this.tree.shadowAngle
             this.shadowSegments[seg].width = this.segments[this.drawnSegments].width + ((this.tree.initY - this.segments[this.drawnSegments].y0)*(shadowSpread/200)) + (Math.abs((this.tree.initX - this.segments[this.drawnSegments].x0)))*(shadowSpread/200)
             this.shadowSegments[seg].blur = (this.tree.initY - this.segments[seg].y0) / this.tree.canvas.height* blurStrength
             this.segments[seg].leaves.forEach( (leaf) => {  // pass the same blur to children leaves
@@ -247,6 +252,7 @@ class Tree {
         readonly initX: number,
         readonly initY: number,
         readonly trunkLen: number,
+        readonly shadowAngle:number,
         readonly trunkWidth = trunkLen * trunkWidthAsPartOfLen,
         readonly initAngle: number = 0,
         readonly maxLevel: number = maxLevelGlobal,
@@ -289,7 +295,7 @@ class Tree {
             // this.allBranches.push([]) // push empty array to fill it by the forEach loop
             this.allBranches[currLvl].forEach( element => {
                 // MAKE BRANCHES IF
-                if (element.yF < this.initY) { // IF PARENT'S END IS NOT ON THE GROUND LEVEL
+                if (element.yF < (this.initY - this.trunkLen/10)) { // IF PARENT'S END IS NOT ON THE GROUND LEVEL
                     // branchingProbabilityByLevel check
                     if (Math.random() < branchingProbabilityByLevel){
                         this.allBranches[currLvl+1].push(element.makeChildBranch(rebranchingAngle + Math.random()*rebranchingAngle, 0))
@@ -577,8 +583,9 @@ canvasContainer.addEventListener("click", (event) => {
     if (alreadyAnimating === false) {
         // console.log(event.x, event.y)
         // TREE DISTANCE SCALING
+        let shadowAngle = - (window.innerWidth/2 - event.x) / window.innerWidth * shadowAngleMultiplier
         let treeTrunkScaledLength = trunkLen + trunkLen * ((event.y - window.innerHeight/2)/ window.innerHeight) * treeDistanceScaling // normal scale at the half of window height
-        const tree = new Tree (event.x, event.y, treeTrunkScaledLength)
+        const tree = new Tree (event.x, event.y, treeTrunkScaledLength, shadowAngle)
         animateTheTree(tree)
     }
 })
