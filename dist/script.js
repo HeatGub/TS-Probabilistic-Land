@@ -8,14 +8,23 @@ window.addEventListener('load', function () {
     // HORIZON HEIGHT
     const horizonHeight = canvasContainer.clientHeight * 0.5;
     document.documentElement.style.cssText = "--horizonHeight:" + horizonHeight + "px";
+    // LIGHTSOURCE
+    const lightSourceCanvas = document.getElementById('lightSourceCanvas');
+    const lightSourcePosition = Math.random() * 500;
+    const lightSourceSize = 100 + Math.random() * 150;
+    lightSourceCanvas.style.width = lightSourceSize + 'px';
+    lightSourceCanvas.style.height = lightSourceSize + 'px';
+    lightSourceCanvas.style.left = (lightSourcePosition - lightSourceSize / 2) + 'px';
+    // const lightSourceCenter = lightSourceCanvas.style.left/2
+    // console.log(lightSourceCanvas.style.width)
     // create Branch public shadowSegments, 
-    const initialsegmentingLen = 10;
+    const initialsegmentingLen = 100;
     const trunkLen = 120;
     const lenMultiplier = 0.8;
     const trunkWidthAsPartOfLen = 0.5;
     const widthMultiplier = 0.7;
     const rebranchingAngle = 23;
-    const maxLevelGlobal = 6;
+    const maxLevelGlobal = 3;
     const branchingProbabilityBooster = 0.5;
     const occasionalBranchesLimit = 0;
     const treeDistanceScaling = 1; // range 0-1
@@ -551,7 +560,7 @@ window.addEventListener('load', function () {
             // console.log(event.x, event.y)
             // console.log(event.srcElement.offsetParent.childNodes)
             console.log(event.srcElement);
-            let shadowAngle = -(window.innerWidth / 2 - event.x) / window.innerWidth * shadowAngleMultiplier;
+            let shadowAngle = -(lightSourcePosition - event.x) / window.innerWidth * shadowAngleMultiplier;
             let groundHeight = window.innerHeight - horizonHeight;
             let groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight) / 2;
             let scaleByTheGroundPosition = (event.y - groundMiddle) / groundHeight * 2; // in range -1 to 1
@@ -747,17 +756,15 @@ window.addEventListener('load', function () {
         }
     });
     // ________________________________________ SIDEBAR ________________________________________
-    const perlinCanvas = document.getElementById('perlinCanvas');
-    perlinCanvas.width = window.innerWidth;
-    perlinCanvas.height = window.innerHeight;
-    const perlinCtx = perlinCanvas.getContext('2d');
-    perlinCtx.lineWidth = 1;
+    // ________________________________________ MOUNTAIN ________________________________________
     class Mountain {
-        constructor(initialAmountOfNodes, octaves, 
+        constructor(initialAmountOfNodes, octaves, targetHeight, canvasBottom, 
         // let width = 600,
-        width = perlinCanvas.width, lowestPoint = Infinity, highestPoint = 0, currentAmountOfNodes = initialAmountOfNodes, currentOctave = 0, allPoints = [], randomPoints = []) {
+        width = window.innerWidth, lowestPoint = Infinity, highestPoint = 0, currentAmountOfNodes = initialAmountOfNodes, currentOctave = 0, allPoints = [], randomPoints = [], canvas = canvasContainer.appendChild(document.createElement("canvas")), ctx = canvas.getContext('2d')) {
             this.initialAmountOfNodes = initialAmountOfNodes;
             this.octaves = octaves;
+            this.targetHeight = targetHeight;
+            this.canvasBottom = canvasBottom;
             this.width = width;
             this.lowestPoint = lowestPoint;
             this.highestPoint = highestPoint;
@@ -765,27 +772,38 @@ window.addEventListener('load', function () {
             this.currentOctave = currentOctave;
             this.allPoints = allPoints;
             this.randomPoints = randomPoints;
+            this.canvas = canvas;
+            this.ctx = ctx;
             this.currentAmountOfNodes = this.initialAmountOfNodes; // to silence TS declared but never read
             while (this.currentOctave < this.octaves) {
                 this.fillPointsOnTheLineBetweenNodes(this.currentAmountOfNodes);
                 this.currentAmountOfNodes = this.currentAmountOfNodes * 2;
                 this.currentOctave++;
             }
-            console.log(this.randomPoints);
+            // console.log(this.randomPoints)
             // let generatedMountainHeight = highestPoint-lowestPoint
-            this.allPoints = this.allPoints.slice(0, this.width); // trim array to initial width
             this.smoothOut();
-            this.drawMountain();
+            this.allPoints = this.allPoints.slice(0, this.width); // trim array to initial width
+            this.rescaleEtc();
+            // this.drawMountain()
+            this.ctx.lineWidth = 1;
+            this.canvas.style.bottom = this.canvasBottom + 'px';
+            this.canvas.classList.add('mountainCanvas');
+            this.canvas.width = window.innerWidth;
+            // this.canvas.height = this.highestPoint- this.lowestPoint
+            this.canvas.height = this.targetHeight;
+            this.drawShortMountain();
         }
         fillPointsOnTheLineBetweenNodes(nodes_amount) {
             this.randomPoints = []; // clean up for next iteration
-            let amp1 = 1100 / nodes_amount;
+            let amplitude = this.initialAmountOfNodes ** this.octaves / nodes_amount; // has to be >1
             let stepLen = Math.ceil(this.width / (nodes_amount - 1));
             // console.log(stepLen)
             let step = 0;
             while (step * stepLen < this.width + stepLen) { // + stepLen to make one next step
-                this.randomPoints.push({ x: step * stepLen, y: Math.random() * amp1 });
+                this.randomPoints.push({ x: step * stepLen, y: Math.random() * amplitude });
                 // console.log(step*stepLen)
+                // step ++
                 step++;
             }
             // FILL POINTS BETWEEN randomPoints
@@ -801,19 +819,12 @@ window.addEventListener('load', function () {
                     else { //calculate average
                         this.allPoints[currIndex] += this.randomPoints[fillingStep].y * thisNodeInfluence + this.randomPoints[fillingStep + 1].y * nextNodeInfluence;
                     }
-                    // CHECK MIN/MAX
-                    if (this.allPoints[currIndex] < this.lowestPoint) {
-                        this.lowestPoint = this.allPoints[currIndex];
-                    }
-                    if (this.allPoints[currIndex] > this.highestPoint) {
-                        this.highestPoint = this.allPoints[currIndex];
-                    }
                 }
                 // console.log('allPoints len = ' + this.allPoints.length)
             }
             // console.log('________________ allPoints len = ' + allPoints.length)
         }
-        // SMOOTHING BY AVERAGE
+        // SMOOTHING BY AVERAGING NEIGHBOURING POINTS
         smoothOut() {
             for (let point = 1; point < this.allPoints.length - 1; point++) {
                 this.allPoints[point] = (this.allPoints[point - 1] + this.allPoints[point] + this.allPoints[point + 1]) / 3;
@@ -822,30 +833,83 @@ window.addEventListener('load', function () {
             //     this.allPoints[point] = (this.allPoints[point-2] + this.allPoints[point-1] + this.allPoints[point] + this.allPoints[point+1] + this.allPoints[point+2])/5
             // }
         }
-        // DRAW ALL POINTS
-        drawMountain() {
-            perlinCtx.lineWidth = 10;
-            perlinCtx.strokeStyle = 'rgba(20,20,20, 1)';
-            perlinCtx.fillStyle = 'rgba(20,20,20, 1)';
-            perlinCtx.beginPath();
-            perlinCtx.moveTo(0, this.allPoints[0]);
+        rescaleEtc() {
+            this.findMinAndMax();
+            let scalingFactor = this.targetHeight / (this.highestPoint - this.lowestPoint);
+            // console.log((this.highestPoint - this.lowestPoint))
+            // console.log(scalingFactor)
+            for (let i = 0; i < this.allPoints.length; i++) {
+                this.allPoints[i] = (this.allPoints[i] - this.lowestPoint) * scalingFactor;
+            }
+        }
+        findMinAndMax() {
+            for (let i = 0; i < this.allPoints.length; i++) {
+                if (this.allPoints[i] < this.lowestPoint) {
+                    this.lowestPoint = this.allPoints[i];
+                }
+                else if (this.allPoints[i] > this.highestPoint) {
+                    this.highestPoint = this.allPoints[i];
+                }
+            }
+        }
+        // // DRAW ALL POINTS
+        // drawMountain () {
+        //     this.ctx.lineWidth = 10
+        //     this.ctx.strokeStyle = 'rgba(20,20,20, 1)'
+        //     this.ctx.fillStyle = 'rgba(20,20,20, 1)'
+        //     this.ctx.beginPath()
+        //     this.ctx.moveTo(0, this.allPoints[0])
+        //     for (let point = 0; point < this.allPoints.length-1; point++) {
+        //         this.ctx.lineTo(point, this.allPoints[point])
+        //         this.ctx.lineTo(point+1, this.allPoints[point+1])
+        //         this.ctx.stroke()
+        //         // perlinCtx.closePath()
+        //     }
+        //     this.ctx.lineTo(this.allPoints.length-1, this.allPoints[this.allPoints.length-1])
+        //     this.ctx.lineTo(this.allPoints.length-1, this.canvas.height)
+        //     this.ctx.lineTo(0, this.canvas.height)
+        //     this.ctx.lineTo(0, this.allPoints[0])
+        //     this.ctx.stroke()
+        //     this.ctx.closePath()
+        //     this.ctx.fill()
+        // }
+        drawShortMountain() {
+            let colorBrightness = 100;
+            let howFar = 1 - (horizonHeight - this.canvasBottom) / (window.innerHeight - horizonHeight);
+            console.log(howFar);
+            this.ctx.lineWidth = 1;
+            let color = 'rgb(' + howFar * colorBrightness + ',' + howFar * colorBrightness + ',' + howFar * colorBrightness + ')';
+            this.ctx.strokeStyle = color;
+            this.ctx.fillStyle = color;
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, this.allPoints[0]);
             for (let point = 0; point < this.allPoints.length - 1; point++) {
-                perlinCtx.lineTo(point, this.allPoints[point]);
-                perlinCtx.lineTo(point + 1, this.allPoints[point + 1]);
-                perlinCtx.stroke();
+                this.ctx.lineTo(point, this.allPoints[point]);
+                this.ctx.lineTo(point + 1, this.allPoints[point + 1]);
+                this.ctx.stroke();
                 // perlinCtx.closePath()
             }
-            perlinCtx.lineTo(this.allPoints.length - 1, this.allPoints[this.allPoints.length - 1]);
-            perlinCtx.lineTo(this.allPoints.length - 1, perlinCanvas.height);
-            perlinCtx.lineTo(0, perlinCanvas.height);
-            perlinCtx.lineTo(0, this.allPoints[0]);
-            perlinCtx.stroke();
-            perlinCtx.closePath();
-            perlinCtx.fill();
+            this.ctx.lineTo(this.allPoints.length - 1, this.allPoints[this.allPoints.length - 1]);
+            this.ctx.lineTo(this.allPoints.length - 1, this.highestPoint);
+            this.ctx.lineTo(0, this.highestPoint);
+            this.ctx.lineTo(0, this.allPoints[0]);
+            this.ctx.stroke();
+            this.ctx.closePath();
+            this.ctx.fill();
         }
     }
-    const mountain = new Mountain(4, 6);
-    console.log(mountain);
+    const mountainFarthest = new Mountain(4, 10, 100, horizonHeight);
+    const mountainClosest = new Mountain(4, 10, 400, 0);
+    mountainFarthest;
+    mountainClosest;
+    // for (let m=1; m < 5; m++) {
+    //     const mountain = new Mountain(4,10, 65*m**1.4, horizonHeight - 80*(m-1)**2)
+    //     mountain
+    //     // console.log(mountain.canvas.height)
+    // }
+    // mountain
+    // console.log(mountain)
+    // ________________________________________ MOUNTAIN ________________________________________
     // SIN WAVES TESTS
     // const wavePointsList = []
     // for (let i = 0; i< perlinCanvas.width; i++) {
