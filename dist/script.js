@@ -6,25 +6,25 @@ window.addEventListener('load', function () {
     const globalCanvasesList = [];
     const canvasContainer = document.getElementById('canvasContainer');
     // HORIZON HEIGHT
-    const horizonHeight = canvasContainer.clientHeight * 0.4;
+    const horizonHeight = canvasContainer.clientHeight * 0.5;
     document.documentElement.style.cssText = "--horizonHeight:" + horizonHeight + "px";
     // create Branch public shadowSegments, 
-    const initialsegmentingLen = 20;
-    const trunkLen = 100;
-    const lenMultiplier = 0.9;
-    const trunkWidthAsPartOfLen = 0.3;
+    const initialsegmentingLen = 10;
+    const trunkLen = 120;
+    const lenMultiplier = 0.8;
+    const trunkWidthAsPartOfLen = 0.5;
     const widthMultiplier = 0.7;
-    const rebranchingAngle = 18;
-    const maxLevelGlobal = 5;
-    const branchingProbabilityBooster = 1;
+    const rebranchingAngle = 23;
+    const maxLevelGlobal = 6;
+    const branchingProbabilityBooster = 0.5;
     const occasionalBranchesLimit = 0;
-    const treeDistanceScaling = 0.7; // 0-1
+    const treeDistanceScaling = 1; // range 0-1
     // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
     const shadowColor = 'rgba(10, 10, 10, 1)';
     // const shadowAngle = -1 // range -1 to +1 works fine. 1 gives 45 angle
     const shadowAngleMultiplier = 5;
-    const shadowSpread = 1; // > 0 for now
-    const blurStrength = 0;
+    const shadowSpread = 1.9; // > 0 for now
+    const blurStrength = 20;
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
     const axis1WidthRatio = 1;
@@ -38,8 +38,8 @@ window.addEventListener('load', function () {
     const leafLenScaling = 1.2;
     const leavesGrowingOrder = 0.25;
     const growLimitingLeavesAmount = 10; // branches drawing will stop when this amount of growing leaves is reached
-    const leafMaxStageGlobal = 10;
-    const whileLoopRetriesEachFrameLeaves = 10; // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
+    const leafMaxStageGlobal = 2;
+    const whileLoopRetriesEachFrameLeaves = 100; // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
     //  SET CANVASES SIZES AND CHANGE THEM AT WINDOW RESIZE
     window.addEventListener('resize', function () {
         globalCanvasesList.forEach((canvas) => {
@@ -177,8 +177,8 @@ window.addEventListener('load', function () {
         drawBranch() {
             // Add the gradient 
             const gradient = this.tree.ctx.createLinearGradient(this.x0, this.y0, this.xF, this.yF);
-            gradient.addColorStop(0, 'rgb(10,' + (10 + 10 * this.level) + ', 0)');
-            gradient.addColorStop(1, 'rgb(10,' + (20 + 10 * this.level) + ', 0)');
+            // gradient.addColorStop(0, 'rgb(10,' + (0 + 5*this.level) + ', 0)')
+            // gradient.addColorStop(1, 'rgb(10,' + (10 + 5*this.level) + ', 0)')
             this.tree.ctx.strokeStyle = gradient;
             this.tree.ctx.lineCap = "round";
             this.tree.ctx.lineWidth = this.branchWidth;
@@ -196,8 +196,10 @@ window.addEventListener('load', function () {
             const gradient = this.tree.ctx.createLinearGradient(this.x0, this.y0, this.xF, this.yF);
             // gradient.addColorStop(0, 'rgb(80,' + (10 + 10*this.level) + ', 0)')
             // gradient.addColorStop(1, 'rgb(80,' + (20 + 10*this.level) + ', 0)')
-            gradient.addColorStop(0, 'rgb(50,' + (12 * this.parent.level) + ', 0)');
-            gradient.addColorStop(1, 'rgb(50,' + (12 * this.level) + ', 0)');
+            // gradient.addColorStop(0, 'rgb(50,' + (5*this.parent.level) + ', 0)')
+            // gradient.addColorStop(1, 'rgb(50,' + (5*this.level) + ', 0)')
+            gradient.addColorStop(0, 'rgb(0,' + (5 * this.parent.level) + ', 0)');
+            gradient.addColorStop(1, 'rgb(0,' + (5 * this.level) + ', 0)');
             this.tree.ctx.strokeStyle = gradient;
             this.tree.ctx.lineCap = "round";
             this.tree.ctx.lineWidth = this.segments[this.drawnSegments].width;
@@ -319,6 +321,8 @@ window.addEventListener('load', function () {
     }
     // ________________________________________ TREE ________________________________________
     // ________________________________________ ROOT ________________________________________
+    // Root just acts as a parent element for the trunk. 
+    // With the root there is no need to check for parent element in Branch constructor
     class Root {
         constructor(tree, angle = 0, // Rotates the tree
         level = -1) {
@@ -485,7 +489,8 @@ window.addEventListener('load', function () {
             // clear whole previous frame
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.ctx.beginPath();
-            this.ctx.strokeStyle = 'rgba(10, 30, 0, 1)';
+            // this.ctx.strokeStyle = 'rgba(10, 30, 0, 1)'
+            this.ctx.strokeStyle = 'rgba(0,0,0, 1)';
             //MAIN NERVE
             this.ctx.moveTo(this.x0rel, this.y0rel);
             this.ctx.lineTo(this.growthStages[this.currentStage].xF, this.growthStages[this.currentStage].yF);
@@ -500,8 +505,9 @@ window.addEventListener('load', function () {
             // left side of a leaf
             this.ctx.bezierCurveTo(this.growthStages[this.currentStage].xL1, this.growthStages[this.currentStage].yL1, this.growthStages[this.currentStage].xL2, this.growthStages[this.currentStage].yL2, this.growthStages[this.currentStage].xF, this.growthStages[this.currentStage].yF);
             this.ctx.closePath();
-            let greenish = 70 + ((this.maxStages - this.currentStage) / this.maxStages) * 180;
-            this.ctx.fillStyle = 'rgba(10,' + greenish + ',0, 1)';
+            // let greenish = 70 + ((this.maxStages-this.currentStage)/this.maxStages)*180
+            // this.ctx.fillStyle = 'rgba(10,' + greenish + ',0, 1)'
+            this.ctx.fillStyle = 'rgba(0,0,0, 1)';
             this.ctx.fill();
             this.ctx.stroke();
             this.drawLeafShadow();
@@ -538,26 +544,18 @@ window.addEventListener('load', function () {
     }
     // ________________________________________ LEAF ________________________________________
     // ________________________________________ INITIATIONS ________________________________________
-    // _________ INITIALIZE THE TREE _________
-    // Root just acts as a parent element for the trunk. 
-    // With the root there is no need for checking for parent element in Branch constructor
-    // const tree = new Tree (window.innerWidth/2, window.innerHeight*0.35, trunkLen) // initialize tree with trunk params. TRUNK LENGTH HERE
-    // tree.drawTheTree() //all at once
-    // console.log(tree.allBranches)
-    // console.log(growingLeavesList)
-    // console.log('leaves amount = ' + growingLeavesList.length)
     let alreadyAnimating = false;
     // PLANT (SPAWN) TREE AT CLICK COORDS
     canvasContainer.addEventListener("click", (event) => {
         if (alreadyAnimating === false && event.y > horizonHeight) {
             // console.log(event.x, event.y)
-            // TREE DISTANCE SCALING
+            // console.log(event.srcElement.offsetParent.childNodes)
+            console.log(event.srcElement);
             let shadowAngle = -(window.innerWidth / 2 - event.x) / window.innerWidth * shadowAngleMultiplier;
-            // let treeTrunkScaledLength = trunkLen + trunkLen * ((event.y - window.innerHeight/2)/ window.innerHeight) * treeDistanceScaling // normal scale at the half of window height
             let groundHeight = window.innerHeight - horizonHeight;
             let groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight) / 2;
             let scaleByTheGroundPosition = (event.y - groundMiddle) / groundHeight * 2; // in range -1 to 1
-            console.log(scaleByTheGroundPosition);
+            // _________ INITIALIZE THE TREE _________
             let treeTrunkScaledLength = trunkLen + trunkLen * scaleByTheGroundPosition * treeDistanceScaling; // normal scale at the half of ground canvas
             const tree = new Tree(event.x, event.y, treeTrunkScaledLength, shadowAngle);
             animateTheTree(tree);
@@ -670,10 +668,10 @@ window.addEventListener('load', function () {
         if (i > 3) {
             ctgr = CATEGORY2;
         }
-        const obj = { name: String(i), category: ctgr, min: i, max: i * 2, value: (i + i * 2) / 2 };
+        const obj = { name: String(i), category: ctgr, min: i, max: i * 2, value: (i + i * 2) / 2, title: 'title ' + i };
         parametersObjectsList.push(obj);
     }
-    function createSliderWithTextInput(name, category, min, max, value) {
+    function createSliderWithTextInput(name, category, min, max, value, title) {
         const sidebarElement = document.createElement("div");
         sidebarElement.classList.add("sidebarElement");
         // console.log(sidebarElement)
@@ -692,6 +690,7 @@ window.addEventListener('load', function () {
         slider.max = String(max);
         slider.step = String(0.1);
         slider.value = String(value);
+        slider.title = title;
         span.appendChild(slider);
         const sliderText = document.createElement("input");
         sliderText.setAttribute('data-sliderText', 'dejtaset' + name);
@@ -702,7 +701,7 @@ window.addEventListener('load', function () {
     }
     // __________ CREATE SLIDERS __________
     parametersObjectsList.forEach(element => {
-        createSliderWithTextInput(element.name, element.category, element.min, element.max, element.value);
+        createSliderWithTextInput(element.name, element.category, element.min, element.max, element.value, element.title);
     });
     const rangeInputs = document.querySelectorAll('.sidebarElement input[type="range"]');
     const textInputs = document.querySelectorAll('.sidebarElement input[type="text"]');
@@ -733,7 +732,7 @@ window.addEventListener('load', function () {
     //     })
     // }
     // snapCurrentParameters()
-    // SIDEBAR OPENINIG AND CLOSING
+    // SIDEBAR OPENING AND CLOSING
     const closeSidebarButton = document.getElementById('closeSidebarButton');
     const sidebar = document.getElementById('sidebar');
     sidebar.style.display = 'none';
@@ -749,10 +748,115 @@ window.addEventListener('load', function () {
     });
     // ________________________________________ SIDEBAR ________________________________________
 }); //window.addEventListener('load', function(){ }) ends here
-// BRANCH COUNTER
-// let branchesAll = 0
-// tree.allBranches.forEach( level => {
-//     branchesAll += level.length
-// } )
-// console.log('branches amount = ' + branchesAll)
+const perlinCanvas = document.getElementById('perlinCanvas');
+perlinCanvas.width = window.innerWidth;
+perlinCanvas.height = window.innerHeight;
+const perlinCtx = perlinCanvas.getContext('2d');
+perlinCtx.lineWidth = 1;
+const wavePointsList = [];
+// for (let i = 0; i< perlinCanvas.width; i++) {
+//     let sinWave = 600 + Math.sin(-Math.PI/2 + (i/perlinCanvas.width)*Math.PI*2)*200
+//     let randomPoint = Math.random()*100
+//     let sumofWaves =  sinWave + randomPoint
+//     wavePointsList.push(sumofWaves)
+// }
+// console.log(wavePointsList)
+// for (let i = 0; i < wavePointsList.length-1; i++) {
+//     // perlinCtx.filter = 'blur(0px)'
+//     console.log(wavePointsList[i])
+//     perlinCtx.beginPath();
+//     perlinCtx.strokeStyle = 'rgba(150,150,150, 1)'
+//     perlinCtx.moveTo(i, wavePointsList[i])
+//     perlinCtx.lineTo(i+1, wavePointsList[i+1])
+//     perlinCtx.stroke()
+//     perlinCtx.closePath()
+// }
+class Mountain {
+    constructor() {
+    }
+}
+let allPoints = [];
+let randomPoints = [];
+function perlinNoise(initialAmountOfNodes, octaves) {
+    let currentAmountOfNodes = initialAmountOfNodes;
+    // let width = 600
+    let width = perlinCanvas.width;
+    let lowestPoint = Infinity;
+    let highestPoint = 0;
+    for (let octave = 0; octave < octaves; octave++) {
+        function fillPointsOnTheLineBetweenNodes(nodes_amount) {
+            randomPoints = []; // clean up for next iteration
+            let amp1 = 2000 / nodes_amount;
+            let stepLen = Math.ceil(width / (nodes_amount - 1));
+            // console.log(stepLen)
+            let step = 0;
+            while (step * stepLen < width + stepLen) { // + stepLen to make one next step
+                randomPoints.push({ x: step * stepLen, y: Math.random() * amp1 });
+                // console.log(step*stepLen)
+                step++;
+            }
+            // FILL POINTS BETWEEN randomPoints
+            for (let fillingStep = 0; fillingStep < randomPoints.length - 1; fillingStep++) {
+                for (let currIndex = fillingStep * stepLen; currIndex < (fillingStep + 1) * stepLen; currIndex++) {
+                    let thisNodeInfluence = ((fillingStep + 1) * stepLen - currIndex) / stepLen; // linearly decreasing 1-0
+                    let nextNodeInfluence = (currIndex - (fillingStep * stepLen)) / stepLen; // linearly rising 0-1
+                    // allPoints[currIndex] = randomPoints[fillingStep].y * thisNodeInfluence + randomPoints[fillingStep+1].y * nextNodeInfluence
+                    if (octave === 0) {
+                        // console.log('fillingStep')
+                        allPoints[currIndex] = randomPoints[fillingStep].y * thisNodeInfluence + randomPoints[fillingStep + 1].y * nextNodeInfluence;
+                    }
+                    else { //calculate average
+                        allPoints[currIndex] += randomPoints[fillingStep].y * thisNodeInfluence + randomPoints[fillingStep + 1].y * nextNodeInfluence;
+                    }
+                    // CHECK MIN/MAX
+                    if (allPoints[currIndex] < lowestPoint) {
+                        lowestPoint = allPoints[currIndex];
+                    }
+                    if (allPoints[currIndex] > highestPoint) {
+                        highestPoint = allPoints[currIndex];
+                    }
+                }
+                // console.log('allPoints len = ' + allPoints.length)
+            }
+            // console.log('________________ allPoints len = ' + allPoints.length)
+            // console.log(randomPoints.length, randomPoints[randomPoints.length-1])
+        }
+        // console.log(currentAmountOfNodes)
+        fillPointsOnTheLineBetweenNodes(currentAmountOfNodes);
+        currentAmountOfNodes = currentAmountOfNodes * 2;
+    }
+    // console.log(randomPoints)
+    // let generatedMountainHeight = highestPoint-lowestPoint
+    // // // SMOOTHING BY AVERAGE
+    // for (let point = 1; point < allPoints.length-1; point++) {
+    //     allPoints[point] = (allPoints[point-1] + allPoints[point] + allPoints[point+1])/3
+    // }
+    // for (let point = 2; point < allPoints.length-2; point++) {
+    //     allPoints[point] = (allPoints[point-2] + allPoints[point-1] + allPoints[point] + allPoints[point+1] + allPoints[point+2])/5
+    // }
+    allPoints = allPoints.slice(0, width); //trim array to initial width
+}
+perlinNoise(4, 8);
+// DRAW ALL POINTS
+function drawMountain() {
+    perlinCtx.lineWidth = 10;
+    perlinCtx.strokeStyle = 'rgba(20,20,20, 1)';
+    perlinCtx.fillStyle = 'rgba(20,20,20, 1)';
+    perlinCtx.beginPath();
+    perlinCtx.moveTo(0, allPoints[0]);
+    for (let point = 0; point < allPoints.length - 1; point++) {
+        perlinCtx.lineTo(point, allPoints[point]);
+        perlinCtx.lineTo(point + 1, allPoints[point + 1]);
+        perlinCtx.stroke();
+        // perlinCtx.closePath()
+    }
+    perlinCtx.lineTo(allPoints.length - 1, allPoints[allPoints.length - 1]);
+    perlinCtx.lineTo(allPoints.length - 1, perlinCanvas.height);
+    perlinCtx.lineTo(0, perlinCanvas.height);
+    perlinCtx.lineTo(0, allPoints[0]);
+    perlinCtx.stroke();
+    perlinCtx.closePath();
+    perlinCtx.fill();
+}
+drawMountain();
 //# sourceMappingURL=script.js.map
