@@ -807,9 +807,6 @@ closeSidebarButton.addEventListener("click", () => {
 })
 // ________________________________________ SIDEBAR ________________________________________
 
-}) //window.addEventListener('load', function(){ }) ends here
-
-
 
 
 
@@ -819,7 +816,112 @@ perlinCanvas.height = window.innerHeight
 const perlinCtx = perlinCanvas.getContext('2d') as CanvasRenderingContext2D
 perlinCtx.lineWidth = 1
 
-const wavePointsList = []
+
+class Mountain {
+    constructor (
+        private initialAmountOfNodes: number,
+        private octaves: number,
+        // let width = 600,
+        private width = perlinCanvas.width,
+        private lowestPoint = Infinity,
+        private highestPoint = 0,
+        private currentAmountOfNodes = initialAmountOfNodes,
+        private currentOctave = 0,
+        private allPoints = [] as number[],
+        private randomPoints = [] as {x: number, y:number}[],
+    ){
+        this.currentAmountOfNodes = this.initialAmountOfNodes // to silence TS declared but never read
+        while (this.currentOctave < this.octaves) {
+            this.fillPointsOnTheLineBetweenNodes(this.currentAmountOfNodes)
+            this.currentAmountOfNodes = this.currentAmountOfNodes * 2
+            this.currentOctave ++
+        }
+        console.log(this.randomPoints)
+        // let generatedMountainHeight = highestPoint-lowestPoint
+        this.allPoints = this.allPoints.slice(0, this.width) // trim array to initial width
+        this.smoothOut()
+        this.drawMountain()
+    }
+
+    fillPointsOnTheLineBetweenNodes (nodes_amount: number) {
+        this.randomPoints = [] // clean up for next iteration
+        let amp1 = 1100/nodes_amount
+        let stepLen = Math.ceil(this.width/(nodes_amount-1))
+        // console.log(stepLen)
+        let step = 0
+        while (step*stepLen < this.width+stepLen) { // + stepLen to make one next step
+            this.randomPoints.push({x:step*stepLen, y: Math.random()*amp1 })
+            // console.log(step*stepLen)
+            step ++
+        }
+        // FILL POINTS BETWEEN randomPoints
+        for (let fillingStep =0; fillingStep < this.randomPoints.length-1; fillingStep++) {
+            for (let currIndex = fillingStep*stepLen; currIndex < (fillingStep+1)*stepLen; currIndex++) {
+                let thisNodeInfluence = ((fillingStep+1)*stepLen - currIndex) / stepLen // linearly decreasing 1-0
+                let nextNodeInfluence = (currIndex - (fillingStep*stepLen)) / stepLen // linearly rising 0-1
+                // allPoints[currIndex] = randomPoints[fillingStep].y * thisNodeInfluence + randomPoints[fillingStep+1].y * nextNodeInfluence
+                if (this.currentOctave === 0) {
+                    // console.log('fillingStep')
+                    this.allPoints[currIndex] = this.randomPoints[fillingStep].y * thisNodeInfluence + this.randomPoints[fillingStep+1].y * nextNodeInfluence
+                }
+                else { //calculate average
+                    this.allPoints[currIndex] += this.randomPoints[fillingStep].y * thisNodeInfluence + this.randomPoints[fillingStep+1].y * nextNodeInfluence
+                }
+                // CHECK MIN/MAX
+                if (this.allPoints[currIndex] < this.lowestPoint){
+                    this.lowestPoint = this.allPoints[currIndex]
+                }
+                if (this.allPoints[currIndex] > this.highestPoint){
+                    this.highestPoint = this.allPoints[currIndex]
+                }
+            }
+            // console.log('allPoints len = ' + this.allPoints.length)
+        }
+        // console.log('________________ allPoints len = ' + allPoints.length)
+    }
+
+    // SMOOTHING BY AVERAGE
+    smoothOut() {
+        for (let point = 1; point < this.allPoints.length-1; point++) {
+            this.allPoints[point] = (this.allPoints[point-1] + this.allPoints[point] + this.allPoints[point+1])/3
+        }
+        // for (let point = 2; point < this.allPoints.length-2; point++) {
+        //     this.allPoints[point] = (this.allPoints[point-2] + this.allPoints[point-1] + this.allPoints[point] + this.allPoints[point+1] + this.allPoints[point+2])/5
+        // }
+    }
+
+    // DRAW ALL POINTS
+    drawMountain () {
+        perlinCtx.lineWidth = 10
+        perlinCtx.strokeStyle = 'rgba(20,20,20, 1)'
+        perlinCtx.fillStyle = 'rgba(20,20,20, 1)'
+    
+        perlinCtx.beginPath()
+        perlinCtx.moveTo(0, this.allPoints[0])
+    
+        for (let point = 0; point < this.allPoints.length-1; point++) {
+            perlinCtx.lineTo(point, this.allPoints[point])
+            perlinCtx.lineTo(point+1, this.allPoints[point+1])
+            perlinCtx.stroke()
+            // perlinCtx.closePath()
+        }
+        perlinCtx.lineTo(this.allPoints.length-1, this.allPoints[this.allPoints.length-1])
+        perlinCtx.lineTo(this.allPoints.length-1, perlinCanvas.height)
+        perlinCtx.lineTo(0, perlinCanvas.height)
+        perlinCtx.lineTo(0, this.allPoints[0])
+        perlinCtx.stroke()
+        perlinCtx.closePath()
+        perlinCtx.fill()
+    }
+}
+const mountain = new Mountain(4,6)
+console.log(mountain)
+
+
+
+
+// SIN WAVES TESTS
+// const wavePointsList = []
 
 // for (let i = 0; i< perlinCanvas.width; i++) {
 //     let sinWave = 600 + Math.sin(-Math.PI/2 + (i/perlinCanvas.width)*Math.PI*2)*200
@@ -841,100 +943,8 @@ const wavePointsList = []
 // }
 
 
-class Mountain {
-    constructor (){
 
-    }
-}
 
-let allPoints = [] as number[]
-let randomPoints = [] as {x: number, y:number}[]
 
-function perlinNoise (initialAmountOfNodes: number, octaves: number) {
-    let currentAmountOfNodes = initialAmountOfNodes
-    // let width = 600
-    let width = perlinCanvas.width
-    let lowestPoint = Infinity
-    let highestPoint = 0
 
-    for (let octave = 0; octave < octaves; octave++) {
-        function fillPointsOnTheLineBetweenNodes (nodes_amount: number) {
-            randomPoints = [] // clean up for next iteration
-            let amp1 = 2000/nodes_amount
-            let stepLen = Math.ceil(width/(nodes_amount-1))
-            // console.log(stepLen)
-            let step = 0
-            while (step*stepLen < width+stepLen) { // + stepLen to make one next step
-                randomPoints.push({x:step*stepLen, y: Math.random()*amp1 })
-                // console.log(step*stepLen)
-                step ++
-            }
-            // FILL POINTS BETWEEN randomPoints
-            for (let fillingStep =0; fillingStep < randomPoints.length-1; fillingStep++) {
-                for (let currIndex = fillingStep*stepLen; currIndex < (fillingStep+1)*stepLen; currIndex++) {
-                    let thisNodeInfluence = ((fillingStep+1)*stepLen - currIndex) / stepLen // linearly decreasing 1-0
-                    let nextNodeInfluence = (currIndex - (fillingStep*stepLen)) / stepLen // linearly rising 0-1
-                    // allPoints[currIndex] = randomPoints[fillingStep].y * thisNodeInfluence + randomPoints[fillingStep+1].y * nextNodeInfluence
-                    if (octave === 0) {
-                        // console.log('fillingStep')
-                        allPoints[currIndex] = randomPoints[fillingStep].y * thisNodeInfluence + randomPoints[fillingStep+1].y * nextNodeInfluence
-                    }
-                    else { //calculate average
-                        allPoints[currIndex] += randomPoints[fillingStep].y * thisNodeInfluence + randomPoints[fillingStep+1].y * nextNodeInfluence
-                    }
-                    // CHECK MIN/MAX
-                    if (allPoints[currIndex] < lowestPoint){
-                        lowestPoint = allPoints[currIndex]
-                    }
-                    if (allPoints[currIndex] > highestPoint){
-                        highestPoint = allPoints[currIndex]
-                    }
-                }
-                // console.log('allPoints len = ' + allPoints.length)
-            }
-            // console.log('________________ allPoints len = ' + allPoints.length)
-            // console.log(randomPoints.length, randomPoints[randomPoints.length-1])
-        }
-        // console.log(currentAmountOfNodes)
-        fillPointsOnTheLineBetweenNodes(currentAmountOfNodes)
-        currentAmountOfNodes = currentAmountOfNodes * 2
-    }
-    // console.log(randomPoints)
-    // let generatedMountainHeight = highestPoint-lowestPoint
-
-    // // // SMOOTHING BY AVERAGE
-    // for (let point = 1; point < allPoints.length-1; point++) {
-    //     allPoints[point] = (allPoints[point-1] + allPoints[point] + allPoints[point+1])/3
-    // }
-    // for (let point = 2; point < allPoints.length-2; point++) {
-    //     allPoints[point] = (allPoints[point-2] + allPoints[point-1] + allPoints[point] + allPoints[point+1] + allPoints[point+2])/5
-    // }
-
-    allPoints = allPoints.slice(0, width) //trim array to initial width
-}
-perlinNoise(4,8)
-
-// DRAW ALL POINTS
-function drawMountain () {
-    perlinCtx.lineWidth = 10
-    perlinCtx.strokeStyle = 'rgba(20,20,20, 1)'
-    perlinCtx.fillStyle = 'rgba(20,20,20, 1)'
-
-    perlinCtx.beginPath()
-    perlinCtx.moveTo(0, allPoints[0])
-
-    for (let point = 0; point < allPoints.length-1; point++) {
-        perlinCtx.lineTo(point, allPoints[point])
-        perlinCtx.lineTo(point+1, allPoints[point+1])
-        perlinCtx.stroke()
-        // perlinCtx.closePath()
-    }
-    perlinCtx.lineTo(allPoints.length-1, allPoints[allPoints.length-1])
-    perlinCtx.lineTo(allPoints.length-1, perlinCanvas.height)
-    perlinCtx.lineTo(0, perlinCanvas.height)
-    perlinCtx.lineTo(0, allPoints[0])
-    perlinCtx.stroke()
-    perlinCtx.closePath()
-    perlinCtx.fill()
-}
-drawMountain()
+}) //window.addEventListener('load', function(){ }) ENDS HERE
