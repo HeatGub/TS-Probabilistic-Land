@@ -6,12 +6,12 @@ const globalCanvasesList = [] as HTMLCanvasElement[]
 const canvasContainer = document.getElementById('canvasContainer') as HTMLBodyElement
 
 // HORIZON HEIGHT
-const horizonHeight = canvasContainer.clientHeight*0.5
+const horizonHeight = canvasContainer.offsetHeight*0.5
 document.documentElement.style.cssText = "--horizonHeight:" + horizonHeight + "px"
 // LIGHTSOURCE
 const lightSourceCanvas = document.getElementById('lightSourceCanvas') as HTMLBodyElement
 
-const lightSourcePosition = Math.random()*500
+const lightSourcePosition = Math.random()*this.window.innerWidth
 const lightSourceSize = 100 + Math.random()*150
 
 lightSourceCanvas.style.width = lightSourceSize + 'px'
@@ -822,20 +822,22 @@ closeSidebarButton.addEventListener("click", () => {
 
 class Mountain {
     constructor (
-        private initialAmountOfNodes: number,
-        private octaves: number,
-        private targetHeight: number,
+        readonly initialAmountOfNodes: number,
+        readonly octaves: number,
+        readonly targetHeight: number,
         private canvasBottom: number,
         // let width = 600,
-        private width = window.innerWidth,
+        private width = canvasContainer.offsetWidth,
         private lowestPoint = Infinity,
         private highestPoint = 0,
         private currentAmountOfNodes = initialAmountOfNodes,
         private currentOctave = 0,
         private allPoints = [] as number[],
         private randomPoints = [] as {x: number, y:number}[],
-        public canvas = canvasContainer.appendChild(document.createElement("canvas")),
-        public ctx = canvas.getContext('2d') as CanvasRenderingContext2D,
+        private canvas = canvasContainer.appendChild(document.createElement("canvas")),
+        private ctx = canvas.getContext('2d') as CanvasRenderingContext2D,
+        private canvasShadow = canvasContainer.appendChild(document.createElement("canvas")),
+        private ctxShadow = canvasShadow.getContext('2d') as CanvasRenderingContext2D,
     ){
         this.currentAmountOfNodes = this.initialAmountOfNodes // to silence TS declared but never read
         while (this.currentOctave < this.octaves) {
@@ -847,7 +849,7 @@ class Mountain {
         // let generatedMountainHeight = highestPoint-lowestPoint
         this.smoothOut()
         this.allPoints = this.allPoints.slice(0, this.width) // trim array to initial width
-        this.rescaleEtc()
+        this.rescale()
         // this.drawMountain()
 
         this.ctx.lineWidth = 1
@@ -855,9 +857,16 @@ class Mountain {
         this.canvas.classList.add('mountainCanvas')
         this.canvas.width = window.innerWidth
         // this.canvas.height = this.highestPoint- this.lowestPoint
-        this.canvas.height = this.targetHeight
+        this.canvas.height = this.targetHeight // ADD VAL FOR HIGHER MOUNTAIN
 
+        this.canvasShadow.classList.add('mountainShadowCanvas')
+        this.canvasShadow.height = this.targetHeight*2 // SAME FACTOR 
+        this.canvasShadow.width = window.innerWidth
+        this.canvasShadow.style.top = this.canvasBottom + 'px'
+
+        // this.drawMountain()
         this.drawShortMountain()
+        // this.drawShadow()
     }
 
     fillPointsOnTheLineBetweenNodes (nodes_amount: number) {
@@ -897,12 +906,12 @@ class Mountain {
         for (let point = 1; point < this.allPoints.length-1; point++) {
             this.allPoints[point] = (this.allPoints[point-1] + this.allPoints[point] + this.allPoints[point+1])/3
         }
-        // for (let point = 2; point < this.allPoints.length-2; point++) {
-        //     this.allPoints[point] = (this.allPoints[point-2] + this.allPoints[point-1] + this.allPoints[point] + this.allPoints[point+1] + this.allPoints[point+2])/5
-        // }
+        for (let point = 2; point < this.allPoints.length-2; point++) {
+            this.allPoints[point] = (this.allPoints[point-2] + this.allPoints[point-1] + this.allPoints[point] + this.allPoints[point+1] + this.allPoints[point+2])/5
+        }
     }
 
-    rescaleEtc () {
+    rescale () {
         this.findMinAndMax ()
 
         let scalingFactor =  this.targetHeight / (this.highestPoint - this.lowestPoint)
@@ -924,39 +933,15 @@ class Mountain {
         }
     }
 
-    // // DRAW ALL POINTS
-    // drawMountain () {
-    //     this.ctx.lineWidth = 10
-    //     this.ctx.strokeStyle = 'rgba(20,20,20, 1)'
-    //     this.ctx.fillStyle = 'rgba(20,20,20, 1)'
-    
-    //     this.ctx.beginPath()
-    //     this.ctx.moveTo(0, this.allPoints[0])
-    
-    //     for (let point = 0; point < this.allPoints.length-1; point++) {
-    //         this.ctx.lineTo(point, this.allPoints[point])
-    //         this.ctx.lineTo(point+1, this.allPoints[point+1])
-    //         this.ctx.stroke()
-    //         // perlinCtx.closePath()
-    //     }
-
-    //     this.ctx.lineTo(this.allPoints.length-1, this.allPoints[this.allPoints.length-1])
-    //     this.ctx.lineTo(this.allPoints.length-1, this.canvas.height)
-    //     this.ctx.lineTo(0, this.canvas.height)
-    //     this.ctx.lineTo(0, this.allPoints[0])
-    //     this.ctx.stroke()
-    //     this.ctx.closePath()
-    //     this.ctx.fill()
-    // }
-
     drawShortMountain () {
         let colorBrightness = 100
         let howFar = 1- (horizonHeight - this.canvasBottom) / (window.innerHeight - horizonHeight)
-        console.log(howFar)
+        // console.log(howFar)
         this.ctx.lineWidth = 1
-        let color = 'rgb('+ howFar*colorBrightness + ',' + howFar*colorBrightness + ',' + howFar*colorBrightness + ')'
+        let color = 'rgba('+ howFar*colorBrightness + ',' + howFar*colorBrightness + ',' + howFar*colorBrightness + ', 1 )'
         this.ctx.strokeStyle = color
         this.ctx.fillStyle = color
+
     
         this.ctx.beginPath()
         this.ctx.moveTo(0, this.allPoints[0])
@@ -974,17 +959,87 @@ class Mountain {
         this.ctx.stroke()
         this.ctx.closePath()
         this.ctx.fill()
+
+        // this.drawMist()
     }
+
+    // drawStraightShadow () { // DRAW MOUNTAIN WITH INVERTED Y
+    //     let h = this.canvasShadow.height
+    //     let color = 'rgba(10,10,10, 0.8)'
+    //     this.ctxShadow.strokeStyle = color
+    //     this.ctxShadow.fillStyle = color
+    //     this.ctxShadow.beginPath()
+    //     this.ctxShadow.moveTo(0, h - this.allPoints[0])
+    //     // this.ctxShadow.filter = 'blur(5px)'
+
+    //     for (let point = 0; point < this.allPoints.length-1; point++) {
+    //         this.ctxShadow.lineTo(point, h - this.allPoints[point])
+    //         this.ctxShadow.lineTo(point+1, h - this.allPoints[point+1])
+    //         this.ctxShadow.stroke()
+    //     }
+
+    //     this.ctxShadow.lineTo(this.allPoints.length-1, h - this.allPoints[this.allPoints.length-1])
+    //     this.ctxShadow.lineTo(this.allPoints.length-1, h -  this.highestPoint)
+    //     this.ctxShadow.lineTo(0, h -  this.highestPoint)
+    //     this.ctxShadow.lineTo(0, h -  this.allPoints[0])
+    //     this.ctxShadow.stroke()
+    //     this.ctxShadow.closePath()
+    //     this.ctxShadow.fill()
+    // }
+
+    drawShadow () {
+        let h = this.targetHeight
+        let color = 'rgba(10,10,10, 0.8)'
+        this.ctxShadow.strokeStyle = color
+        this.ctxShadow.fillStyle = color
+        this.ctxShadow.beginPath()
+        this.ctxShadow.moveTo(0, h - this.allPoints[0])
+        // this.ctxShadow.filter = 'blur(5px)'
+
+        for (let point = 0; point < this.allPoints.length-1; point++) {
+            let verticalAngleInfluence = (h - this.allPoints[point]) / h
+            let shadowAngle = - ((lightSourcePosition - point) / window.innerWidth)/4 * shadowAngleMultiplier * verticalAngleInfluence
+            // let mlt = 2
+            this.ctxShadow.lineTo(point+ point*shadowAngle, (h - this.allPoints[point]) * shadowSpread)
+            this.ctxShadow.lineTo(point+1 + (point+1)*shadowAngle, (h - this.allPoints[point+1]) * shadowSpread)
+            this.ctxShadow.stroke()
+        }
+
+        this.ctxShadow.lineTo(this.allPoints.length-1, (h - this.allPoints[this.allPoints.length-1]) * shadowSpread)
+        this.ctxShadow.lineTo(this.allPoints.length-1, (h -  this.highestPoint) * shadowSpread)
+        this.ctxShadow.lineTo(0, (h -  this.highestPoint) * shadowSpread)
+        this.ctxShadow.lineTo(0, (h -  this.allPoints[0]) * shadowSpread)
+        this.ctxShadow.stroke()
+        this.ctxShadow.closePath()
+        this.ctxShadow.fill()
+    }
+
+    drawMist () {
+        // SNOW / MIST EFFECT
+        this.ctxShadow.shadowColor = 'rgb(0,10,10,0.5)'
+        this.ctxShadow.shadowOffsetX = 0
+        this.ctxShadow.shadowOffsetY = 10
+        this.ctxShadow.shadowBlur = 5
+        this.ctxShadow.fill()
+    }
+
+    
 }
 
 const mountainFarthest = new Mountain(4,10, 100, horizonHeight)
-const mountainClosest = new Mountain(4,10, 400, 0)
-mountainFarthest
-mountainClosest
+// mountainFarthest.drawStraightShadow()
+mountainFarthest.drawShadow()
+// mountainFarthest.drawMist()
 
-// for (let m=1; m < 5; m++) {
+mountainFarthest
+
+// const mountainClosest = new Mountain(4,10, 400, 0)
+// mountainClosest
+
+// for (let m=1; m < 3; m++) {
 //     const mountain = new Mountain(4,10, 65*m**1.4, horizonHeight - 80*(m-1)**2)
 //     mountain
+//     mountain.drawStraightShadow()
 //     // console.log(mountain.canvas.height)
 // }
 // mountain
