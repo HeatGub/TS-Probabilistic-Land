@@ -6,13 +6,13 @@ window.addEventListener('load', function () {
     const globalCanvasesList = [];
     const canvasContainer = document.getElementById('canvasContainer');
     // HORIZON HEIGHT
-    const horizonHeight = canvasContainer.offsetHeight * 0.5;
+    const horizonHeight = canvasContainer.offsetHeight * 0.4;
     document.documentElement.style.cssText = "--horizonHeight:" + horizonHeight + "px";
     // LIGHTSOURCE
     const lightSourceCanvas = document.getElementById('lightSourceCanvas');
     const lightSourceGlowCanvas = document.getElementById('lightSourceGlowCanvas');
     const lightSourcePositionX = Math.random() * this.window.innerWidth;
-    const lightSourcePositionY = Math.random() * horizonHeight;
+    const lightSourcePositionY = Math.random() * horizonHeight * 0.8;
     const lightSourceSize = 100 + Math.random() * 150;
     lightSourceCanvas.style.width = lightSourceSize + 'px';
     lightSourceCanvas.style.height = lightSourceSize + 'px';
@@ -22,24 +22,25 @@ window.addEventListener('load', function () {
     lightSourceGlowCanvas.style.height = lightSourceSize * 2 + 'px';
     lightSourceGlowCanvas.style.left = (lightSourcePositionX - lightSourceSize) + 'px';
     lightSourceGlowCanvas.style.top = (lightSourcePositionY - lightSourceSize) + 'px';
-    // const lightSourceCenter = lightSourceCanvas.style.left/2
-    // console.log(lightSourceCanvas.style.width)
-    // create Branch public shadowSegments, 
-    const initialsegmentingLen = 100;
+    // create Branch public shadowSegments,
+    const initialsegmentingLen = 25;
     const trunkLen = 120;
     const lenMultiplier = 0.8;
     const trunkWidthAsPartOfLen = 0.5;
     const widthMultiplier = 0.7;
     const rebranchingAngle = 23;
-    const maxLevelGlobal = 6;
+    const maxLevelGlobal = 1;
     const branchingProbabilityBooster = 0.5;
-    const occasionalBranchesLimit = 0;
-    const treeDistanceScaling = 1; // range 0-1
+    const occasionalBranchesLimit = 10;
+    const treeDistanceScaling = 0.95; // range 0-1
     // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
-    const shadowColor = 'rgba(10, 10, 10, 1)';
+    const shadowColor = 'rgba(40, 40, 80)';
     // const shadowAngle = -1 // range -1 to +1 works fine. 1 gives 45 angle
-    const shadowAngleMultiplier = 5;
-    const shadowSpread = 0.75; // > 0 for now
+    const shadowAngleMultiplier = 6;
+    // const shadowSpread = 0.75 // > 0 for now
+    const shadowSpreadMultiplier = 1;
+    const shadowSpread = (lightSourcePositionY / horizonHeight) * shadowSpreadMultiplier + 0.15;
+    const shadowSpreadMountain = (lightSourcePositionY / horizonHeight) * shadowSpreadMultiplier + 0.25;
     const blurStrength = 20;
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
@@ -56,9 +57,22 @@ window.addEventListener('load', function () {
     const growLimitingLeavesAmount = 10; // branches drawing will stop when this amount of growing leaves is reached
     const leafMaxStageGlobal = 2;
     const whileLoopRetriesEachFrameLeaves = 100; // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
-    // const segRedMultiplier = 20
-    // const segGreenMultiplier = 20
-    // const segBlueMultiplier = 20
+    const colorTreeInitialGlobal = 'rgba(0, 0, 0, 1)';
+    const colorTreeFinalGlobal = 'rgba(250, 250, 250, 1)';
+    function blendRgbaColorsInProportions(color1, color2, initColorInfluence) {
+        let colorInitVals = color1.substring(4, color1.length - 1).replace(/[[\(\))]/g, '').split(','); // /g is global - as many finds as necessary
+        let colorFinalVals = color2.substring(4, color2.length - 1).replace(/[[\(\))]/g, '').split(',');
+        // console.log(colorInitVals, colorFinalVals)
+        // BLEND - WEIGHTED AVERAGE
+        let resultingRed = (Number(colorInitVals[0]) * initColorInfluence + Number(colorFinalVals[0]) * (1 - initColorInfluence));
+        let resultingGreen = (Number(colorInitVals[1]) * initColorInfluence + Number(colorFinalVals[1]) * (1 - initColorInfluence));
+        let resultingBlue = (Number(colorInitVals[2]) * initColorInfluence + Number(colorFinalVals[2]) * (1 - initColorInfluence));
+        let resultingAlpha = (Number(colorInitVals[3]) * initColorInfluence + Number(colorFinalVals[3]) * (1 - initColorInfluence));
+        let resultingColor = 'rgba(' + resultingRed + ',' + resultingGreen + ',' + resultingBlue + ',' + resultingAlpha + ')';
+        // console.log(resultingColor)
+        return resultingColor;
+    }
+    // blendRgbaColorsInProportions(colorTreeInitial, colorTreeFinal, 0.75)
     //  SET CANVASES SIZES AND CHANGE THEM AT WINDOW RESIZE
     window.addEventListener('resize', function () {
         globalCanvasesList.forEach((canvas) => {
@@ -217,8 +231,15 @@ window.addEventListener('load', function () {
             // gradient.addColorStop(1, 'rgb(80,' + (20 + 10*this.level) + ', 0)')
             // gradient.addColorStop(0, 'rgb(50,' + (5*this.parent.level) + ', 0)')
             // gradient.addColorStop(1, 'rgb(50,' + (5*this.level) + ', 0)')
-            gradient.addColorStop(0, 'rgba(0, ' + (20 * this.parent.level) + ', 0 , 1)');
-            gradient.addColorStop(1, 'rgba(0,' + (20 * this.level) + ', 0)');
+            // gradient.addColorStop(0, 'rgba(0, ' + (20*this.parent.level) + ', 0 , 1)')
+            // gradient.addColorStop(1, 'rgba(0,' + (20*this.level) + ', 0)')
+            // gradient.addColorStop(0, blendRgbaColorsInProportions(colorTreeInitial, colorTreeFinal, ( (this.parent.level)/(this.tree.maxLevel) ) ))
+            // gradient.addColorStop(1, blendRgbaColorsInProportions(colorTreeInitial, colorTreeFinal, ( (this.level)/(this.tree.maxLevel) ) ))
+            gradient.addColorStop(0, blendRgbaColorsInProportions(this.tree.colorTreeInitial, this.tree.colorTreeFinal, ((this.parent.level) / (this.tree.maxLevel))));
+            gradient.addColorStop(1, blendRgbaColorsInProportions(this.tree.colorTreeInitial, this.tree.colorTreeFinal, ((this.level) / (this.tree.maxLevel))));
+            // console.log(this.level/this.tree.maxLevel) /// 0-1
+            // console.log((this.level/this.tree.maxLevel))
+            console.log((this.parent.level));
             this.tree.ctx.strokeStyle = gradient;
             this.tree.ctx.lineCap = "round";
             this.tree.ctx.lineWidth = this.segments[this.drawnSegments].width;
@@ -256,7 +277,8 @@ window.addEventListener('load', function () {
         // public canvas = document.getElementById('canvasBranches') as HTMLCanvasElement,
         canvas = canvasContainer.appendChild(document.createElement("canvas")), // create canvas
         ctx = canvas.getContext('2d'), canvasShadows = canvasContainer.appendChild(document.createElement("canvas")), // create canvas for tree shadow
-        ctxShadows = canvasShadows.getContext('2d'), averageLeafSize = trunkLen / 5, minimalDistanceBetweenLeaves = averageLeafSize) {
+        ctxShadows = canvasShadows.getContext('2d'), averageLeafSize = trunkLen / 5, minimalDistanceBetweenLeaves = averageLeafSize, // doesnt count the distance between leaves of different branches
+        colorTreeInitial = colorTreeInitialGlobal, colorTreeFinal = colorTreeFinalGlobal) {
             this.initX = initX;
             this.initY = initY;
             this.trunkLen = trunkLen;
@@ -273,6 +295,8 @@ window.addEventListener('load', function () {
             this.ctxShadows = ctxShadows;
             this.averageLeafSize = averageLeafSize;
             this.minimalDistanceBetweenLeaves = minimalDistanceBetweenLeaves;
+            this.colorTreeInitial = colorTreeInitial;
+            this.colorTreeFinal = colorTreeFinal;
             this.canvas.style.zIndex = String(initY); // higher z-index makes element appear on top
             // SET INITIAL CANVASES SIZE
             this.canvas.classList.add('canvas');
@@ -569,7 +593,7 @@ window.addEventListener('load', function () {
         if (alreadyAnimating === false && event.y > horizonHeight) {
             // console.log(event.x, event.y)
             // console.log(event.srcElement.offsetParent.childNodes)
-            console.log(event.srcElement);
+            // console.log(event.srcElement)
             let shadowAngle = -(lightSourcePositionX - event.x) / window.innerWidth * shadowAngleMultiplier;
             let groundHeight = window.innerHeight - horizonHeight;
             let groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight) / 2;
@@ -770,7 +794,8 @@ window.addEventListener('load', function () {
     class Mountain {
         constructor(initialAmountOfNodes, octaves, targetHeight, canvasBottom, 
         // let width = 600,
-        width = canvasContainer.offsetWidth, lowestPoint = Infinity, highestPoint = 0, currentAmountOfNodes = initialAmountOfNodes, currentOctave = 0, allPoints = [], randomPoints = [], canvas = canvasContainer.appendChild(document.createElement("canvas")), ctx = canvas.getContext('2d'), canvasShadow = canvasContainer.appendChild(document.createElement("canvas")), ctxShadow = canvasShadow.getContext('2d')) {
+        width = canvasContainer.offsetWidth * 1.02, // a little overlap for reassuring
+        lowestPoint = Infinity, highestPoint = 0, currentAmountOfNodes = initialAmountOfNodes, currentOctave = 0, allPoints = [], randomPoints = [], canvas = canvasContainer.appendChild(document.createElement("canvas")), ctx = canvas.getContext('2d'), canvasShadow = canvasContainer.appendChild(document.createElement("canvas")), ctxShadow = canvasShadow.getContext('2d')) {
             this.initialAmountOfNodes = initialAmountOfNodes;
             this.octaves = octaves;
             this.targetHeight = targetHeight;
@@ -794,20 +819,20 @@ window.addEventListener('load', function () {
             }
             // console.log(this.randomPoints)
             // let generatedMountainHeight = highestPoint-lowestPoint
-            this.smoothOut();
-            // this.allPoints = this.allPoints.slice(0, this.width) // trim array to initial width
             this.rescale();
+            this.smoothOut();
+            this.allPoints = this.allPoints.slice(0, this.width); // trim array to initial width
             // this.drawMountain()
             this.ctx.lineWidth = 1;
-            this.canvas.style.bottom = this.canvasBottom + 'px';
+            this.canvas.style.bottom = (window.innerHeight - this.canvasBottom) + 'px';
             this.canvas.classList.add('mountainCanvas');
             this.canvas.width = window.innerWidth;
             // this.canvas.height = this.highestPoint- this.lowestPoint
-            this.canvas.height = this.targetHeight + 0; // ADD VAL FOR HIGHER MOUNTAIN
-            this.canvasShadow.classList.add('mountainShadowCanvas');
-            this.canvasShadow.height = this.targetHeight * shadowSpread * 1.05; // little bit more for blur
-            this.canvasShadow.width = window.innerWidth;
+            this.canvas.height = this.targetHeight; // ADD VAL FOR HIGHER MOUNTAIN
             this.canvasShadow.style.top = this.canvasBottom + 'px';
+            this.canvasShadow.classList.add('mountainShadowCanvas');
+            this.canvasShadow.height = this.targetHeight * shadowSpreadMountain * 1.05; // little bit more for blur
+            this.canvasShadow.width = window.innerWidth;
             this.ctx.globalCompositeOperation = 'destination-atop'; // for drawing stroke in the same color as fill
             this.ctxShadow.globalCompositeOperation = 'destination-atop'; // for drawing stroke in the same color as fill
             this.drawMountain();
@@ -843,6 +868,16 @@ window.addEventListener('load', function () {
             }
             // console.log('________________ allPoints len = ' + allPoints.length)
         }
+        findMinAndMax() {
+            for (let i = 0; i < this.allPoints.length; i++) {
+                if (this.allPoints[i] < this.lowestPoint) {
+                    this.lowestPoint = this.allPoints[i];
+                }
+                else if (this.allPoints[i] > this.highestPoint) {
+                    this.highestPoint = this.allPoints[i];
+                }
+            }
+        }
         // SMOOTHING BY AVERAGING NEIGHBOURING POINTS
         smoothOut() {
             for (let point = 1; point < this.allPoints.length - 1; point++) {
@@ -862,22 +897,12 @@ window.addEventListener('load', function () {
                 this.allPoints[i] = (this.allPoints[i] - this.lowestPoint) * scalingFactor;
             }
         }
-        findMinAndMax() {
-            for (let i = 0; i < this.allPoints.length; i++) {
-                if (this.allPoints[i] < this.lowestPoint) {
-                    this.lowestPoint = this.allPoints[i];
-                }
-                else if (this.allPoints[i] > this.highestPoint) {
-                    this.highestPoint = this.allPoints[i];
-                }
-            }
-        }
         drawMountain() {
             this.ctx.lineWidth = 1;
             const gradient = this.ctx.createLinearGradient(this.canvasShadow.width / 2, 0, this.canvasShadow.width / 2, this.canvas.height);
             gradient.addColorStop(0, 'rgb(20,20,20,1)');
             // gradient.addColorStop(0.25, 'rgb(50,50,50,1)')
-            gradient.addColorStop(1, 'rgb(0,0,0,1)');
+            gradient.addColorStop(1, shadowColor);
             this.ctx.fillStyle = gradient;
             this.ctx.strokeStyle = gradient;
             // let colorBrightness = 100
@@ -900,12 +925,11 @@ window.addEventListener('load', function () {
             this.ctx.stroke();
             this.ctx.closePath();
             this.ctx.fill();
-            console.log(this.allPoints.length);
-            // this.drawMist()
+            // console.log(this.allPoints.length)
         }
         drawShadow() {
             const gradient = this.ctxShadow.createLinearGradient(this.canvasShadow.width / 2, 0, this.canvasShadow.width / 2, this.canvasShadow.height);
-            gradient.addColorStop(0, 'rgb(0,0,0,1)');
+            gradient.addColorStop(0, shadowColor);
             gradient.addColorStop(1, 'rgb(0,0,0,0)');
             this.ctxShadow.fillStyle = gradient;
             let h = this.targetHeight;
@@ -919,23 +943,19 @@ window.addEventListener('load', function () {
             // this.ctxShadow.stroke()
             for (let point = 0; point < this.allPoints.length - 1; point++) {
                 let verticalAngleInfluence = ((h - this.allPoints[point]) / h) ** 0.7;
+                // console.log(this.allPoints[point])
                 let shadowAngle = -((lightSourcePositionX - point) / window.innerWidth) / 4 * shadowAngleMultiplier * verticalAngleInfluence;
-                this.ctxShadow.lineTo(point + point * shadowAngle, (h - this.allPoints[point]) * shadowSpread);
-                this.ctxShadow.lineTo(point + 1 + (point + 1) * shadowAngle, (h - this.allPoints[point + 1]) * shadowSpread);
+                // console.log(shadowAngle)
+                this.ctxShadow.lineTo(point + point * shadowAngle, (h - this.allPoints[point]) * shadowSpreadMountain);
+                this.ctxShadow.lineTo(point + 1 + (point + 1) * shadowAngle, (h - this.allPoints[point + 1]) * shadowSpreadMountain);
             }
-            // this.ctxShadow.lineTo(this.allPoints.length, (h - this.allPoints[this.allPoints.length]) * shadowSpread)
-            this.ctxShadow.lineTo(this.allPoints.length - 1, (h - this.highestPoint) * shadowSpread);
-            this.ctxShadow.lineTo(0, (h - this.highestPoint) * shadowSpread);
-            this.ctxShadow.lineTo(0, (h - this.allPoints[0]) * shadowSpread);
+            this.ctxShadow.lineTo(this.allPoints.length, (h - this.allPoints[this.allPoints.length]) * shadowSpreadMountain);
+            this.ctxShadow.lineTo(this.allPoints.length, (h - this.highestPoint) * shadowSpreadMountain);
+            this.ctxShadow.lineTo(0, (h - this.highestPoint) * shadowSpreadMountain);
+            // this.ctxShadow.lineTo(0, (h -  this.allPoints[0]) * shadowSpreadMountain)
             this.ctxShadow.closePath();
             this.ctxShadow.stroke();
             this.ctxShadow.fill();
-            // SHADOW
-            // this.ctxShadow.shadowColor = 'white'
-            // this.ctxShadow.shadowOffsetX = 10
-            // this.ctxShadow.shadowOffsetY = 10
-            // this.ctxShadow.shadowBlur = 5
-            // this.ctxShadow.fill()
             // console.log(this.canvas)
             // console.log(this.canvasShadow)
         }
@@ -943,12 +963,12 @@ window.addEventListener('load', function () {
     const mountainFarthest = new Mountain(4, 10, 250, horizonHeight);
     // mountainFarthest.drawStraightShadow()
     mountainFarthest.drawShadow();
-    console.log(window.innerWidth);
-    console.log(window.outerWidth);
-    // mountainFarthest.drawMist()
-    mountainFarthest;
-    // const mountainClosest = new Mountain(4,10, 400, 0)
+    // const mountainClosest = new Mountain(4,10, 150, window.innerHeight)
     // mountainClosest
+    // console.log(window.innerWidth)
+    // console.log(window.outerWidth)
+    // mountainFarthest.drawMist()
+    // mountainFarthest
     // for (let m=1; m < 3; m++) {
     //     const mountain = new Mountain(4,10, 65*m**1.4, horizonHeight - 80*(m-1)**2)
     //     mountain
