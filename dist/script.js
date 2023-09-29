@@ -6,7 +6,7 @@ window.addEventListener('load', function () {
     const globalCanvasesList = [];
     const canvasContainer = document.getElementById('canvasContainer');
     // HORIZON HEIGHT
-    const horizonHeight = canvasContainer.offsetHeight * 0.4;
+    const horizonHeight = canvasContainer.offsetHeight * 0.1 + Math.random() * canvasContainer.offsetHeight * 0.8;
     document.documentElement.style.cssText = "--horizonHeight:" + horizonHeight + "px";
     // LIGHTSOURCE
     const lightSourceCanvas = document.getElementById('lightSourceCanvas');
@@ -24,23 +24,24 @@ window.addEventListener('load', function () {
     lightSourceGlowCanvas.style.top = (lightSourcePositionY - lightSourceSize) + 'px';
     // create Branch public shadowSegments,
     const initialsegmentingLen = 25;
-    const trunkLen = 120;
+    const trunkLen = 80;
     const lenMultiplier = 0.8;
-    const trunkWidthAsPartOfLen = 0.5;
+    const trunkWidthAsPartOfLen = 0.3;
     const widthMultiplier = 0.7;
     const rebranchingAngle = 23;
-    const maxLevelGlobal = 1;
+    const maxLevelGlobal = 2;
     const branchingProbabilityBooster = 0.5;
     const occasionalBranchesLimit = 10;
     const treeDistanceScaling = 0.95; // range 0-1
     // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
-    const shadowColor = 'rgba(40, 40, 80)';
+    const shadowColor = 'rgba(40, 40, 80, 1)';
     // const shadowAngle = -1 // range -1 to +1 works fine. 1 gives 45 angle
-    const shadowAngleMultiplier = 6;
+    const shadowAngleMultiplier = 3;
     // const shadowSpread = 0.75 // > 0 for now
-    const shadowSpreadMultiplier = 1;
-    const shadowSpread = (lightSourcePositionY / horizonHeight) * shadowSpreadMultiplier + 0.15;
-    const shadowSpreadMountain = (lightSourcePositionY / horizonHeight) * shadowSpreadMultiplier + 0.25;
+    const shadowSpreadMultiplier = 2;
+    const shadowSpread = (lightSourcePositionY) / horizonHeight * shadowSpreadMultiplier + 0.15; // + for minimal shadow length
+    // console.log((lightSourcePositionY/horizonHeight))
+    const shadowSpreadMountain = (lightSourcePositionY) / horizonHeight * shadowSpreadMultiplier + 0.20;
     const blurStrength = 20;
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
@@ -57,22 +58,26 @@ window.addEventListener('load', function () {
     const growLimitingLeavesAmount = 10; // branches drawing will stop when this amount of growing leaves is reached
     const leafMaxStageGlobal = 2;
     const whileLoopRetriesEachFrameLeaves = 100; // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
-    const colorTreeInitialGlobal = 'rgba(0, 0, 0, 1)';
+    const colorTreeInitialGlobal = 'rgba(0, 50, 0, 1)';
     const colorTreeFinalGlobal = 'rgba(250, 250, 250, 1)';
-    function blendRgbaColorsInProportions(color1, color2, initColorInfluence) {
-        let colorInitVals = color1.substring(4, color1.length - 1).replace(/[[\(\))]/g, '').split(','); // /g is global - as many finds as necessary
-        let colorFinalVals = color2.substring(4, color2.length - 1).replace(/[[\(\))]/g, '').split(',');
-        // console.log(colorInitVals, colorFinalVals)
-        // BLEND - WEIGHTED AVERAGE
-        let resultingRed = (Number(colorInitVals[0]) * initColorInfluence + Number(colorFinalVals[0]) * (1 - initColorInfluence));
-        let resultingGreen = (Number(colorInitVals[1]) * initColorInfluence + Number(colorFinalVals[1]) * (1 - initColorInfluence));
-        let resultingBlue = (Number(colorInitVals[2]) * initColorInfluence + Number(colorFinalVals[2]) * (1 - initColorInfluence));
-        let resultingAlpha = (Number(colorInitVals[3]) * initColorInfluence + Number(colorFinalVals[3]) * (1 - initColorInfluence));
-        let resultingColor = 'rgba(' + resultingRed + ',' + resultingGreen + ',' + resultingBlue + ',' + resultingAlpha + ')';
-        // console.log(resultingColor)
-        return resultingColor;
-    }
+    // function blendRgbaColorsInProportions (color1: string, color2: string, initColorInfluence: number) {
+    //     let colorInitVals = color1.substring(4, color1.length-1).replace(/[[\(\))]/g,'').split(',') // /g is global - as many finds as necessary
+    //     let colorFinalVals = color2.substring(4, color2.length-1).replace(/[[\(\))]/g,'').split(',')
+    //     // console.log(colorInitVals, colorFinalVals)
+    //     // BLEND - WEIGHTED AVERAGE
+    //     let resultingRed = (Number(colorInitVals[0])*initColorInfluence + Number(colorFinalVals[0])*(1-initColorInfluence))
+    //     let resultingGreen = (Number(colorInitVals[1])*initColorInfluence + Number(colorFinalVals[1])*(1-initColorInfluence))
+    //     let resultingBlue = (Number(colorInitVals[2])*initColorInfluence + Number(colorFinalVals[2])*(1-initColorInfluence))
+    //     let resultingAlpha = (Number(colorInitVals[3])*initColorInfluence + Number(colorFinalVals[3])*(1-initColorInfluence))
+    //     let resultingColor = 'rgba(' + resultingRed + ',' + resultingGreen + ',' + resultingBlue + ',' + resultingAlpha + ')'
+    //     // console.log(resultingColor)
+    //     return resultingColor
+    // }
     // blendRgbaColorsInProportions(colorTreeInitial, colorTreeFinal, 0.75)
+    function rgbaStrToObj(color) {
+        let colorValsArray = color.substring(4, color.length - 1).replace(/[[\(\))]/g, '').split(','); // /g is global - as many finds as necessary
+        return { r: Number(colorValsArray[0]), g: Number(colorValsArray[1]), b: Number(colorValsArray[2]), a: Number(colorValsArray[3]) };
+    }
     //  SET CANVASES SIZES AND CHANGE THEM AT WINDOW RESIZE
     window.addEventListener('resize', function () {
         globalCanvasesList.forEach((canvas) => {
@@ -89,7 +94,9 @@ window.addEventListener('load', function () {
         yF = 0, level = 0, children = [], // list of children branches
         segments = [], // segments endpoints to draw lines between
         drawnSegments = 0, //to track branch drawing progress
-        occasionalBranches = 0, tree = parent.tree, shadowSegments = []) {
+        occasionalBranches = 0, tree = parent.tree, shadowSegments = [], 
+        // public color: {r: number, g: number, b: number, a:number} = {r: 0, g: parent.color.g+20, b: 0, a: 1},
+        color = { r: 0, g: 0, b: 0, a: 1 }) {
             this.parent = parent;
             this.x0 = x0;
             this.y0 = y0;
@@ -106,6 +113,9 @@ window.addEventListener('load', function () {
             this.occasionalBranches = occasionalBranches;
             this.tree = tree;
             this.shadowSegments = shadowSegments;
+            this.color = color;
+            const greenScale = (rgbaStrToObj(colorTreeFinalGlobal).g - rgbaStrToObj(colorTreeInitialGlobal).g) / (this.tree.maxLevel + 1);
+            console.log(greenScale);
             this.parent = parent;
             // console.log(this.leaves)
             // RECALCULATE LEN AND WIDTH WITH levelShift
@@ -224,23 +234,19 @@ window.addEventListener('load', function () {
             // console.log('drawBranch')
             this.tree.ctx.closePath();
         }
-        drawBranchBySegments() {
-            // gradient color for the whole branch
+        setLinearGradientStrokeStyle() {
+            // // gradient color for the whole branch
             const gradient = this.tree.ctx.createLinearGradient(this.x0, this.y0, this.xF, this.yF);
-            // gradient.addColorStop(0, 'rgb(80,' + (10 + 10*this.level) + ', 0)')
-            // gradient.addColorStop(1, 'rgb(80,' + (20 + 10*this.level) + ', 0)')
-            // gradient.addColorStop(0, 'rgb(50,' + (5*this.parent.level) + ', 0)')
-            // gradient.addColorStop(1, 'rgb(50,' + (5*this.level) + ', 0)')
-            // gradient.addColorStop(0, 'rgba(0, ' + (20*this.parent.level) + ', 0 , 1)')
-            // gradient.addColorStop(1, 'rgba(0,' + (20*this.level) + ', 0)')
-            // gradient.addColorStop(0, blendRgbaColorsInProportions(colorTreeInitial, colorTreeFinal, ( (this.parent.level)/(this.tree.maxLevel) ) ))
-            // gradient.addColorStop(1, blendRgbaColorsInProportions(colorTreeInitial, colorTreeFinal, ( (this.level)/(this.tree.maxLevel) ) ))
-            gradient.addColorStop(0, blendRgbaColorsInProportions(this.tree.colorTreeInitial, this.tree.colorTreeFinal, ((this.parent.level) / (this.tree.maxLevel))));
-            gradient.addColorStop(1, blendRgbaColorsInProportions(this.tree.colorTreeInitial, this.tree.colorTreeFinal, ((this.level) / (this.tree.maxLevel))));
-            // console.log(this.level/this.tree.maxLevel) /// 0-1
-            // console.log((this.level/this.tree.maxLevel))
-            console.log((this.parent.level));
+            // gradient.addColorStop(0, 'rgb(80,' + (100*this.parent.level) + ', 0)')
+            // gradient.addColorStop(1, 'rgb(80,' + (100*this.level) + ', 0)')
+            // gradient.addColorStop(0, 'rgb(50,' + (50*this.parent.level) + ', 0)')
+            // gradient.addColorStop(1, 'rgb(50,' + (50*this.level) + ', 0)')
+            gradient.addColorStop(0, 'rgba(0, ' + (this.parent.color.g) + ', 0 , 1)');
+            gradient.addColorStop(1, 'rgba(0,' + (this.color.g) + ', 0)');
             this.tree.ctx.strokeStyle = gradient;
+        }
+        drawBranchBySegments() {
+            this.setLinearGradientStrokeStyle();
             this.tree.ctx.lineCap = "round";
             this.tree.ctx.lineWidth = this.segments[this.drawnSegments].width;
             this.tree.ctx.beginPath();
@@ -368,10 +374,11 @@ window.addEventListener('load', function () {
     // With the root there is no need to check for parent element in Branch constructor
     class Root {
         constructor(tree, angle = 0, // Rotates the tree
-        level = -1) {
+        level = -1, color = rgbaStrToObj(colorTreeInitialGlobal)) {
             this.tree = tree;
             this.angle = angle;
             this.level = level;
+            this.color = color;
         }
     }
     // ________________________________________ ROOT ________________________________________
@@ -594,6 +601,8 @@ window.addEventListener('load', function () {
             // console.log(event.x, event.y)
             // console.log(event.srcElement.offsetParent.childNodes)
             // console.log(event.srcElement)
+            // let verticalAngleInfluence = 1+ ( (this.window.innerHeight - event.y) / this.window.innerHeight ) ** 0.9
+            // let shadowAngle = - (lightSourcePositionX - event.x) / window.innerWidth * shadowAngleMultiplier * verticalAngleInfluence
             let shadowAngle = -(lightSourcePositionX - event.x) / window.innerWidth * shadowAngleMultiplier;
             let groundHeight = window.innerHeight - horizonHeight;
             let groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight) / 2;
@@ -900,8 +909,8 @@ window.addEventListener('load', function () {
         drawMountain() {
             this.ctx.lineWidth = 1;
             const gradient = this.ctx.createLinearGradient(this.canvasShadow.width / 2, 0, this.canvasShadow.width / 2, this.canvas.height);
-            gradient.addColorStop(0, 'rgb(20,20,20,1)');
             // gradient.addColorStop(0.25, 'rgb(50,50,50,1)')
+            gradient.addColorStop(0, 'rgb(20,20,20,1)');
             gradient.addColorStop(1, shadowColor);
             this.ctx.fillStyle = gradient;
             this.ctx.strokeStyle = gradient;
@@ -929,8 +938,10 @@ window.addEventListener('load', function () {
         }
         drawShadow() {
             const gradient = this.ctxShadow.createLinearGradient(this.canvasShadow.width / 2, 0, this.canvasShadow.width / 2, this.canvasShadow.height);
+            const shadowColorValues = rgbaStrToObj(shadowColor);
+            const shadowColorTransparent = 'rgba(' + shadowColorValues.r + ',' + shadowColorValues.g + ',' + shadowColorValues.b + ',' + shadowColorValues.a / 10 + ')';
             gradient.addColorStop(0, shadowColor);
-            gradient.addColorStop(1, 'rgb(0,0,0,0)');
+            gradient.addColorStop(1, shadowColorTransparent);
             this.ctxShadow.fillStyle = gradient;
             let h = this.targetHeight;
             this.ctxShadow.lineWidth = 1;
@@ -942,9 +953,10 @@ window.addEventListener('load', function () {
             this.ctxShadow.filter = 'blur(5px)';
             // this.ctxShadow.stroke()
             for (let point = 0; point < this.allPoints.length - 1; point++) {
-                let verticalAngleInfluence = ((h - this.allPoints[point]) / h) ** 0.7;
-                // console.log(this.allPoints[point])
-                let shadowAngle = -((lightSourcePositionX - point) / window.innerWidth) / 4 * shadowAngleMultiplier * verticalAngleInfluence;
+                // let verticalAngleInfluence = ( (h - this.allPoints[point]) / h ) ** 0.7
+                // let shadowAngle = - ((lightSourcePositionX - point) / window.innerWidth)/4 * shadowAngleMultiplier * verticalAngleInfluence
+                let verticalAngleInfluence = ((h - this.allPoints[point]) / h) ** 0.9;
+                let shadowAngle = -((lightSourcePositionX - point) / window.innerWidth) * shadowAngleMultiplier * verticalAngleInfluence;
                 // console.log(shadowAngle)
                 this.ctxShadow.lineTo(point + point * shadowAngle, (h - this.allPoints[point]) * shadowSpreadMountain);
                 this.ctxShadow.lineTo(point + 1 + (point + 1) * shadowAngle, (h - this.allPoints[point + 1]) * shadowSpreadMountain);
