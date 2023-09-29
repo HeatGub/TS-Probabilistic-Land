@@ -27,15 +27,15 @@ lightSourceGlowCanvas.style.left = (lightSourcePositionX - lightSourceSize) + 'p
 lightSourceGlowCanvas.style.top = (lightSourcePositionY - lightSourceSize) + 'px'
 
 // create Branch public shadowSegments,
-const initialsegmentingLen = 25
+const initialsegmentingLen = 10
 const trunkLen = 80
 const lenMultiplier = 0.8
 const trunkWidthAsPartOfLen = 0.3
 const widthMultiplier = 0.7
 const rebranchingAngle = 23
-const maxLevelGlobal = 2
+const maxLevelGlobal = 5
 const branchingProbabilityBooster = 0.5
-const occasionalBranchesLimit = 10
+const occasionalBranchesLimit = 1
 const treeDistanceScaling = 0.95 // range 0-1
 
 // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
@@ -66,43 +66,23 @@ const growLimitingLeavesAmount = 10 // branches drawing will stop when this amou
 const leafMaxStageGlobal = 2
 const whileLoopRetriesEachFrameLeaves = 100 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
 
-
-
-const colorTreeInitialGlobal = 'rgba(0, 50, 0, 1)'
-const colorTreeFinalGlobal = 'rgba(250, 250, 250, 1)'
-
-// function blendRgbaColorsInProportions (color1: string, color2: string, initColorInfluence: number) {
-//     let colorInitVals = color1.substring(4, color1.length-1).replace(/[[\(\))]/g,'').split(',') // /g is global - as many finds as necessary
-//     let colorFinalVals = color2.substring(4, color2.length-1).replace(/[[\(\))]/g,'').split(',')
-//     // console.log(colorInitVals, colorFinalVals)
-
-//     // BLEND - WEIGHTED AVERAGE
-//     let resultingRed = (Number(colorInitVals[0])*initColorInfluence + Number(colorFinalVals[0])*(1-initColorInfluence))
-//     let resultingGreen = (Number(colorInitVals[1])*initColorInfluence + Number(colorFinalVals[1])*(1-initColorInfluence))
-//     let resultingBlue = (Number(colorInitVals[2])*initColorInfluence + Number(colorFinalVals[2])*(1-initColorInfluence))
-//     let resultingAlpha = (Number(colorInitVals[3])*initColorInfluence + Number(colorFinalVals[3])*(1-initColorInfluence))
-
-//     let resultingColor = 'rgba(' + resultingRed + ',' + resultingGreen + ',' + resultingBlue + ',' + resultingAlpha + ')'
-//     // console.log(resultingColor)
-//     return resultingColor
-// }
-// blendRgbaColorsInProportions(colorTreeInitial, colorTreeFinal, 0.75)
-
+const colorTreeInitialGlobal = 'rgba(20, 20, 20, 1)'
+const colorTreeFinalGlobal = 'rgba(50, 100, 100, 1)'
 
 function rgbaStrToObj (color: string) {
     let colorValsArray = color.substring(4, color.length-1).replace(/[[\(\))]/g,'').split(',') // /g is global - as many finds as necessary
     return {r: Number(colorValsArray[0]), g: Number(colorValsArray[1]), b: Number(colorValsArray[2]), a: Number(colorValsArray[3])}
 }
 
-
-
-
 //  SET CANVASES SIZES AND CHANGE THEM AT WINDOW RESIZE
 window.addEventListener('resize', function() {
-    globalCanvasesList.forEach( (canvas) => {
-        canvas.width = window.innerWidth
-        canvas.height = window.innerHeight
-    })
+    // globalCanvasesList.forEach( (canvas) => {
+    //     canvas.width = window.innerWidth
+    //     canvas.height = window.innerHeight
+
+    // })
+
+    window.location.reload() // refresh page
     // tree.drawTheTree() // tree possibly not ready at resize
 })
 // ________________________________________ GLOBALS ________________________________________
@@ -127,17 +107,19 @@ class Branch {
         public tree: Tree = parent.tree,
         public shadowSegments: { x0: number, y0: number, xF: number, yF: number, width: number, blur: number}[] = [],
         // public color: {r: number, g: number, b: number, a:number} = {r: 0, g: parent.color.g+20, b: 0, a: 1},
-        public color: {r: number, g: number, b: number, a:number} = {r: 0, g: 0, b: 0, a: 1},
+        public color: {r: number, g: number, b: number, a:number} = {r: 0, g:0, b: 0, a: 1},
     ){
-        const greenScale = (rgbaStrToObj(colorTreeFinalGlobal).g - rgbaStrToObj(colorTreeInitialGlobal).g) / (this.tree.maxLevel+1)
-        
-        console.log(greenScale)
-
-
         this.parent = parent
         // console.log(this.leaves)
         // RECALCULATE LEN AND WIDTH WITH levelShift
+        
         this.level = this.parent.level + 1 + this.levelShift
+        this.color = {
+            r: rgbaStrToObj(tree.colorTreeInitial).r + tree.redPerLevel*(this.level+1), // level +1 because trunk is level 0
+            g: rgbaStrToObj(tree.colorTreeInitial).g + tree.greenPerLevel*(this.level+1), 
+            b: rgbaStrToObj(tree.colorTreeInitial).b + tree.bluePerLevel*(this.level+1), 
+            a: 1
+        }
 
         // Occasional branch length (or width) = orig.len * lenMultipl^levelShift
         this.branchWidth = this.branchWidth * Math.pow(widthMultiplier, this.levelShift)
@@ -276,8 +258,8 @@ class Branch {
         // gradient.addColorStop(0, 'rgb(50,' + (50*this.parent.level) + ', 0)')
         // gradient.addColorStop(1, 'rgb(50,' + (50*this.level) + ', 0)')
 
-        gradient.addColorStop(0, 'rgba(0, ' + (this.parent.color.g) + ', 0 , 1)')
-        gradient.addColorStop(1, 'rgba(0,' + (this.color.g) + ', 0)')
+        gradient.addColorStop(0, 'rgba(' + this.parent.color.r + ',' + this.parent.color.g + ',' + this.parent.color.b +', 1)')
+        gradient.addColorStop(1, 'rgba(' + this.color.r + ',' + this.color.g + ',' + this.color.b +', 1)')
 
         this.tree.ctx.strokeStyle = gradient
     }
@@ -341,6 +323,11 @@ class Tree {
         public minimalDistanceBetweenLeaves = averageLeafSize, // doesnt count the distance between leaves of different branches
         public colorTreeInitial = colorTreeInitialGlobal,
         public colorTreeFinal = colorTreeFinalGlobal,
+        // public rgbColorByLevel
+        public redPerLevel = (rgbaStrToObj(colorTreeFinalGlobal).r - rgbaStrToObj(colorTreeInitialGlobal).r) / maxLevel,
+        public greenPerLevel = (rgbaStrToObj(colorTreeFinalGlobal).g - rgbaStrToObj(colorTreeInitialGlobal).g) / maxLevel,
+        public bluePerLevel = (rgbaStrToObj(colorTreeFinalGlobal).b - rgbaStrToObj(colorTreeInitialGlobal).b) / maxLevel,
+
     ){
         this.canvas.style.zIndex = String(initY) // higher z-index makes element appear on top
         // SET INITIAL CANVASES SIZE
@@ -1060,7 +1047,7 @@ class Mountain {
         for (let point = 0; point < this.allPoints.length-1; point++) {
             // let verticalAngleInfluence = ( (h - this.allPoints[point]) / h ) ** 0.7
             // let shadowAngle = - ((lightSourcePositionX - point) / window.innerWidth)/4 * shadowAngleMultiplier * verticalAngleInfluence
-            let verticalAngleInfluence = ( (h - this.allPoints[point]) / h ) ** 0.9
+            let verticalAngleInfluence = ( (h - this.allPoints[point]) / h ) ** 1
             let shadowAngle = - ((lightSourcePositionX - point) / window.innerWidth) * shadowAngleMultiplier * verticalAngleInfluence
             // console.log(shadowAngle)
             this.ctxShadow.lineTo(point+ point*shadowAngle, (h - this.allPoints[point]) * shadowSpreadMountain)
