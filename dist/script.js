@@ -29,12 +29,12 @@ window.addEventListener('load', function () {
     const trunkWidthAsPartOfLen = 0.3;
     const widthMultiplier = 0.7;
     const rebranchingAngle = 23;
-    const maxLevelGlobal = 5;
+    const maxLevelGlobal = 8;
     const branchingProbabilityBooster = 0.5;
     const occasionalBranchesLimit = 1;
     const treeDistanceScaling = 0.95; // range 0-1
     // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
-    const shadowColor = 'rgba(40, 40, 80, 1)';
+    const shadowColor = 'rgba(30, 30, 120, 1)';
     // const shadowAngle = -1 // range -1 to +1 works fine. 1 gives 45 angle
     const shadowAngleMultiplier = 3;
     // const shadowSpread = 0.75 // > 0 for now
@@ -256,15 +256,36 @@ window.addEventListener('load', function () {
             this.drawnSegments++;
         }
         drawSegmentShadow() {
-            this.tree.ctxShadows.strokeStyle = shadowColor;
-            this.tree.ctxShadows.lineCap = "round";
-            this.tree.ctxShadows.lineWidth = this.shadowSegments[this.drawnSegments].width;
-            this.tree.ctxShadows.filter = 'blur(' + this.shadowSegments[this.drawnSegments].blur + 'px)';
-            this.tree.ctxShadows.beginPath();
-            this.tree.ctxShadows.moveTo(this.shadowSegments[this.drawnSegments].x0, this.shadowSegments[this.drawnSegments].y0);
-            this.tree.ctxShadows.lineTo(this.shadowSegments[this.drawnSegments].xF, this.shadowSegments[this.drawnSegments].yF);
-            this.tree.ctxShadows.stroke();
-            this.tree.ctxShadows.closePath();
+            if (this.checkIfOutsideDrawingWindow() === false) {
+                // this.shadowSegments[this.drawnSegments].y0
+                this.tree.ctxShadows.strokeStyle = shadowColor;
+                this.tree.ctxShadows.lineCap = "round";
+                this.tree.ctxShadows.lineWidth = this.shadowSegments[this.drawnSegments].width;
+                this.tree.ctxShadows.filter = 'blur(' + this.shadowSegments[this.drawnSegments].blur + 'px)';
+                this.tree.ctxShadows.beginPath();
+                this.tree.ctxShadows.moveTo(this.shadowSegments[this.drawnSegments].x0, this.shadowSegments[this.drawnSegments].y0);
+                this.tree.ctxShadows.lineTo(this.shadowSegments[this.drawnSegments].xF, this.shadowSegments[this.drawnSegments].yF);
+                this.tree.ctxShadows.stroke();
+                this.tree.ctxShadows.closePath();
+            }
+        }
+        checkIfOutsideDrawingWindow() {
+            if ((this.shadowSegments[this.drawnSegments].x0 <= 0 ||
+                this.shadowSegments[this.drawnSegments].x0 >= this.tree.canvas.width)
+                &&
+                    (this.shadowSegments[this.drawnSegments].xF <= 0 ||
+                        this.shadowSegments[this.drawnSegments].xF >= this.tree.canvas.width)) {
+                return true;
+            }
+            if ((this.shadowSegments[this.drawnSegments].y0 <= 0 ||
+                this.shadowSegments[this.drawnSegments].y0 >= this.tree.canvas.height)
+                &&
+                    (this.shadowSegments[this.drawnSegments].yF <= 0 ||
+                        this.shadowSegments[this.drawnSegments].yF >= this.tree.canvas.height)) {
+                return true;
+            }
+            // console.log('not outside')
+            return false;
         }
     }
     // ________________________________________ BRANCH ________________________________________
