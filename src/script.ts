@@ -6,7 +6,7 @@ const globalCanvasesList = [] as HTMLCanvasElement[]
 const canvasContainer = document.getElementById('canvasContainer') as HTMLBodyElement
 
 // HORIZON HEIGHT
-const horizonHeight = canvasContainer.offsetHeight*0.1 + Math.random()*canvasContainer.offsetHeight*0.8
+const horizonHeight = canvasContainer.offsetHeight*0.2 + Math.random()*canvasContainer.offsetHeight*0.6
 document.documentElement.style.cssText = "--horizonHeight:" + horizonHeight + "px"
 // LIGHTSOURCE
 const lightSourceCanvas = document.getElementById('lightSourceCanvas') as HTMLBodyElement
@@ -28,15 +28,17 @@ lightSourceGlowCanvas.style.top = (lightSourcePositionY - lightSourceSize) + 'px
 
 // create Branch public shadowSegments,
 const initialsegmentingLen = 10
-const trunkLen = 80
+const trunkLen = 120
 const lenMultiplier = 0.8
 const trunkWidthAsPartOfLen = 0.3
 const widthMultiplier = 0.7
 const rebranchingAngle = 23
 const maxLevelGlobal = 8
 const branchingProbabilityBooster = 0.5
-const occasionalBranchesLimit = 1
-const treeDistanceScaling = 0.95 // range 0-1
+const occasionalBranchesLimit = 10
+const levelShiftRangeAddition = 5
+
+const treeDistanceScaling = 0.85 // range 0-1
 
 // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
 const shadowColor = 'rgba(30, 30, 120, 1)'
@@ -44,10 +46,10 @@ const shadowColor = 'rgba(30, 30, 120, 1)'
 const shadowAngleMultiplier = 3
 // const shadowSpread = 0.75 // > 0 for now
 const shadowSpreadMultiplier = 2
-const shadowSpread = (lightSourcePositionY)/horizonHeight * shadowSpreadMultiplier + 0.15 // + for minimal shadow length
+const shadowSpread = (lightSourcePositionY/horizonHeight) * (lightSourceSize*2/horizonHeight) * shadowSpreadMultiplier + 0.15 // + for minimal shadow length
 // console.log((lightSourcePositionY/horizonHeight))
-const shadowSpreadMountain = (lightSourcePositionY)/horizonHeight * shadowSpreadMultiplier + 0.20
-const blurStrength = 20
+const shadowSpreadMountain = (lightSourcePositionY)/horizonHeight * (lightSourceSize*2/horizonHeight) * shadowSpreadMultiplier + 0.20
+const blurStrength = 10
 
 // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
 // ratio is relative to Leaf's this.len
@@ -57,9 +59,10 @@ const axis1LenRatio = -0.15
 const axis2LenRatio = 0.5
 const petioleLenRatio = 0.2 //of the whole length
 const leafyLevels = 3
-const globalLeafProbability = 0.02 // SAME PROBABILITY FOR EACH SIDE
 const leafLineWidthAsPartOfLeafLen = 0.05
+const globalLeafProbability = 0.2 // SAME PROBABILITY FOR EACH SIDE
 const leafLenScaling = 1.2
+const leafDistanceMultiplier = 0.5 // > 0 !
 
 const leavesGrowingOrder = 0.25
 const growLimitingLeavesAmount = 10 // branches drawing will stop when this amount of growing leaves is reached
@@ -68,6 +71,14 @@ const whileLoopRetriesEachFrameLeaves = 100 // when that = 1 --> ~1 FPS for leaf
 
 const colorTreeInitialGlobal = 'rgba(20, 20, 20, 1)'
 const colorTreeFinalGlobal = 'rgba(50, 100, 100, 1)'
+// const colorLeaf = 'rgba(20, 150, 150, 1)'
+// const colorLeafLine = 'rgba(50, 50, 50, 1)'
+const colorLeaf = 'rgba(10, 150, 50, 1)'
+const leafLineDarkness = 0.2 // 0-1 range
+const leafBrightnessRandomizer = 50 // +- in rgb scale (0-255)
+const leafColorRandomizerR = 0 // +- in rgb scale (0-255)
+const leafColorRandomizerG = 0 // +- in rgb scale (0-255)
+const leafColorRandomizerB = 0 // +- in rgb scale (0-255)
 
 function rgbaStrToObj (color: string) {
     let colorValsArray = color.substring(4, color.length-1).replace(/[[\(\))]/g,'').split(',') // /g is global - as many finds as necessary
@@ -81,7 +92,6 @@ window.addEventListener('resize', function() {
     //     canvas.height = window.innerHeight
 
     // })
-
     window.location.reload() // refresh page
     // tree.drawTheTree() // tree possibly not ready at resize
 })
@@ -249,18 +259,10 @@ class Branch {
     }
 
     setLinearGradientStrokeStyle () {
-        // // gradient color for the whole branch
-        
+        // gradient color calculated for the whole branch
         const gradient = this.tree.ctx.createLinearGradient(this.x0, this.y0, this.xF, this.yF)
-        // gradient.addColorStop(0, 'rgb(80,' + (100*this.parent.level) + ', 0)')
-        // gradient.addColorStop(1, 'rgb(80,' + (100*this.level) + ', 0)')
-
-        // gradient.addColorStop(0, 'rgb(50,' + (50*this.parent.level) + ', 0)')
-        // gradient.addColorStop(1, 'rgb(50,' + (50*this.level) + ', 0)')
-
         gradient.addColorStop(0, 'rgba(' + this.parent.color.r + ',' + this.parent.color.g + ',' + this.parent.color.b +', 1)')
         gradient.addColorStop(1, 'rgba(' + this.color.r + ',' + this.color.g + ',' + this.color.b +', 1)')
-
         this.tree.ctx.strokeStyle = gradient
     }
 
@@ -293,7 +295,7 @@ class Branch {
         this.tree.ctxShadows.strokeStyle = shadowColor
         this.tree.ctxShadows.lineCap = "round"
         this.tree.ctxShadows.lineWidth = this.shadowSegments[this.drawnSegments].width
-        this.tree.ctxShadows.filter = 'blur(' + this.shadowSegments[this.drawnSegments].blur + 'px)';
+        this.tree.ctxShadows.filter = 'blur(' + this.shadowSegments[this.drawnSegments].blur + 'px)'
         this.tree.ctxShadows.beginPath();
         this.tree.ctxShadows.moveTo(this.shadowSegments[this.drawnSegments].x0, this.shadowSegments[this.drawnSegments].y0)
         this.tree.ctxShadows.lineTo(this.shadowSegments[this.drawnSegments].xF, this.shadowSegments[this.drawnSegments].yF)
@@ -346,7 +348,7 @@ class Tree {
         public canvasShadows = canvasContainer.appendChild(document.createElement("canvas")), // create canvas for tree shadow
         public ctxShadows = canvasShadows.getContext('2d') as CanvasRenderingContext2D,
         public averageLeafSize = trunkLen/5,
-        public minimalDistanceBetweenLeaves = averageLeafSize, // doesnt count the distance between leaves of different branches
+        public minimalDistanceBetweenLeaves = averageLeafSize * leafLenScaling * leafDistanceMultiplier, // doesnt count the distance between leaves of different branches
         public colorTreeInitial = colorTreeInitialGlobal,
         public colorTreeFinal = colorTreeFinalGlobal,
         // public rgbColorByLevel
@@ -379,7 +381,9 @@ class Tree {
             // this variable lowers branching probability with level. In range from 1 to branchingProbability linearly
             let branchingProbabilityByLevel = this.branchingProbability + ( (1-branchingProbability) * ((this.maxLevel-currLvl)/this.maxLevel) )
             // console.log(branchingProbabilityByLevel)
-            let occasionalBranchingProbability = ((this.maxLevel-currLvl+1)/this.maxLevel) // always spawn at lvl 0
+            // let occasionalBranchingProbability = ((this.maxLevel-currLvl+1)/this.maxLevel) // always spawn at lvl 0
+            let occasionalBranchingProbability = 10 // always spawn at lvl 0
+
             // console.log(branchingProbabilityByLevel, currLvl)
             // this.allBranches.push([]) // push empty array to fill it by the forEach loop
             this.allBranches[currLvl].forEach( element => {
@@ -396,7 +400,7 @@ class Tree {
                     // compare occasionalBranches to occasionalBranchesLimit  
                     if (Math.random() < occasionalBranchingProbability && element.occasionalBranches <= occasionalBranchesLimit) {
                         // random level shift
-                        let levelShift = 1 + Math.round(Math.random()*2)
+                        let levelShift = 1 + Math.round(Math.random()*levelShiftRangeAddition)
                         // console.log('occasional branching')
                         if (element.level + 1 + levelShift < this.maxLevel) {
                             const occasionalBranch = element.makeGrandChildBranch(-rebranchingAngle + Math.random()*2*rebranchingAngle, levelShift)                       
@@ -472,8 +476,17 @@ class Leaf {
         public y0relShadow = 0,
         public shadowLen = 0,
         public blur = 0,
-        public colors: {r:number, g: number, b: number} = {r:0, g:0, b:0},
+        public color: {r:number, g: number, b: number} = {r:0, g:0, b:0},
     ) {
+        
+        let base = rgbaStrToObj(colorLeaf)
+        let brghtnAddtn = -leafBrightnessRandomizer/2 + Math.random()*leafBrightnessRandomizer
+        let rAddtn = - leafColorRandomizerR/2 + Math.random() * leafColorRandomizerR
+        let gAddtn = - leafColorRandomizerG/2 + Math.random() * leafColorRandomizerG
+        let bAddtn = - leafColorRandomizerB/2 + Math.random() * leafColorRandomizerB
+
+        this.color = {r: base.r + brghtnAddtn + rAddtn, g: base.g + brghtnAddtn + gAddtn, b: base.b + brghtnAddtn + bAddtn}
+        
         // RESIZE CANVAS (canvasCoords and 0rels depend on it)
         this.canvas.width = this.len*1.4
         this.canvas.height = this.len*1.4
@@ -600,11 +613,14 @@ class Leaf {
 
     drawLeafStage () {
         // clear whole previous frame
+        
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
         
-        this.ctx.beginPath();
-        // this.ctx.strokeStyle = 'rgba(10, 30, 0, 1)'
-        this.ctx.strokeStyle = 'rgba(0,0,0, 1)'
+        // this.ctx.strokeStyle = colorLeafLine
+        // this.ctx.strokeStyle = this.color.r 
+        this.ctx.strokeStyle = 'rgba(' + (this.color.r - this.color.r*leafLineDarkness) + ',' + (this.color.g - this.color.g*leafLineDarkness) +  ',' + (this.color.b - this.color.b*leafLineDarkness) + ')'
+
+        this.ctx.beginPath()
 
         //MAIN NERVE
         this.ctx.moveTo(this.x0rel, this.y0rel)
@@ -621,9 +637,10 @@ class Leaf {
         // left side of a leaf
         this.ctx.bezierCurveTo(this.growthStages[this.currentStage].xL1, this.growthStages[this.currentStage].yL1, this.growthStages[this.currentStage].xL2, this.growthStages[this.currentStage].yL2, this.growthStages[this.currentStage].xF, this.growthStages[this.currentStage].yF)
         this.ctx.closePath()
-        // let greenish = 70 + ((this.maxStages-this.currentStage)/this.maxStages)*180
-        // this.ctx.fillStyle = 'rgba(10,' + greenish + ',0, 1)'
-        this.ctx.fillStyle = 'rgba(0,0,0, 1)'
+        // this.ctx.fillStyle = colorLeaf
+        this.ctx.fillStyle = 'rgba(' + this.color.r + ',' + this.color.g +  ',' + this.color.b + ')'
+
+        // this.ctx.fillStyle = gradient
         this.ctx.fill()
         this.ctx.stroke()
         this.drawLeafShadow()
@@ -669,13 +686,10 @@ let alreadyAnimating = false
 canvasContainer.addEventListener("click", (event) => {
     if (alreadyAnimating === false && event.y > horizonHeight) {
         // console.log(event.x, event.y)
-        // console.log(event.srcElement.offsetParent.childNodes)
-        // console.log(event.srcElement)
 
         // let verticalAngleInfluence = 1+ ( (this.window.innerHeight - event.y) / this.window.innerHeight ) ** 0.9
         // let shadowAngle = - (lightSourcePositionX - event.x) / window.innerWidth * shadowAngleMultiplier * verticalAngleInfluence
-        
-
+    
         let shadowAngle = - (lightSourcePositionX - event.x) / window.innerWidth * shadowAngleMultiplier
         let groundHeight = window.innerHeight - horizonHeight
         let groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight)/2
