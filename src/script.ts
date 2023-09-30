@@ -28,27 +28,34 @@ lightSourceGlowCanvas.style.top = (lightSourcePositionY - lightSourceSize) + 'px
 
 // create Branch public shadowSegments,
 const initialsegmentingLen = 10
-const trunkLen = 120
+const trunkLen = 50
 const lenMultiplier = 0.8
 const trunkWidthAsPartOfLen = 0.3
 const widthMultiplier = 0.7
 const rebranchingAngle = 23
-const maxLevelGlobal = 8
+const maxLevelGlobal = 6
 const branchingProbabilityBooster = 0.5
 const occasionalBranchesLimit = 10
 const levelShiftRangeAddition = 5
 
-const treeDistanceScaling = 0.85 // range 0-1
+const distanceScaling = 0.5 // range 0-1
+
+const mountainRangesAmount = 1
+const mountainRangePacksize = 10
+const mountainRangePackingDistance = 3
+const mountainRangeHeightVariation = 0.5 // 0-1
+
+const mountainBetweenRanges = 500
+const mountainHeightMultiplier = 450
 
 // const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
-const shadowColor = 'rgba(30, 30, 120, 1)'
 // const shadowAngle = -1 // range -1 to +1 works fine. 1 gives 45 angle
 const shadowAngleMultiplier = 3
 // const shadowSpread = 0.75 // > 0 for now
 const shadowSpreadMultiplier = 2
 const shadowSpread = (lightSourcePositionY/horizonHeight) * (lightSourceSize*2/horizonHeight) * shadowSpreadMultiplier + 0.15 // + for minimal shadow length
 // console.log((lightSourcePositionY/horizonHeight))
-const shadowSpreadMountain = (lightSourcePositionY)/horizonHeight * (lightSourceSize*2/horizonHeight) * shadowSpreadMultiplier + 0.20
+const shadowSpreadMountain = (lightSourcePositionY)/horizonHeight * (lightSourceSize*2/horizonHeight) * shadowSpreadMultiplier + 0.6
 const blurStrength = 10
 
 // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
@@ -60,7 +67,7 @@ const axis2LenRatio = 0.5
 const petioleLenRatio = 0.2 //of the whole length
 const leafyLevels = 3
 const leafLineWidthAsPartOfLeafLen = 0.05
-const globalLeafProbability = 0.2 // SAME PROBABILITY FOR EACH SIDE
+const globalLeafProbability = 0.1 // SAME PROBABILITY FOR EACH SIDE
 const leafLenScaling = 1.2
 const leafDistanceMultiplier = 0.5 // > 0 !
 
@@ -69,6 +76,8 @@ const growLimitingLeavesAmount = 10 // branches drawing will stop when this amou
 const leafMaxStageGlobal = 2
 const whileLoopRetriesEachFrameLeaves = 100 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
 
+const shadowColor = 'rgba(30, 30, 30, 0.5)'
+const mountainTopColor = 'rgba(250, 250, 250, 1)'
 const colorTreeInitialGlobal = 'rgba(20, 20, 20, 1)'
 const colorTreeFinalGlobal = 'rgba(50, 100, 100, 1)'
 // const colorLeaf = 'rgba(20, 150, 150, 1)'
@@ -291,16 +300,18 @@ class Branch {
 
     drawSegmentShadow() {
         if (this.checkIfOutsideDrawingWindow() === false) {
-        // this.shadowSegments[this.drawnSegments].y0
-        this.tree.ctxShadows.strokeStyle = shadowColor
-        this.tree.ctxShadows.lineCap = "round"
-        this.tree.ctxShadows.lineWidth = this.shadowSegments[this.drawnSegments].width
-        this.tree.ctxShadows.filter = 'blur(' + this.shadowSegments[this.drawnSegments].blur + 'px)'
-        this.tree.ctxShadows.beginPath();
-        this.tree.ctxShadows.moveTo(this.shadowSegments[this.drawnSegments].x0, this.shadowSegments[this.drawnSegments].y0)
-        this.tree.ctxShadows.lineTo(this.shadowSegments[this.drawnSegments].xF, this.shadowSegments[this.drawnSegments].yF)
-        this.tree.ctxShadows.stroke()
-        this.tree.ctxShadows.closePath()
+            const shadowColorValues = rgbaStrToObj(shadowColor)
+            const shadowColorAlpha1= 'rgba(' + shadowColorValues.r + ',' + shadowColorValues.g +  ',' + shadowColorValues.b +  ')'
+            // this.shadowSegments[this.drawnSegments].y0
+            this.tree.ctxShadows.strokeStyle = shadowColorAlpha1
+            this.tree.ctxShadows.lineCap = "round"
+            this.tree.ctxShadows.lineWidth = this.shadowSegments[this.drawnSegments].width
+            this.tree.ctxShadows.filter = 'blur(' + this.shadowSegments[this.drawnSegments].blur + 'px)'
+            this.tree.ctxShadows.beginPath();
+            this.tree.ctxShadows.moveTo(this.shadowSegments[this.drawnSegments].x0, this.shadowSegments[this.drawnSegments].y0)
+            this.tree.ctxShadows.lineTo(this.shadowSegments[this.drawnSegments].xF, this.shadowSegments[this.drawnSegments].yF)
+            this.tree.ctxShadows.stroke()
+            this.tree.ctxShadows.closePath()
         }
     }
 
@@ -503,7 +514,7 @@ class Leaf {
         // MOVE CANVAS
         this.canvas.style.left = this.canvasCoords.x + 'px'
         this.canvas.style.top = this.canvasCoords.y + 'px'
-        this.canvas.style.zIndex = String(this.tree.initY+1) // z-index of its tree +1
+        this.canvas.style.zIndex = this.tree.canvas.style.zIndex
 
         this.canvas.classList.add('leafCanvas')
         this.ctx.lineWidth = this.lineWidth // petiole width
@@ -685,7 +696,7 @@ let alreadyAnimating = false
 // PLANT (SPAWN) TREE AT CLICK COORDS
 canvasContainer.addEventListener("click", (event) => {
     if (alreadyAnimating === false && event.y > horizonHeight) {
-        // console.log(event.x, event.y)
+        console.log(event.y)
 
         // let verticalAngleInfluence = 1+ ( (this.window.innerHeight - event.y) / this.window.innerHeight ) ** 0.9
         // let shadowAngle = - (lightSourcePositionX - event.x) / window.innerWidth * shadowAngleMultiplier * verticalAngleInfluence
@@ -696,7 +707,7 @@ canvasContainer.addEventListener("click", (event) => {
         let scaleByTheGroundPosition = (event.y - groundMiddle)/groundHeight*2 // in range -1 to 1
         
         // _________ INITIALIZE THE TREE _________
-        let treeTrunkScaledLength = trunkLen + trunkLen * scaleByTheGroundPosition * treeDistanceScaling // normal scale at the half of ground canvas
+        let treeTrunkScaledLength = trunkLen + trunkLen * scaleByTheGroundPosition * distanceScaling // normal scale at the half of ground canvas
         const tree = new Tree (event.x, event.y, treeTrunkScaledLength, shadowAngle)
         animateTheTree(tree)
     }
@@ -931,6 +942,9 @@ class Mountain {
         private canvasShadow = canvasContainer.appendChild(document.createElement("canvas")),
         private ctxShadow = canvasShadow.getContext('2d') as CanvasRenderingContext2D,
     ){
+        this.canvas.style.zIndex = String(Math.round(canvasBottom))
+        this.canvasShadow.style.zIndex = this.canvas.style.zIndex
+
         this.currentAmountOfNodes = this.initialAmountOfNodes // to silence TS declared but never read
         while (this.currentOctave < this.octaves) {
             this.fillPointsOnTheLineBetweenNodes(this.currentAmountOfNodes)
@@ -1027,14 +1041,15 @@ class Mountain {
         }
     }
 
-
     drawMountain () {
         this.ctx.lineWidth = 1
         const gradient = this.ctx.createLinearGradient(this.canvasShadow.width/2, 0, this.canvasShadow.width/2, this.canvas.height)
-        // gradient.addColorStop(0.25, 'rgb(50,50,50,1)')
 
-        gradient.addColorStop(0, 'rgb(20,20,20,1)')
-        gradient.addColorStop(1, shadowColor)
+        const shadowColorValues = rgbaStrToObj(shadowColor)
+        const shadowColorAlpha1= 'rgba(' + shadowColorValues.r + ',' + shadowColorValues.g +  ',' + shadowColorValues.b +  ')'
+
+        gradient.addColorStop(0, mountainTopColor)
+        gradient.addColorStop(1, shadowColorAlpha1)
         this.ctx.fillStyle = gradient
         this.ctx.strokeStyle = gradient
 
@@ -1075,7 +1090,7 @@ class Mountain {
         this.ctxShadow.fillStyle = gradient
 
         let h = this.targetHeight
-        this.ctxShadow.lineWidth = 1
+        // this.ctxShadow.lineWidth = 1
         // let color = 'rgba(0,0,0, 0.5)'
         // this.ctxShadow.strokeStyle = color
         // this.ctxShadow.fillStyle = color
@@ -1101,7 +1116,7 @@ class Mountain {
 
         // this.ctxShadow.lineTo(0, (h -  this.allPoints[0]) * shadowSpreadMountain)
         this.ctxShadow.closePath()
-        this.ctxShadow.stroke()
+        // this.ctxShadow.stroke()
         this.ctxShadow.fill()
         // console.log(this.canvas)
         // console.log(this.canvasShadow)
@@ -1110,9 +1125,9 @@ class Mountain {
     
 }
 
-const mountainFarthest = new Mountain(4,10, 250, horizonHeight)
-// mountainFarthest.drawStraightShadow()
-mountainFarthest.drawShadow()
+// const mountainFarthest = new Mountain(4,10, 250, horizonHeight)
+// mountainFarthest.drawShadow()
+
 // const mountainClosest = new Mountain(4,10, 150, window.innerHeight)
 // mountainClosest
 
@@ -1124,13 +1139,21 @@ mountainFarthest.drawShadow()
 // mountainFarthest
 
 
-// for (let m=1; m < 3; m++) {
-//     const mountain = new Mountain(4,10, 65*m**1.4, horizonHeight - 80*(m-1)**2)
-//     mountain
-//     mountain.drawStraightShadow()
-//     // console.log(mountain.canvas.height)
-// }
-// mountain
+// DRAWING MOUNTAIN RANGES
+for (let n=0; n < mountainRangesAmount; n++) {
+
+    for (let p=0; p < mountainRangePacksize; p++ ) {
+        const height = mountainHeightMultiplier * ((n+1)/(mountainRangesAmount+1)) * ((mountainRangePacksize- (p* mountainRangeHeightVariation))/mountainRangePacksize)
+        const bottom = horizonHeight + n**2*mountainBetweenRanges + mountainRangePackingDistance*p
+
+        const groundHeight = window.innerHeight - horizonHeight
+        const groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight)/2
+        const scaleByTheGroundPosition = (bottom - groundMiddle)/groundHeight*2 * distanceScaling // in range -1 to 1
+
+        const mountain = new Mountain(4,10, height + height*scaleByTheGroundPosition*0.8, bottom)
+        mountain.drawShadow() 
+    }
+}
 
 // console.log(mountain)
 
