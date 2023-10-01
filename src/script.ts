@@ -37,27 +37,6 @@ const maxLevelGlobal = 6
 const branchingProbabilityBooster = 0.5
 const occasionalBranchesLimit = 10
 const levelShiftRangeAddition = 5
-
-const distanceScaling = 0.5 // range 0-1
-
-const mountainRangesAmount = 1
-const mountainRangePacksize = 10
-const mountainRangePackingDistance = 3
-const mountainRangeHeightVariation = 0.5 // 0-1
-
-const mountainBetweenRanges = 500
-const mountainHeightMultiplier = 450
-
-// const shadowSpread = -0.3 // -1 to 0 is shrinked shadow, 0 is shadow straight behind, 
-// const shadowAngle = -1 // range -1 to +1 works fine. 1 gives 45 angle
-const shadowAngleMultiplier = 3
-// const shadowSpread = 0.75 // > 0 for now
-const shadowSpreadMultiplier = 2
-const shadowSpread = (lightSourcePositionY/horizonHeight) * (lightSourceSize*2/horizonHeight) * shadowSpreadMultiplier + 0.15 // + for minimal shadow length
-// console.log((lightSourcePositionY/horizonHeight))
-const shadowSpreadMountain = (lightSourcePositionY)/horizonHeight * (lightSourceSize*2/horizonHeight) * shadowSpreadMultiplier + 0.6
-const blurStrength = 10
-
 // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
 // ratio is relative to Leaf's this.len
 const axis1WidthRatio = 1
@@ -70,14 +49,26 @@ const leafLineWidthAsPartOfLeafLen = 0.05
 const globalLeafProbability = 0.1 // SAME PROBABILITY FOR EACH SIDE
 const leafLenScaling = 1.2
 const leafDistanceMultiplier = 0.5 // > 0 !
-
 const leavesGrowingOrder = 0.25
 const growLimitingLeavesAmount = 10 // branches drawing will stop when this amount of growing leaves is reached
 const leafMaxStageGlobal = 2
 const whileLoopRetriesEachFrameLeaves = 100 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
 
-const shadowColor = 'rgba(30, 30, 30, 0.5)'
-const mountainTopColor = 'rgba(250, 250, 250, 1)'
+const distanceScaling = 0.7 // range 0-1
+
+const mountainsAmount = 20
+const mountainRangeWidth = (window.innerHeight - horizonHeight) / 6
+const mountainRangeHeightVariation = 0.4 // 0-1
+const mountainHeightMultiplier = 0.2 // 0.1 - 1?
+
+const shadowAngleMultiplier = 3
+const shadowSpreadMultiplier = 1
+const shadowSpread = (lightSourcePositionY/horizonHeight) * (lightSourceSize*2/horizonHeight) * shadowSpreadMultiplier + 0.15 // + for minimal shadow length
+const shadowSpreadMountain = (lightSourcePositionY)/horizonHeight * (lightSourceSize*2/horizonHeight) * shadowSpreadMultiplier + 0.7
+const blurStrength = 10
+
+const shadowColor = 'rgba(30, 30, 30, 0.6)' // alpha affects leaves and mountain shadow
+const mountainTopColor = 'rgba(100, 100, 150, 1)'
 const colorTreeInitialGlobal = 'rgba(20, 20, 20, 1)'
 const colorTreeFinalGlobal = 'rgba(50, 100, 100, 1)'
 // const colorLeaf = 'rgba(20, 150, 150, 1)'
@@ -1125,37 +1116,19 @@ class Mountain {
     
 }
 
-// const mountainFarthest = new Mountain(4,10, 250, horizonHeight)
-// mountainFarthest.drawShadow()
-
-// const mountainClosest = new Mountain(4,10, 150, window.innerHeight)
-// mountainClosest
-
-// console.log(window.innerWidth)
-// console.log(window.outerWidth)
-
-// mountainFarthest.drawMist()
-
-// mountainFarthest
-
-
 // DRAWING MOUNTAIN RANGES
-for (let n=0; n < mountainRangesAmount; n++) {
+for (let m = 0; m < mountainsAmount; m++ ) {
+    const height = 1000 * mountainHeightMultiplier * ((mountainsAmount - (m* mountainRangeHeightVariation))/(mountainsAmount))
+    const bottom = horizonHeight +  (mountainRangeWidth/mountainsAmount) * m
 
-    for (let p=0; p < mountainRangePacksize; p++ ) {
-        const height = mountainHeightMultiplier * ((n+1)/(mountainRangesAmount+1)) * ((mountainRangePacksize- (p* mountainRangeHeightVariation))/mountainRangePacksize)
-        const bottom = horizonHeight + n**2*mountainBetweenRanges + mountainRangePackingDistance*p
+    const groundHeight = window.innerHeight - horizonHeight
+    const groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight)/2
+    const scaleByTheGroundPosition = (bottom - groundMiddle)/groundHeight*2 * distanceScaling * 0.95
 
-        const groundHeight = window.innerHeight - horizonHeight
-        const groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight)/2
-        const scaleByTheGroundPosition = (bottom - groundMiddle)/groundHeight*2 * distanceScaling // in range -1 to 1
-
-        const mountain = new Mountain(4,10, height + height*scaleByTheGroundPosition*0.8, bottom)
-        mountain.drawShadow() 
-    }
+    const mountain = new Mountain(4,10, height + height*scaleByTheGroundPosition*1, bottom)
+    mountain.drawShadow() 
 }
 
-// console.log(mountain)
 
 
 // ________________________________________ MOUNTAIN ________________________________________
@@ -1185,9 +1158,6 @@ for (let n=0; n < mountainRangesAmount; n++) {
 //     perlinCtx.stroke()
 //     perlinCtx.closePath()
 // }
-
-
-
 
 
 
