@@ -24,13 +24,13 @@ lightSourceGlowCanvas.style.left = (lightSourcePositionX - lightSourceSize) + 'p
 lightSourceGlowCanvas.style.top = (lightSourcePositionY - lightSourceSize) + 'px'
 
 // create Branch public shadowSegments,
-const initialsegmentingLen = 10
-const trunkLen = 50
+const initialsegmentingLen = 100
+const trunkLen = 60
 const lenMultiplier = 0.8
 const trunkWidthAsPartOfLen = 0.3
 const widthMultiplier = 0.7
 const rebranchingAngle = 23
-const maxLevelGlobal = 6
+const maxLevelGlobal = 4
 const branchingProbabilityBooster = 0.5
 const occasionalBranchesLimit = 10
 const levelShiftRangeAddition = 5
@@ -51,12 +51,12 @@ const growLimitingLeavesAmount = 10 // branches drawing will stop when this amou
 const leafMaxStageGlobal = 2
 const whileLoopRetriesEachFrameLeaves = 100 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
 
-const distanceScaling = 0.7 // range 0-1
+const distanceScaling = 0.9 // range 0-1
 
-const mountainsAmount = 20
-const mountainRangeWidth = (window.innerHeight - horizonHeight) / 2
-const mountainRangeHeightVariation = 0.8 // 0-1
-const mountainHeightMultiplier = 0.5 // 0.1 - 1?
+const mountainsAmount = 10
+const mountainRangeWidth = (window.innerHeight - horizonHeight) / 4
+const mountainTrimCloser = 0.8 // 0-1
+const mountainHeightMultiplier = 0.4 // 0.1 - 1?
 
 const shadowAngleMultiplier = 3
 const shadowSpreadMultiplier = 1
@@ -65,28 +65,30 @@ const shadowSpreadMountain = (lightSourcePositionY)/horizonHeight * (lightSource
 const blurStrength = 10
 
 const leafLineDarkness = 0.2 // 0-1 range
-const leafBrightnessRandomizer = 50 // +- in rgb scale (0-255)
-const leafColorRandomizerR = 100 // +- in rgb scale (0-255)
-const leafColorRandomizerG = 100 // +- in rgb scale (0-255)
-const leafColorRandomizerB = 100 // +- in rgb scale (0-255)
+const leafBrightnessRandomizer = 0 // +- in rgb scale (0-255)
+const leafColorRandomizerR = 0 // +- in rgb scale (0-255)
+const leafColorRandomizerG = 0 // +- in rgb scale (0-255)
+const leafColorRandomizerB = 0 // +- in rgb scale (0-255)
 const colorLeaf = 'rgba(10, 150, 50, 1)'
 // const colorLeaf = 'rgba(20, 150, 150, 1)'
-const colorTreeInitialGlobal = 'rgba(20, 20, 20, 1)'
-const colorTreeFinalGlobal = 'rgba(50, 100, 100, 1)'
+const colorTreeInitialGlobal = 'rgba(70, 20, 5, 1)'
+const colorTreeFinalGlobal = 'rgba(180, 180, 100, 1)'
 // const colorLeafLine = 'rgba(50, 50, 50, 1)'
-const skyColorTop = 'rgba(50, 50, 100, 1)'
-const skyColorBottom = 'rgba(100, 100, 250, 1)' // MIST COLOR AS WELL
+const skyColor = 'rgba(120, 20, 160, 1)'
+const mistColor = 'rgba(150, 150, 160, 1)'
+const shadowColor = 'rgba(50, 50, 20, 1)' // alpha affects leaves and mountain shadow
+const mountainColor = 'rgba(150, 150, 150, 1)'
+const groundColor = 'rgba(50, 100, 50, 1)'
 
-const shadowColor = 'rgba(30, 30, 30, 1)' // alpha affects leaves and mountain shadow
-const mountainTopColor = 'rgba(250, 250, 250, 1)'
-const groundColor = 'rgba(100, 100, 100, 1)'
+const treeMistBlendingProportion = 0.8
+const treeShadowBlendingProportion = 0.2
 
 function paintTheSky() {
     const skyCanvas = document.getElementById('skyCanvas') as HTMLCanvasElement
     const skyCtx = skyCanvas.getContext('2d') as CanvasRenderingContext2D
     const gradient = skyCtx.createLinearGradient(skyCanvas.width/2, 0, skyCanvas.width/2, skyCanvas.height)
-    gradient.addColorStop(0, skyColorTop)
-    gradient.addColorStop(1, skyColorBottom)
+    gradient.addColorStop(0, skyColor)
+    gradient.addColorStop(1, mistColor)
     skyCtx.fillStyle = gradient
     skyCtx.fillRect(0, 0, skyCanvas.width, skyCanvas.height)
 }
@@ -96,7 +98,7 @@ function paintTheGround() {
     const groundCanvas = document.getElementById('groundCanvas') as HTMLCanvasElement
     const groundCtx = groundCanvas.getContext('2d') as CanvasRenderingContext2D
     const gradient = groundCtx.createLinearGradient(groundCanvas.width/2, 0, groundCanvas.width/2, groundCanvas.height)
-    gradient.addColorStop(0, skyColorBottom)
+    gradient.addColorStop(0, mistColor)
     gradient.addColorStop(1, groundColor)
     groundCtx.fillStyle = gradient
     groundCtx.fillRect(0, 0, groundCanvas.width, groundCanvas.height)
@@ -381,6 +383,9 @@ class Tree {
         readonly initY: number,
         readonly trunkLen: number,
         readonly shadowAngle:number,
+        public colorTreeInitial = colorTreeInitialGlobal,
+        public colorTreeFinal = colorTreeFinalGlobal,
+        public colorDistortionProportion = 0,
         readonly trunkWidth = trunkLen * trunkWidthAsPartOfLen,
         readonly initAngle: number = 0,
         readonly maxLevel: number = maxLevelGlobal,
@@ -394,14 +399,17 @@ class Tree {
         public ctxShadows = canvasShadows.getContext('2d') as CanvasRenderingContext2D,
         public averageLeafSize = trunkLen/5,
         public minimalDistanceBetweenLeaves = averageLeafSize * leafLenScaling * leafDistanceMultiplier, // doesnt count the distance between leaves of different branches
-        public colorTreeInitial = colorTreeInitialGlobal,
-        public colorTreeFinal = colorTreeFinalGlobal,
+
         // public rgbColorByLevel
-        public redPerLevel = (rgbaStrToObj(colorTreeFinalGlobal).r - rgbaStrToObj(colorTreeInitialGlobal).r) / maxLevel,
-        public greenPerLevel = (rgbaStrToObj(colorTreeFinalGlobal).g - rgbaStrToObj(colorTreeInitialGlobal).g) / maxLevel,
-        public bluePerLevel = (rgbaStrToObj(colorTreeFinalGlobal).b - rgbaStrToObj(colorTreeInitialGlobal).b) / maxLevel,
+        public redPerLevel = 0,
+        public greenPerLevel = 0,
+        public bluePerLevel = 0,
 
     ){
+        this.redPerLevel = (rgbaStrToObj(this.colorTreeFinal).r - rgbaStrToObj(this.colorTreeInitial).r) / maxLevel,
+        this.greenPerLevel = (rgbaStrToObj(this.colorTreeFinal).g - rgbaStrToObj(this.colorTreeInitial).g) / maxLevel,
+        this.bluePerLevel = (rgbaStrToObj(this.colorTreeFinal).b - rgbaStrToObj(this.colorTreeInitial).b) / maxLevel,
+
         this.canvas.style.zIndex = String(initY) // higher z-index makes element appear on top
         // SET INITIAL CANVASES SIZE
         this.canvas.classList.add('canvas')
@@ -482,7 +490,7 @@ class Root {
         public tree: Tree,
         public angle: number = 0, // Rotates the tree
         public level: number = -1,
-        public color = rgbaStrToObj(colorTreeInitialGlobal)
+        public color = rgbaStrToObj(tree.colorTreeInitial)
     ){
 }}
 // ________________________________________ ROOT ________________________________________
@@ -531,7 +539,16 @@ class Leaf {
         let bAddtn = - leafColorRandomizerB/2 + Math.random() * leafColorRandomizerB
 
         this.color = {r: base.r + brghtnAddtn + rAddtn, g: base.g + brghtnAddtn + gAddtn, b: base.b + brghtnAddtn + bAddtn}
-        
+
+        let leafColor = 'rgba(' + this.color.r + ',' + this.color.g +  ',' + this.color.b + ')'
+        let colorResulting = blendRgbaColorsInProportions(mistColor, leafColor, this.tree.colorDistortionProportion * treeMistBlendingProportion)
+        // NOW BLEND AGAIN WITH SHADOW
+        colorResulting = blendRgbaColorsInProportions(shadowColor, colorResulting, this.tree.colorDistortionProportion * treeShadowBlendingProportion)
+        const colorFinalValues = rgbaStrToObj(colorResulting)
+
+        this.color = {r: colorFinalValues.r, g: colorFinalValues.g, b: colorFinalValues.b}
+
+
         // RESIZE CANVAS (canvasCoords and 0rels depend on it)
         this.canvas.width = this.len*1.4
         this.canvas.height = this.len*1.4
@@ -658,12 +675,17 @@ class Leaf {
 
     drawLeafStage () {
         // clear whole previous frame
+        // console.log(colorProportion) // 1 - 0
         
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
         
         // this.ctx.strokeStyle = colorLeafLine
+        console.log(leafLineDarkness)
+        console.log(this.tree.colorDistortionProportion)
+        const strokeStyleBlend = leafLineDarkness* (1-this.tree.colorDistortionProportion)
+
         // this.ctx.strokeStyle = this.color.r 
-        this.ctx.strokeStyle = 'rgba(' + (this.color.r - this.color.r*leafLineDarkness) + ',' + (this.color.g - this.color.g*leafLineDarkness) +  ',' + (this.color.b - this.color.b*leafLineDarkness) + ')'
+        this.ctx.strokeStyle = 'rgba(' + (this.color.r - this.color.r*strokeStyleBlend) + ',' + (this.color.g - this.color.g*strokeStyleBlend) +  ',' + (this.color.b - this.color.b*strokeStyleBlend) + ')'
 
         this.ctx.beginPath()
 
@@ -684,7 +706,7 @@ class Leaf {
         this.ctx.closePath()
         // this.ctx.fillStyle = colorLeaf
         this.ctx.fillStyle = 'rgba(' + this.color.r + ',' + this.color.g +  ',' + this.color.b + ')'
-
+        
         // this.ctx.fillStyle = gradient
         this.ctx.fill()
         this.ctx.stroke()
@@ -730,7 +752,7 @@ let alreadyAnimating = false
 // PLANT (SPAWN) TREE AT CLICK COORDS
 canvasContainer.addEventListener("click", (event) => {
     if (alreadyAnimating === false && event.y > horizonHeight) {
-        console.log(event.y)
+        // console.log(event.y)
 
         // let verticalAngleInfluence = 1+ ( (this.window.innerHeight - event.y) / this.window.innerHeight ) ** 0.9
         // let shadowAngle = - (lightSourcePositionX - event.x) / window.innerWidth * shadowAngleMultiplier * verticalAngleInfluence
@@ -740,9 +762,19 @@ canvasContainer.addEventListener("click", (event) => {
         let groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight)/2
         let scaleByTheGroundPosition = (event.y - groundMiddle)/groundHeight*2 // in range -1 to 1
         
+        const colorDistortionProportion = 1 - ((event.y - horizonHeight) / groundHeight)
+        // console.log(colorProportion) // 1 - 0
+        let colorInitial = blendRgbaColorsInProportions(mistColor, colorTreeInitialGlobal, colorDistortionProportion*treeMistBlendingProportion)
+        let colorFinal = blendRgbaColorsInProportions(mistColor, colorTreeFinalGlobal, colorDistortionProportion*treeMistBlendingProportion)
+        // NOW BLEND AGAIN WITH SHADOW
+        colorInitial = blendRgbaColorsInProportions(shadowColor, colorInitial, colorDistortionProportion*treeShadowBlendingProportion)
+        colorFinal = blendRgbaColorsInProportions(shadowColor, colorFinal, colorDistortionProportion*treeShadowBlendingProportion)
+
+        // console.log(colorInitial)
+        
         // _________ INITIALIZE THE TREE _________
         let treeTrunkScaledLength = trunkLen + trunkLen * scaleByTheGroundPosition * distanceScaling // normal scale at the half of ground canvas
-        const tree = new Tree (event.x, event.y, treeTrunkScaledLength, shadowAngle)
+        const tree = new Tree (event.x, event.y, treeTrunkScaledLength, shadowAngle, colorInitial, colorFinal, colorDistortionProportion)
         animateTheTree(tree)
     }
 })
@@ -1082,7 +1114,7 @@ class Mountain {
         const gradient = this.ctx.createLinearGradient(this.canvasShadow.width/2, 0, this.canvasShadow.width/2, this.canvas.height)
         // const shadowColorValues = rgbaStrToObj(shadowColor)
         // const shadowColorAlpha1= 'rgba(' + shadowColorValues.r + ',' + shadowColorValues.g +  ',' + shadowColorValues.b +  ', 1)'
-        // gradient.addColorStop(0, mountainTopColor)
+        // gradient.addColorStop(0, mountainColor)
         // gradient.addColorStop(1, this.colorBottom)
         gradient.addColorStop(0, this.colorTop)
         gradient.addColorStop(1, this.colorBottom)
@@ -1159,19 +1191,18 @@ class Mountain {
 
 // DRAWING MOUNTAIN RANGES
 for (let m = 0; m < mountainsAmount; m++ ) {
-    const height = 1000 * mountainHeightMultiplier * ((mountainsAmount - (m* mountainRangeHeightVariation))/(mountainsAmount))
+    const height = 1000 * mountainHeightMultiplier * ((mountainsAmount - (m* mountainTrimCloser))/(mountainsAmount))
     const bottom = horizonHeight +  (mountainRangeWidth/mountainsAmount) * m
 
     const groundHeight = window.innerHeight - horizonHeight
-    const groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight)/2
-    const scaleByTheGroundPosition = (bottom - groundMiddle)/groundHeight*2 * distanceScaling * 0.95
     const colorProportion = 1 - ((bottom - horizonHeight) / groundHeight)
+    const groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight)/2
+    const scaleByTheGroundPosition = (bottom - groundMiddle)/groundHeight * distanceScaling * 1.8
     // console.log(colorProportion) // 1 - 0
-    const colorTop = blendRgbaColorsInProportions(skyColorBottom, mountainTopColor, colorProportion)
+    const colorTop = blendRgbaColorsInProportions(mistColor, mountainColor, colorProportion)
     // const colorProportionBottom = colorProportion *2/4 + 1/4
-    const colorProportionBottom = colorProportion
 
-    const colorBottom = blendRgbaColorsInProportions(skyColorBottom, shadowColor, colorProportionBottom)
+    const colorBottom = blendRgbaColorsInProportions(mistColor, shadowColor, colorProportion)
     const mountain = new Mountain(4,10, height + height*scaleByTheGroundPosition*1, bottom, colorTop, colorBottom)
     mountain //silence TS
 }
