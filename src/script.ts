@@ -1,26 +1,23 @@
 // START ON LOAD
 window.addEventListener('load', function() {
 // ________________________________________ GLOBALS ________________________________________
-// ctx.globalAlpha = 0.3;
 const globalCanvasesList = [] as HTMLCanvasElement[]
 const canvasContainer = document.getElementById('canvasContainer') as HTMLBodyElement
 
 // HORIZON HEIGHT
 const horizonHeight = canvasContainer.offsetHeight*0.2 + Math.random()*canvasContainer.offsetHeight*0.6
 document.documentElement.style.cssText = "--horizonHeight:" + horizonHeight + "px"
+
 // LIGHTSOURCE
 const lightSourceCanvas = document.getElementById('lightSourceCanvas') as HTMLBodyElement
 const lightSourceGlowCanvas = document.getElementById('lightSourceGlowCanvas') as HTMLBodyElement
-
 const lightSourcePositionX = Math.random()*this.window.innerWidth
 const lightSourcePositionY = Math.random()*horizonHeight*0.8
 const lightSourceSize = 100 + Math.random()*150
-
 lightSourceCanvas.style.width = lightSourceSize + 'px'
 lightSourceCanvas.style.height = lightSourceSize + 'px'
 lightSourceCanvas.style.left = (lightSourcePositionX - lightSourceSize/2) + 'px'
 lightSourceCanvas.style.top = (lightSourcePositionY - lightSourceSize/2) + 'px'
-
 lightSourceGlowCanvas.style.width = lightSourceSize*2 + 'px'
 lightSourceGlowCanvas.style.height = lightSourceSize*2 + 'px'
 lightSourceGlowCanvas.style.left = (lightSourcePositionX - lightSourceSize) + 'px'
@@ -57,40 +54,86 @@ const whileLoopRetriesEachFrameLeaves = 100 // when that = 1 --> ~1 FPS for leaf
 const distanceScaling = 0.7 // range 0-1
 
 const mountainsAmount = 20
-const mountainRangeWidth = (window.innerHeight - horizonHeight) / 6
-const mountainRangeHeightVariation = 0.4 // 0-1
-const mountainHeightMultiplier = 0.2 // 0.1 - 1?
+const mountainRangeWidth = (window.innerHeight - horizonHeight) / 2
+const mountainRangeHeightVariation = 0.8 // 0-1
+const mountainHeightMultiplier = 0.5 // 0.1 - 1?
 
 const shadowAngleMultiplier = 3
 const shadowSpreadMultiplier = 1
 const shadowSpread = (lightSourcePositionY/horizonHeight) * (lightSourceSize*2/horizonHeight) * shadowSpreadMultiplier + 0.15 // + for minimal shadow length
-const shadowSpreadMountain = (lightSourcePositionY)/horizonHeight * (lightSourceSize*2/horizonHeight) * shadowSpreadMultiplier + 0.7
+const shadowSpreadMountain = (lightSourcePositionY)/horizonHeight * (lightSourceSize*2/horizonHeight) * shadowSpreadMultiplier + 0.8
 const blurStrength = 10
 
-const shadowColor = 'rgba(30, 30, 30, 0.6)' // alpha affects leaves and mountain shadow
-const mountainTopColor = 'rgba(100, 100, 150, 1)'
-const colorTreeInitialGlobal = 'rgba(20, 20, 20, 1)'
-const colorTreeFinalGlobal = 'rgba(50, 100, 100, 1)'
-// const colorLeaf = 'rgba(20, 150, 150, 1)'
-// const colorLeafLine = 'rgba(50, 50, 50, 1)'
-const colorLeaf = 'rgba(10, 150, 50, 1)'
 const leafLineDarkness = 0.2 // 0-1 range
 const leafBrightnessRandomizer = 50 // +- in rgb scale (0-255)
-const leafColorRandomizerR = 0 // +- in rgb scale (0-255)
-const leafColorRandomizerG = 0 // +- in rgb scale (0-255)
-const leafColorRandomizerB = 0 // +- in rgb scale (0-255)
+const leafColorRandomizerR = 100 // +- in rgb scale (0-255)
+const leafColorRandomizerG = 100 // +- in rgb scale (0-255)
+const leafColorRandomizerB = 100 // +- in rgb scale (0-255)
+const colorLeaf = 'rgba(10, 150, 50, 1)'
+// const colorLeaf = 'rgba(20, 150, 150, 1)'
+const colorTreeInitialGlobal = 'rgba(20, 20, 20, 1)'
+const colorTreeFinalGlobal = 'rgba(50, 100, 100, 1)'
+// const colorLeafLine = 'rgba(50, 50, 50, 1)'
+const skyColorTop = 'rgba(50, 50, 100, 1)'
+const skyColorBottom = 'rgba(100, 100, 250, 1)' // MIST COLOR AS WELL
+
+const shadowColor = 'rgba(30, 30, 30, 1)' // alpha affects leaves and mountain shadow
+const mountainTopColor = 'rgba(250, 250, 250, 1)'
+const groundColor = 'rgba(100, 100, 100, 1)'
+
+function paintTheSky() {
+    const skyCanvas = document.getElementById('skyCanvas') as HTMLCanvasElement
+    const skyCtx = skyCanvas.getContext('2d') as CanvasRenderingContext2D
+    const gradient = skyCtx.createLinearGradient(skyCanvas.width/2, 0, skyCanvas.width/2, skyCanvas.height)
+    gradient.addColorStop(0, skyColorTop)
+    gradient.addColorStop(1, skyColorBottom)
+    skyCtx.fillStyle = gradient
+    skyCtx.fillRect(0, 0, skyCanvas.width, skyCanvas.height)
+}
+paintTheSky()
+
+function paintTheGround() {
+    const groundCanvas = document.getElementById('groundCanvas') as HTMLCanvasElement
+    const groundCtx = groundCanvas.getContext('2d') as CanvasRenderingContext2D
+    const gradient = groundCtx.createLinearGradient(groundCanvas.width/2, 0, groundCanvas.width/2, groundCanvas.height)
+    gradient.addColorStop(0, skyColorBottom)
+    gradient.addColorStop(1, groundColor)
+    groundCtx.fillStyle = gradient
+    groundCtx.fillRect(0, 0, groundCanvas.width, groundCanvas.height)
+}
+paintTheGround()
 
 function rgbaStrToObj (color: string) {
-    let colorValsArray = color.substring(4, color.length-1).replace(/[[\(\))]/g,'').split(',') // /g is global - as many finds as necessary
+    const colorValsArray = color.substring(4, color.length-1).replace(/[[\(\))]/g,'').split(',') // /g is global - as many finds as necessary
     return {r: Number(colorValsArray[0]), g: Number(colorValsArray[1]), b: Number(colorValsArray[2]), a: Number(colorValsArray[3])}
 }
+
+function blendRgbaColorsInProportions (color1: string, color2: string, initColorInfluence: number) {
+    const colorInitVals = color1.substring(4, color1.length-1).replace(/[[\(\))]/g,'').split(',') // /g is global - as many finds as necessary
+    const colorFinalVals = color2.substring(4, color2.length-1).replace(/[[\(\))]/g,'').split(',')
+    // console.log(colorInitVals, colorFinalVals)
+    
+    // BLEND - WEIGHTED AVERAGE
+    const resultingRed = (Number(colorInitVals[0])*initColorInfluence + Number(colorFinalVals[0])*(1-initColorInfluence))
+    const resultingGreen = (Number(colorInitVals[1])*initColorInfluence + Number(colorFinalVals[1])*(1-initColorInfluence))
+    const resultingBlue = (Number(colorInitVals[2])*initColorInfluence + Number(colorFinalVals[2])*(1-initColorInfluence))
+    const resultingAlpha = (Number(colorInitVals[3])*initColorInfluence + Number(colorFinalVals[3])*(1-initColorInfluence))
+    
+    const resultingColor = 'rgba(' + resultingRed + ',' + resultingGreen + ',' + resultingBlue + ',' + resultingAlpha + ')'
+    // console.log(resultingColor)
+    return resultingColor
+}
+// const colorTreeFinalGlobal0 = 'rgba(10, 250, 250, 1)'
+// blendRgbaColorsInProportions(skyColor, colorTreeFinalGlobal0, 0.5)
+
+
+
 
 //  SET CANVASES SIZES AND CHANGE THEM AT WINDOW RESIZE
 window.addEventListener('resize', function() {
     // globalCanvasesList.forEach( (canvas) => {
     //     canvas.width = window.innerWidth
     //     canvas.height = window.innerHeight
-
     // })
     window.location.reload() // refresh page
     // tree.drawTheTree() // tree possibly not ready at resize
@@ -292,7 +335,7 @@ class Branch {
     drawSegmentShadow() {
         if (this.checkIfOutsideDrawingWindow() === false) {
             const shadowColorValues = rgbaStrToObj(shadowColor)
-            const shadowColorAlpha1= 'rgba(' + shadowColorValues.r + ',' + shadowColorValues.g +  ',' + shadowColorValues.b +  ')'
+            const shadowColorAlpha1= 'rgba(' + shadowColorValues.r + ',' + shadowColorValues.g +  ',' + shadowColorValues.b +  ',1)'
             // this.shadowSegments[this.drawnSegments].y0
             this.tree.ctxShadows.strokeStyle = shadowColorAlpha1
             this.tree.ctxShadows.lineCap = "round"
@@ -920,6 +963,8 @@ class Mountain {
         readonly octaves: number,
         readonly targetHeight: number,
         private canvasBottom: number,
+        private colorTop: string,
+        private colorBottom: string,
         // let width = 600,
         private width = canvasContainer.offsetWidth * 1.02, // a little overlap for reassuring
         private lowestPoint = Infinity,
@@ -964,7 +1009,7 @@ class Mountain {
         this.ctx.globalCompositeOperation = 'destination-atop' // for drawing stroke in the same color as fill
         this.ctxShadow.globalCompositeOperation = 'destination-atop' // for drawing stroke in the same color as fill
         this.drawMountain()
-        // this.drawShadow()
+        this.drawShadow()
     }
 
     fillPointsOnTheLineBetweenNodes (nodes_amount: number) {
@@ -1035,21 +1080,16 @@ class Mountain {
     drawMountain () {
         this.ctx.lineWidth = 1
         const gradient = this.ctx.createLinearGradient(this.canvasShadow.width/2, 0, this.canvasShadow.width/2, this.canvas.height)
-
-        const shadowColorValues = rgbaStrToObj(shadowColor)
-        const shadowColorAlpha1= 'rgba(' + shadowColorValues.r + ',' + shadowColorValues.g +  ',' + shadowColorValues.b +  ')'
-
-        gradient.addColorStop(0, mountainTopColor)
-        gradient.addColorStop(1, shadowColorAlpha1)
+        // const shadowColorValues = rgbaStrToObj(shadowColor)
+        // const shadowColorAlpha1= 'rgba(' + shadowColorValues.r + ',' + shadowColorValues.g +  ',' + shadowColorValues.b +  ', 1)'
+        // gradient.addColorStop(0, mountainTopColor)
+        // gradient.addColorStop(1, this.colorBottom)
+        gradient.addColorStop(0, this.colorTop)
+        gradient.addColorStop(1, this.colorBottom)
         this.ctx.fillStyle = gradient
         this.ctx.strokeStyle = gradient
+        this.ctx.stroke()
 
-        // let colorBrightness = 100
-        // let howFar = 1- (horizonHeight - this.canvasBottom) / (window.innerHeight - horizonHeight)
-        // console.log(howFar)
-        // let color = 'rgba('+ howFar*colorBrightness + ',' + howFar*colorBrightness + ',' + howFar*colorBrightness + ', 1 )'
-        // this.ctx.strokeStyle = color
-        // this.ctx.fillStyle = color
         // this.ctx.filter = 'blur(3px)'
 
         this.ctx.beginPath()
@@ -1074,9 +1114,10 @@ class Mountain {
     drawShadow () {
         const gradient = this.ctxShadow.createLinearGradient(this.canvasShadow.width/2, 0, this.canvasShadow.width/2, this.canvasShadow.height)
         const shadowColorValues =  rgbaStrToObj(shadowColor)
-        const shadowColorTransparent = 'rgba(' + shadowColorValues.r + ',' + shadowColorValues.g +  ',' + shadowColorValues.b +  ',' + shadowColorValues.a/10 + ')'
+        const shadowColorTransparent = 'rgba(' + shadowColorValues.r + ',' + shadowColorValues.g +  ',' + shadowColorValues.b +  ',' + shadowColorValues.a/4 + ')'
 
-        gradient.addColorStop(0, shadowColor)
+        gradient.addColorStop(0, this.colorBottom)
+        // gradient.addColorStop(0, shadowColor)
         gradient.addColorStop(1, shadowColorTransparent)
         this.ctxShadow.fillStyle = gradient
 
@@ -1124,9 +1165,15 @@ for (let m = 0; m < mountainsAmount; m++ ) {
     const groundHeight = window.innerHeight - horizonHeight
     const groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight)/2
     const scaleByTheGroundPosition = (bottom - groundMiddle)/groundHeight*2 * distanceScaling * 0.95
+    const colorProportion = 1 - ((bottom - horizonHeight) / groundHeight)
+    // console.log(colorProportion) // 1 - 0
+    const colorTop = blendRgbaColorsInProportions(skyColorBottom, mountainTopColor, colorProportion)
+    // const colorProportionBottom = colorProportion *2/4 + 1/4
+    const colorProportionBottom = colorProportion
 
-    const mountain = new Mountain(4,10, height + height*scaleByTheGroundPosition*1, bottom)
-    mountain.drawShadow() 
+    const colorBottom = blendRgbaColorsInProportions(skyColorBottom, shadowColor, colorProportionBottom)
+    const mountain = new Mountain(4,10, height + height*scaleByTheGroundPosition*1, bottom, colorTop, colorBottom)
+    mountain //silence TS
 }
 
 
