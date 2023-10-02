@@ -23,15 +23,15 @@ window.addEventListener('load', function () {
     lightSourceGlowCanvas.style.top = (lightSourcePositionY - lightSourceSize) + 'px';
     // create Branch public shadowSegments,
     const trunkLen = 40;
-    const initialsegmentingLen = trunkLen / 8;
+    const initialsegmentingLen = trunkLen / 1;
     const lenMultiplier = 0.9;
     const trunkWidthAsPartOfLen = 0.3;
-    const widthMultiplier = 0.6;
+    const widthMultiplier = 0.7;
     const rebranchingAngle = 23;
-    const maxLevelGlobal = 5;
-    const branchingProbabilityBooster = 0.5;
+    const maxLevelGlobal = 8;
+    const branchingProbabilityBooster = 0.5; // when 0 trees look like sick
     const occasionalBranchesLimit = 2;
-    const levelShiftRangeAddition = maxLevelGlobal;
+    const levelShiftRangeAddition = maxLevelGlobal / 2;
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
     const axis1WidthRatio = 1;
@@ -39,20 +39,20 @@ window.addEventListener('load', function () {
     const axis1LenRatio = -0.15;
     const axis2LenRatio = 0.5;
     const petioleLenRatio = 0.2; //of the whole length
-    const leafyLevels = 3;
+    const leafyLevels = 5;
     const leafLineWidthAsPartOfLeafLen = 0.05;
-    const globalLeafProbability = 0.1; // SAME PROBABILITY FOR EACH SIDE
-    const leafLenScaling = 1.2;
+    const globalLeafProbability = 0.25; // SAME PROBABILITY FOR EACH SIDE
+    const leafLenScaling = 1;
     const leafDistanceMultiplier = 0.5; // > 0 !
     const leavesGrowingOrder = 0.25;
     const growLimitingLeavesAmount = 10; // branches drawing will stop when this amount of growing leaves is reached
     const leafMaxStageGlobal = 2;
     const whileLoopRetriesEachFrameLeaves = 100; // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
     const distanceScaling = 1; // range 0-1
-    const mountainsAmount = 20;
-    const mountainRangeWidth = (window.innerHeight - horizonHeight) * 0.3;
-    const mountainTrimCloser = 0.5; // 0-1
-    const mountainHeightMultiplier = 0.6; // 0.1 - 1?
+    const mountainsAmount = 10;
+    const mountainRangeWidth = (window.innerHeight - horizonHeight) * 0.2;
+    const mountainTrimCloser = 0.7; // 0-1
+    const mountainHeightMultiplier = 0.8; // 0.1 - 1?
     const shadowAngleMultiplier = 3;
     const shadowSpreadMultiplier = 1;
     const shadowSpread = (lightSourcePositionY / horizonHeight) * (lightSourceSize * 2 / horizonHeight) * shadowSpreadMultiplier + 0.15; // + for minimal shadow length
@@ -61,20 +61,32 @@ window.addEventListener('load', function () {
     const colorTreeInitialGlobal = 'rgba(20, 30, 0, 1)';
     const colorTreeFinalGlobal = 'rgba(100, 160, 160, 1)';
     const leafLineDarkness = -1; // 0-1 range (or even -1 to +1)
-    const leafBrightnessRandomizer = 10; // +- in rgb scale (0-255)
-    const leafColorRandomizerR = 100; // +- in rgb scale (0-255)
-    const leafColorRandomizerG = 100; // +- in rgb scale (0-255)
-    const leafColorRandomizerB = 100; // +- in rgb scale (0-255)
-    const colorLeaf = 'rgba(10, 120, 150, 1)';
+    const leafBrightnessRandomizer = 0; // +- in rgb scale (0-255)
+    const leafColorRandomizerR = 50; // +- in rgb scale (0-255)
+    const leafColorRandomizerG = 50; // +- in rgb scale (0-255)
+    const leafColorRandomizerB = 50; // +- in rgb scale (0-255)
+    const colorLeaf = 'rgba(10, 140, 160, 1)';
     // const colorLeaf = colorTreeFinalGlobal
     const skyColor = 'rgba(80, 20, 140, 1)';
     const mistColor = 'rgba(200, 200, 200, 1)';
-    const shadowColor = 'rgba(20, 20, 20, 1)'; // alpha affects leaves and mountain shadow
+    const shadowColor = 'rgba(10, 10, 40, 1)'; // alpha affects leaves and mountain shadow
     const mountainColor = 'rgba(40, 0, 0, 1)';
     const groundColor = 'rgba(50, 100, 50, 1)';
-    const treeMistBlendingProportion = 0.9;
-    const treeShapeShadow = 0.2; // not much
-    const treeShadowBlendingProportion = 0.9; // blend shadow color with ground color
+    const treeMistBlendingProportion = 0.6;
+    const treeShapeShadow = 0.2; // not much, not needed as a parameter 
+    const treeShadowBlendingProportion = 0.8; // blend shadow color with ground color
+    const undoButton = this.document.getElementById('undoButton');
+    let treesList = [];
+    undoButton.addEventListener('click', removeLastTree);
+    function removeLastTree() {
+        console.log('__________');
+        console.log(treesList);
+        if (treesList.length > 0) {
+            treesList[treesList.length - 1].removeTreeCanvases();
+            treesList.splice(-1);
+        }
+        console.log(treesList);
+    }
     function paintTheSky() {
         const skyCanvas = document.getElementById('skyCanvas');
         const skyCtx = skyCanvas.getContext('2d');
@@ -344,7 +356,7 @@ window.addEventListener('load', function () {
     // ________________________________________ BRANCH ________________________________________
     // ________________________________________ TREE ________________________________________
     class Tree {
-        constructor(initX, initY, trunkLen, shadowAngle, colorTreeInitial = colorTreeInitialGlobal, colorTreeFinal = colorTreeFinalGlobal, shadowColorTree = shadowColor, colorDistortionProportion = 0, trunkWidth = trunkLen * trunkWidthAsPartOfLen, initAngle = 0, maxLevel = maxLevelGlobal, branchingProbability = branchingProbabilityBooster, allBranches = [[]], growingLeavesList = [], 
+        constructor(initX, initY, trunkLen, shadowAngle, colorTreeInitial = colorTreeInitialGlobal, colorTreeFinal = colorTreeFinalGlobal, shadowColorTree = shadowColor, colorDistortionProportion = 0, trunkWidth = trunkLen * trunkWidthAsPartOfLen, initAngle = 0, maxLevel = maxLevelGlobal, branchingProbability = branchingProbabilityBooster, allBranches = [[]], growingLeavesList = [], leavesList = [], 
         // public canvas = document.getElementById('canvasBranches') as HTMLCanvasElement,
         canvas = canvasContainer.appendChild(document.createElement("canvas")), // create canvas
         ctx = canvas.getContext('2d'), canvasShadows = canvasContainer.appendChild(document.createElement("canvas")), // create canvas for tree shadow
@@ -365,6 +377,7 @@ window.addEventListener('load', function () {
             this.branchingProbability = branchingProbability;
             this.allBranches = allBranches;
             this.growingLeavesList = growingLeavesList;
+            this.leavesList = leavesList;
             this.canvas = canvas;
             this.ctx = ctx;
             this.canvasShadows = canvasShadows;
@@ -442,6 +455,14 @@ window.addEventListener('load', function () {
             }
             console.log('drawTheTree in ' + (Date.now() - startTime) + ' ms');
         }
+        removeTreeCanvases() {
+            this.canvas.remove();
+            this.canvasShadows.remove();
+            this.leavesList.forEach((leaf) => {
+                leaf.canvas.remove();
+                leaf.canvasShadow.remove();
+            });
+        }
     }
     // ________________________________________ TREE ________________________________________
     // ________________________________________ ROOT ________________________________________
@@ -498,6 +519,7 @@ window.addEventListener('load', function () {
             this.shadowLen = shadowLen;
             this.blur = blur;
             this.color = color;
+            this.tree.leavesList.push(this);
             let base = rgbaStrToObj(colorLeaf);
             let brghtnAddtn = -leafBrightnessRandomizer / 2 + Math.random() * leafBrightnessRandomizer;
             let rAddtn = -leafColorRandomizerR / 2 + Math.random() * leafColorRandomizerR;
@@ -712,6 +734,7 @@ window.addEventListener('load', function () {
             // _________ INITIALIZE THE TREE _________
             let treeTrunkScaledLength = trunkLen + trunkLen * scaleByTheGroundPosition * distanceScaling; // normal scale at the half of ground canvas
             const tree = new Tree(event.x, event.y, treeTrunkScaledLength, shadowAngle, colorInitial, colorFinal, shadowColorTree, colorDistortionProportion);
+            treesList.push(tree);
             animateTheTree(tree);
         }
     });
