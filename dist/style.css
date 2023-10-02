@@ -4,7 +4,7 @@
     /* background: linear-gradient(90deg, rgba(255,241,0,1) 9%, rgba(255,233,0,1) 12%, rgba(0,212,255,1) 21%); */
     /* --horizonHeight: 50%; */
     /*image-rendering: optimizeSpeed;*/ /* keep it or not? */
-    --lightSourceColor: rgb(217, 224, 116);
+    --lightSourceColor: rgba(126, 230, 204, 0.861);
     /* --skyColor: rgb(5, 70, 119); */
 }
 
@@ -18,7 +18,7 @@
 #canvasContainer {
     overflow: hidden;
     width: 100%;
-    height: 100%;
+    height: 100%; /* > 100? */
     position: absolute;
     /* border: 2px solid rgba(4, 98, 92, 0.305); */
     top: 50%;
@@ -28,6 +28,7 @@
 }
 
 #skyCanvas{
+    /* top: -10px; */
     position: absolute;
     background: var(--skyColor);
     width: 100%;
@@ -53,7 +54,7 @@
     /* background: rgb(17, 2, 80); */
     /* width: 100%; */
     /* border: 2px solid rgb(5, 253, 237); */
-    z-index: 2;
+    z-index: 0;
     image-rendering: smooth;
 }
 
