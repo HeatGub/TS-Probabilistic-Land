@@ -1,5 +1,132 @@
 // START ON LOAD
 window.addEventListener('load', function() {
+
+// ________________________________________ SIDEBAR ________________________________________
+const SIDEBAR_WIDTH = 200
+const CTGR_PERSPECTIVE = document.getElementById('CTGR_PERSPECTIVE') as HTMLElement
+const CTGR_LIGHTSOURCE = document.getElementById('CTGR_LIGHTSOURCE') as HTMLElement
+const CTGR_BRANCH = document.getElementById('CTGR_BRANCH') as HTMLElement
+// const CTGR_LEAF = document.getElementById('CTGR_LEAF') as HTMLElement
+
+function valById(id: string) {
+    return Number( (<HTMLInputElement>document.getElementById(id)).value )
+}
+
+const paramsList: {id: string, name: string, category: HTMLElement, min: number, max: number, value: number, title: string}[] = []
+paramsList
+// // PERSPECTIVE
+// paramsList.push({id: 'horizonHeight', name: 'horizon height' , category: CTGR_PERSPECTIVE, min: 0, max: 10, value: 3, title: ''})
+// PERSPECTIVE
+createSliderWithTextInput('horizonHeight', 'horizon height' , CTGR_PERSPECTIVE, 0, 10, 3, '')
+// console.log(valById('horizonHeight_T'))
+// LIGHTSOURCE
+createSliderWithTextInput('lightSourcePositionX', 'x coordinate' , CTGR_LIGHTSOURCE, 0, this.window.innerWidth, Math.random()*this.window.innerWidth, '')
+// createSliderWithTextInput({id: 'lightSourcePositionY', name: 'y coordinate' , category: CTGR_LIGHTSOURCE, min: 0, max: 10, value: Math.random()*valById('horizonHeight_R')*0.8, title: ''})
+
+// BRANCH
+createSliderWithTextInput('maxLevelGlobal', 'max level' , CTGR_BRANCH, 0, 12, Math.random()*12, 'max lvl')
+
+
+// LEAF
+
+
+function createSliderWithTextInput (id: string, name: string, category: HTMLElement, min: number, max: number, value: number, title: string) {
+    const sidebarElement = document.createElement("div")
+    sidebarElement.classList.add("sidebarElement")
+    sidebarElement.title = title
+    // console.log(sidebarElement)
+    category.appendChild(sidebarElement)
+    const namePar = document.createElement("p")
+    namePar.innerText = name
+    sidebarElement.appendChild(namePar)
+
+    const span = document.createElement("span")
+    sidebarElement.appendChild(span)
+
+    const slider = document.createElement("input") // create canvas
+    slider.type = 'range';
+    slider.classList.add("sliderClass")
+    slider.setAttribute('data-slider', name)
+    slider.id = id // Range
+    slider.min = String(min)
+    slider.max = String(max)
+    slider.step = String(0.1)
+    slider.value = String(value)
+    span.appendChild(slider)
+
+    const sliderText = document.createElement("input")
+    sliderText.setAttribute('data-sliderText', name)
+    sliderText.id = id + '_T' // Text
+    sliderText.type = 'text';
+    sliderText.value = String(value)
+    span.appendChild(sliderText)
+}
+
+// // __________ CREATE SLIDERS __________
+// paramsList.forEach ( element => {
+//     createSliderWithTextInput(element.id, element.name, element.category, element.min, element.max, element.value, element.title)
+// })
+const rangeInputs = document.querySelectorAll('.sidebarElement input[type="range"]')
+const textInputs = document.querySelectorAll('.sidebarElement input[type="text"]')
+// console.log(rangeInputs)
+// console.log(textInputs)
+
+// __________ CREATE SLIDERS __________
+
+// UPDATE NUMBER INPUT BY SLIDER
+rangeInputs.forEach((rangeInput) => {
+    rangeInput.addEventListener("input", (event) => {
+        const eventTarget = event.target as HTMLInputElement
+        const dataOf = eventTarget.dataset.slider as string
+        const sliderText = document.querySelector(`[data-sliderText="${dataOf}"]`) as HTMLInputElement
+        sliderText.value = String(eventTarget.value)
+
+        console.log(sliderText.value)
+        // console.log(paramsList[0].name)
+        // findCorrespondingVariable(dataOf)
+    })
+})
+
+// UPDATE SLIDER BY NUMBER INPUT
+textInputs.forEach((textInput) => {
+    textInput.addEventListener("change", (event) => {
+        const eventTarget = event.target as HTMLInputElement
+        const dataOf = eventTarget.dataset.slidertext
+        const slider = document.querySelector(`[data-slider="${dataOf}"]`) as HTMLInputElement
+        slider.value = String(eventTarget.value)
+    })
+})
+
+// // SNAP PARAMETERS
+// function snapCurrentParameters () {
+//     rangeInputs.forEach((rangeInput) => {
+//         const inputElement = rangeInput as HTMLInputElement  // because (rangeInput: HTMLInputElement) was not accepted by TS
+//         console.log(inputElement.dataset.slider, inputElement.value)
+//         // console.log(inputElement.id)
+//     })
+// }
+// snapCurrentParameters()
+
+// SIDEBAR OPENING AND CLOSING
+const closeSidebarButton = document.getElementById('closeSidebarButton') as HTMLBodyElement
+const sidebar = document.getElementById('sidebar') as HTMLBodyElement
+// sidebar.style.display = 'none'
+sidebar.style.width = SIDEBAR_WIDTH + 'px'
+closeSidebarButton.style.left = SIDEBAR_WIDTH + 'px'
+closeSidebarButton.addEventListener("click", () => {
+    if (sidebar.style.display == 'none') {
+        closeSidebarButton.style.left = String(SIDEBAR_WIDTH) + 'px'
+        sidebar.style.display = 'block'
+    }
+    else if (sidebar.style.display != 'none') {
+        closeSidebarButton.style.left = String(0)
+        sidebar.style.display = 'none'
+    }
+})
+
+// ________________________________________ SIDEBAR ________________________________________
+
+
 // ________________________________________ GLOBALS ________________________________________
 const globalCanvasesList = [] as HTMLCanvasElement[]
 const canvasContainer = document.getElementById('canvasContainer') as HTMLBodyElement
@@ -31,7 +158,7 @@ const branchLenRandomizer = 0.15 // keep it const
 const trunkWidthAsPartOfLen = 0.3
 const widthMultiplier = 0.6
 const rebranchingAngle = 10
-const maxLevelGlobal = 10
+// const maxLevelGlobal = 10 // -> valById('maxLevelGlobal')
 const branchingProbabilityBooster = 0 // when 0 trees look like sick
 const occasionalBranchesLimit = 10
 const levelShiftRangeAddition = 1
@@ -43,10 +170,11 @@ const axis1LenRatio = -0.15
 const axis2LenRatio = 0.5
 const petioleLenRatio = 0.2 //of the whole length
 
-const globalLeafProbability = 0.0000001 // SAME PROBABILITY FOR EACH SIDE
+const globalLeafProbability = 0.2 // SAME PROBABILITY FOR EACH SIDE
 const leafyLevels = 3
-const leafLineWidthAsPartOfLeafLen = 0.05
 const leafLenScaling = 1
+const leafLineWidthAsPartOfLeafLen = 0.05
+// const leafLenScaling = 1
 const leafDistanceMultiplier = 0.5 // > 0 !
 const leavesGrowingOrder = 0.25
 const growLimitingLeavesAmount = 10 // branches drawing will stop when this amount of growing leaves is reached
@@ -248,10 +376,10 @@ class Branch {
             const singleSegmentLength = this.len * (1/segAmountByLevel)
             const spawnLeafEverySegments = Math.ceil(this.tree.minimalDistanceBetweenLeaves / singleSegmentLength)
 
-            if (maxLevelGlobal-leafyLevels < this.level  &&  seg%spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
+            if (valById('maxLevelGlobal')-leafyLevels < this.level  &&  seg%spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
                 const thisLeafSize = (this.tree.averageLeafSize*0.7 + this.tree.averageLeafSize*0.3*Math.random()) * leafLenScaling // randomize leaf size
 
-                const leafProbabilityByLevel = globalLeafProbability - globalLeafProbability*((maxLevelGlobal-this.level)/leafyLevels/2) // linearly change probability with level from around globalLeafProbability/2 to globalLeafProbability (for leafy levels)
+                const leafProbabilityByLevel = globalLeafProbability - globalLeafProbability*((valById('maxLevelGlobal')-this.level)/leafyLevels/2) // linearly change probability with level from around globalLeafProbability/2 to globalLeafProbability (for leafy levels)
                 // console.log(leafProbabilityByLevel)
     
                 // LEFT LEAF
@@ -414,7 +542,7 @@ class Tree {
         public colorDistortionProportion = 0,
         readonly trunkWidth = trunkLen * trunkWidthAsPartOfLen,
         readonly initAngle: number = 0,
-        readonly maxLevel: number = maxLevelGlobal,
+        readonly maxLevel: number = valById('maxLevelGlobal'),
         readonly branchingProbability: number = branchingProbabilityBooster,
         public allBranches: [Branch[]] = [[]],
         public growingLeavesList: Leaf[] = [],
@@ -1152,131 +1280,6 @@ for (let m = 0; m < mountainsAmount; m++ ) {
 
 
 
-
-
-
-
-
-// ________________________________________ SIDEBAR ________________________________________
-const CATEGORY1 = document.getElementById('category1') as HTMLElement
-const CATEGORY2 = document.getElementById('category2') as HTMLElement
-
-const parametersObjectsList = [] 
-// type parameterObject = {name: string, category: string, min: number, max: number, value:number}
-for (let i=0; i< 10; i++){
-    let ctgr = CATEGORY1
-    if (i>3) {
-        ctgr = CATEGORY2
-    }
-    let obj = {name: 'name' + String(i), category: ctgr, min: i, max: i*2, value: (i+i*2)/2, title: 'title ' + i }
-    // obj.keys
-    // Object.defineProperty(obj, 'sdf', key)
-    // Object.getOwnPropertyDescriptor(obj, min)
-    parametersObjectsList.push(obj)
-}
-
-function createSliderWithTextInput (name: string, category: HTMLElement, min: number, max: number, value: number, title: string) {
-    const sidebarElement = document.createElement("div")
-    sidebarElement.classList.add("sidebarElement")
-    // console.log(sidebarElement)
-    category.appendChild(sidebarElement)
-    const namePar = document.createElement("p")
-    namePar.innerText = name
-    sidebarElement.appendChild(namePar)
-
-    const span = document.createElement("span")
-    sidebarElement.appendChild(span)
-
-    const slider = document.createElement("input") // create canvas
-    slider.type = 'range';
-    slider.classList.add("sliderClass")
-    slider.setAttribute('data-slider', name)
-    slider.id = name + 'RangeInput'
-    slider.min = String(min)
-    slider.max = String(max)
-    slider.step = String(0.1)
-    slider.value = String(value)
-    slider.title = title
-    span.appendChild(slider)
-
-    const sliderText = document.createElement("input")
-    sliderText.setAttribute('data-sliderText', name)
-    slider.id = name + 'TextInput'
-    sliderText.type = 'text';
-    sliderText.value = String(value)
-    span.appendChild(sliderText)
-}
-
-// __________ CREATE SLIDERS __________
-parametersObjectsList.forEach ( element => {
-    createSliderWithTextInput(element.name, element.category, element.min, element.max, element.value, element.title)
-})
-const rangeInputs = document.querySelectorAll('.sidebarElement input[type="range"]')
-const textInputs = document.querySelectorAll('.sidebarElement input[type="text"]')
-// __________ CREATE SLIDERS __________
-
-// UPDATE NUMBER INPUT BY SLIDER
-rangeInputs.forEach((rangeInput) => {
-    rangeInput.addEventListener("input", (event) => {
-        const eventTarget = event.target as HTMLInputElement
-        const dataOf = eventTarget.dataset.slider
-        const sliderText = document.querySelector(`[data-sliderText="${dataOf}"]`) as HTMLInputElement
-        sliderText.value = String(eventTarget.value)
-    })
-})
-
-// UPDATE SLIDER BY NUMBER INPUT
-textInputs.forEach((textInput) => {
-    textInput.addEventListener("change", (event) => {
-        const eventTarget = event.target as HTMLInputElement
-        const dataOf = eventTarget.dataset.slidertext
-        const slider = document.querySelector(`[data-slider="${dataOf}"]`) as HTMLInputElement
-        slider.value = String(eventTarget.value)
-    })
-})
-
-// // SNAP PARAMETERS
-// function snapCurrentParameters () {
-//     rangeInputs.forEach((rangeInput) => {
-//         const inputElement = rangeInput as HTMLInputElement  // because (rangeInput: HTMLInputElement) was not accepted by TS
-//         console.log(inputElement.dataset.slider, inputElement.value)
-//         // console.log(inputElement.id)
-//     })
-// }
-// snapCurrentParameters()
-
-// SIDEBAR OPENING AND CLOSING
-const closeSidebarButton = document.getElementById('closeSidebarButton') as HTMLBodyElement
-const sidebar = document.getElementById('sidebar') as HTMLBodyElement
-sidebar.style.display = 'none'
-closeSidebarButton.addEventListener("click", () => {
-    if (sidebar.style.display == 'none') {
-        closeSidebarButton.style.left = String(500) + 'px'
-        sidebar.style.display = 'block'
-    }
-    else if (sidebar.style.display != 'none') {
-        closeSidebarButton.style.left = String(0)
-        sidebar.style.display = 'none'
-    }
-})
-// const nejm = 'John'
-// console.log(Object.keys({nejm})[0]) // 'nejm'
-
-console.log(parametersObjectsList)
-// console.log(Object(parametersObjectsList))
-console.log(parametersObjectsList[0].name)
-
-
-
-
-// // const nejm = 'John'
-// function findVariableByName (name: any) {
-//     console.log(Object.keys({name})[0]) // 'namee'
-// }
-// findVariableByName(distanceScaling)
-
-
-// ________________________________________ SIDEBAR ________________________________________
 
 
 

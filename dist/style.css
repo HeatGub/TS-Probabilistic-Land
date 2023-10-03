@@ -141,7 +141,7 @@
 /* ___________________________ SIDEBAR ___________________________*/
 #sidebar{
     position: absolute;
-    width: 500px;
+    width: 250px;
     height: 100%;
     background-color: rgba(0, 51, 255, 0.356);
     z-index: 100;
@@ -181,7 +181,7 @@ input[type="text"]{
     top: 50%;
     /* left: 500px; */
     background-color: rgba(0, 51, 255, 0.419);
-    z-index: 100;
+    z-index: 1000000;
 }
 
 #undoButton {
