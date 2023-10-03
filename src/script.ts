@@ -2,35 +2,65 @@
 window.addEventListener('load', function() {
 
 // ________________________________________ SIDEBAR ________________________________________
-const SIDEBAR_WIDTH = 200
+const SIDEBAR_WIDTH = 250
 const CTGR_PERSPECTIVE = document.getElementById('CTGR_PERSPECTIVE') as HTMLElement
-const CTGR_LIGHTSOURCE = document.getElementById('CTGR_LIGHTSOURCE') as HTMLElement
+// const CTGR_LIGHTSOURCE = document.getElementById('CTGR_LIGHTSOURCE') as HTMLElement
 const CTGR_BRANCH = document.getElementById('CTGR_BRANCH') as HTMLElement
 // const CTGR_LEAF = document.getElementById('CTGR_LEAF') as HTMLElement
+// const CTGR_MOUNTAINS = document.getElementById('CTGR_MOUNTAINS') as HTMLElement
+
+const canvasContainer = document.getElementById('canvasContainer') as HTMLBodyElement
+
+// HORIZON HEIGHT
+const horizonHeight = canvasContainer.offsetHeight*0.2 + Math.random()*canvasContainer.offsetHeight*0.6
+document.documentElement.style.cssText = "--horizonHeight:" + horizonHeight + "px"
+
+// LIGHTSOURCE
+const lightSourceCanvas = document.getElementById('lightSourceCanvas') as HTMLBodyElement
+const lightSourceGlowCanvas = document.getElementById('lightSourceGlowCanvas') as HTMLBodyElement
+const lightSourcePositionX = Math.random()*this.window.innerWidth
+const lightSourcePositionY = Math.random()*horizonHeight*0.8
+const lightSourceSize = 100 + Math.random()*150
+
+function moveLightsource() {
+    lightSourceCanvas.style.width = lightSourceSize + 'px'
+    lightSourceCanvas.style.height = lightSourceSize + 'px'
+    lightSourceCanvas.style.left = (lightSourcePositionX - lightSourceSize/2) + 'px'
+    lightSourceCanvas.style.top = (lightSourcePositionY - lightSourceSize/2) + 'px'
+    lightSourceGlowCanvas.style.width = lightSourceSize*2 + 'px'
+    lightSourceGlowCanvas.style.height = lightSourceSize*2 + 'px'
+    lightSourceGlowCanvas.style.left = (lightSourcePositionX - lightSourceSize) + 'px'
+    lightSourceGlowCanvas.style.top = (lightSourcePositionY - lightSourceSize) + 'px'
+}
+moveLightsource()
 
 function valById(id: string) {
     return Number( (<HTMLInputElement>document.getElementById(id)).value )
 }
 
+// function recalculatePerspective () {
+// }
+// recalculatePerspective()
+
 const paramsList: {id: string, name: string, category: HTMLElement, min: number, max: number, value: number, title: string}[] = []
 paramsList
 // // PERSPECTIVE
-// paramsList.push({id: 'horizonHeight', name: 'horizon height' , category: CTGR_PERSPECTIVE, min: 0, max: 10, value: 3, title: ''})
 // PERSPECTIVE
-createSliderWithTextInput('horizonHeight', 'horizon height' , CTGR_PERSPECTIVE, 0, 10, 3, '')
-// console.log(valById('horizonHeight_T'))
+createSliderWithTextInput(CTGR_PERSPECTIVE , 'horizonHeight', 'hrzn h' , '', 0, 1500, 1, Math.round(Math.random()*1200))
 // LIGHTSOURCE
-createSliderWithTextInput('lightSourcePositionX', 'x coordinate' , CTGR_LIGHTSOURCE, 0, this.window.innerWidth, Math.random()*this.window.innerWidth, '')
+// createSliderWithTextInput('lightSourcePositionX', 'x coordinate' , CTGR_LIGHTSOURCE, 0, this.window.innerWidth, Math.random()*this.window.innerWidth, '')
 // createSliderWithTextInput({id: 'lightSourcePositionY', name: 'y coordinate' , category: CTGR_LIGHTSOURCE, min: 0, max: 10, value: Math.random()*valById('horizonHeight_R')*0.8, title: ''})
-
 // BRANCH
-createSliderWithTextInput('maxLevelGlobal', 'max level' , CTGR_BRANCH, 0, 12, Math.random()*12, 'max lvl')
-
-
+createSliderWithTextInput(CTGR_BRANCH , 'maxLevelGlobal', 'max level' , 'title', 1, 12, 1, Math.round(Math.random()*2)) // min > 0!
+createSliderWithTextInput(CTGR_BRANCH , 'trunkLen', 'trunk length' , '',  0, 200 , 0.1, 50)
+createSliderWithTextInput(CTGR_BRANCH , 'initialsegmentingLen', 'segment length' , 'as a part of trunk length',  0.01, 1 , 0.01, 0.5)
 // LEAF
+// MOUNTAINS
 
 
-function createSliderWithTextInput (id: string, name: string, category: HTMLElement, min: number, max: number, value: number, title: string) {
+
+
+function createSliderWithTextInput (category: HTMLElement, id: string, name: string, title: string,  min: number, max: number, step: number, value: number, ) {
     const sidebarElement = document.createElement("div")
     sidebarElement.classList.add("sidebarElement")
     sidebarElement.title = title
@@ -50,7 +80,7 @@ function createSliderWithTextInput (id: string, name: string, category: HTMLElem
     slider.id = id // Range
     slider.min = String(min)
     slider.max = String(max)
-    slider.step = String(0.1)
+    slider.step = String(step)
     slider.value = String(value)
     span.appendChild(slider)
 
@@ -80,10 +110,7 @@ rangeInputs.forEach((rangeInput) => {
         const dataOf = eventTarget.dataset.slider as string
         const sliderText = document.querySelector(`[data-sliderText="${dataOf}"]`) as HTMLInputElement
         sliderText.value = String(eventTarget.value)
-
-        console.log(sliderText.value)
-        // console.log(paramsList[0].name)
-        // findCorrespondingVariable(dataOf)
+        // console.log(sliderText.value)
     })
 })
 
@@ -128,31 +155,12 @@ closeSidebarButton.addEventListener("click", () => {
 
 
 // ________________________________________ GLOBALS ________________________________________
-const globalCanvasesList = [] as HTMLCanvasElement[]
-const canvasContainer = document.getElementById('canvasContainer') as HTMLBodyElement
+// const globalCanvasesList = [] as HTMLCanvasElement[]
 
-// HORIZON HEIGHT
-const horizonHeight = canvasContainer.offsetHeight*0.2 + Math.random()*canvasContainer.offsetHeight*0.6
-document.documentElement.style.cssText = "--horizonHeight:" + horizonHeight + "px"
-
-// LIGHTSOURCE
-const lightSourceCanvas = document.getElementById('lightSourceCanvas') as HTMLBodyElement
-const lightSourceGlowCanvas = document.getElementById('lightSourceGlowCanvas') as HTMLBodyElement
-const lightSourcePositionX = Math.random()*this.window.innerWidth
-const lightSourcePositionY = Math.random()*horizonHeight*0.8
-const lightSourceSize = 100 + Math.random()*150
-lightSourceCanvas.style.width = lightSourceSize + 'px'
-lightSourceCanvas.style.height = lightSourceSize + 'px'
-lightSourceCanvas.style.left = (lightSourcePositionX - lightSourceSize/2) + 'px'
-lightSourceCanvas.style.top = (lightSourcePositionY - lightSourceSize/2) + 'px'
-lightSourceGlowCanvas.style.width = lightSourceSize*2 + 'px'
-lightSourceGlowCanvas.style.height = lightSourceSize*2 + 'px'
-lightSourceGlowCanvas.style.left = (lightSourcePositionX - lightSourceSize) + 'px'
-lightSourceGlowCanvas.style.top = (lightSourcePositionY - lightSourceSize) + 'px'
 
 // create Branch public shadowSegments,
-const trunkLen = 70
-const initialsegmentingLen = trunkLen/4
+// const trunkLen = 70
+// const initialsegmentingLen = valById('trunkLen')/4
 const lenMultiplier = 0.8
 const branchLenRandomizer = 0.15 // keep it const
 const trunkWidthAsPartOfLen = 0.3
@@ -183,7 +191,7 @@ const whileLoopRetriesEachFrameLeaves = 10 // when that = 1 --> ~1 FPS for leafM
 
 const distanceScaling = 0.8 // range 0-1
 
-const mountainsAmount = 10
+const mountainsAmount = 1
 const mountainRangeWidth = (window.innerHeight - horizonHeight) * 0.2
 const mountainTrimCloser = 0.9 // 0-1
 const mountainHeightMultiplier = 0.8 // 0.1 - 1?
@@ -219,14 +227,10 @@ const undoButton = this.document.getElementById('undoButton') as HTMLBodyElement
 let treesList: Tree [] = []
 undoButton.addEventListener('click', removeLastTree )
 function removeLastTree () {
-    console.log('__________' )
-    console.log( treesList )
-
     if (treesList.length > 0) {
         treesList[treesList.length-1].removeTreeCanvases()
         treesList.splice(-1)
     }
-    console.log( treesList )
 }
 
 
@@ -319,11 +323,11 @@ class Branch {
         
         this.level = this.parent.level + 1 + this.levelShift
         this.color = {
-            r: rgbaStrToObj(tree.colorTreeInitial).r + tree.redPerLevel*(this.level+1), // level +1 because trunk is level 0
-            g: rgbaStrToObj(tree.colorTreeInitial).g + tree.greenPerLevel*(this.level+1), 
-            b: rgbaStrToObj(tree.colorTreeInitial).b + tree.bluePerLevel*(this.level+1), 
+            r: rgbaStrToObj(this.tree.colorTreeInitial).r + tree.redPerLevel*(this.level+1), // level +1 because trunk is level 0
+            g: rgbaStrToObj(this.tree.colorTreeInitial).g + tree.greenPerLevel*(this.level+1), 
+            b: rgbaStrToObj(this.tree.colorTreeInitial).b + tree.bluePerLevel*(this.level+1), 
             a: 1
-        }
+        }    
 
         // Occasional branch length (or width) = orig.len * lenMultipl^levelShift
         this.branchWidth = this.branchWidth * Math.pow(widthMultiplier, this.levelShift)
@@ -337,8 +341,8 @@ class Branch {
         this.yF = this.y0 - Math.cos(this.angle/180* Math.PI) * this.len
 
         // ____________ SEGMENTING A BRANCH ____________
-        // let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level) )
-        let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) )
+        // let segAmountByLevel = Math.ceil( ((valById('trunkLen')*(Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level) )
+        let segAmountByLevel = Math.ceil( ((this.tree.trunkLen*(Math.pow(lenMultiplier, this.level))) / this.tree.initialsegmentingLen) )
 
         for (let seg=0; seg < segAmountByLevel; seg++){
             // EXIT LOOP IF SEGMENT IS NEARLY TOUCHING THE GROUND (this.tree.initY-this.tree.trunkLen/10)
@@ -535,14 +539,13 @@ class Tree {
         readonly initX: number,
         readonly initY: number,
         readonly trunkLen: number,
-        readonly shadowAngle:number,
+        readonly shadowAngle: number,
         public colorTreeInitial = colorTreeInitialGlobal,
         public colorTreeFinal = colorTreeFinalGlobal,
         public shadowColorTree = shadowColor,
         public colorDistortionProportion = 0,
         readonly trunkWidth = trunkLen * trunkWidthAsPartOfLen,
         readonly initAngle: number = 0,
-        readonly maxLevel: number = valById('maxLevelGlobal'),
         readonly branchingProbability: number = branchingProbabilityBooster,
         public allBranches: [Branch[]] = [[]],
         public growingLeavesList: Leaf[] = [],
@@ -554,12 +557,13 @@ class Tree {
         public ctxShadows = canvasShadows.getContext('2d') as CanvasRenderingContext2D,
         public averageLeafSize = trunkLen/5,
         public minimalDistanceBetweenLeaves = averageLeafSize * leafLenScaling * leafDistanceMultiplier, // doesnt count the distance between leaves of different branches
+        readonly maxLevel: number = valById('maxLevelGlobal'),
+        readonly initialsegmentingLen = trunkLen * valById('initialsegmentingLen'),
 
         // public rgbColorByLevel
         public redPerLevel = 0,
         public greenPerLevel = 0,
         public bluePerLevel = 0,
-
     ){
         this.redPerLevel = (rgbaStrToObj(this.colorTreeFinal).r - rgbaStrToObj(this.colorTreeInitial).r) / maxLevel,
         this.greenPerLevel = (rgbaStrToObj(this.colorTreeFinal).g - rgbaStrToObj(this.colorTreeInitial).g) / maxLevel,
@@ -570,12 +574,12 @@ class Tree {
         this.canvas.classList.add('canvas')
         this.canvas.width = window.innerWidth
         this.canvas.height = window.innerHeight
-        globalCanvasesList.push(this.canvas)
+        // globalCanvasesList.push(this.canvas)
         //  SHADOWS CANVAS
         this.canvasShadows.classList.add('canvasShadows')
         this.canvasShadows.width = window.innerWidth
         this.canvasShadows.height = window.innerHeight
-        globalCanvasesList.push(this.canvasShadows)
+        // globalCanvasesList.push(this.canvasShadows)
         // this.canvasShadows.style.zIndex = String(initY-1)
 
         const root = new Root (this)
@@ -941,7 +945,7 @@ canvasContainer.addEventListener("click", (event) => {
         shadowColorTree = 'rgba(' + vals.r + ',' + vals.g  +',' + vals.b + ',1)' // alpha =1
                 
         // _________ INITIALIZE THE TREE _________
-        let treeTrunkScaledLength = trunkLen + trunkLen * scaleByTheGroundPosition * distanceScaling // normal scale at the half of ground canvas
+        let treeTrunkScaledLength = valById('trunkLen') + valById('trunkLen') * scaleByTheGroundPosition * distanceScaling // normal scale at the half of ground canvas
         const tree = new Tree (event.x, event.y, treeTrunkScaledLength, shadowAngle, colorInitial, colorFinal, shadowColorTree, colorDistortionProportion)
         treesList.push(tree)
         animateTheTree(tree)
@@ -1249,32 +1253,32 @@ class Mountain {
         this.ctxShadow.closePath()
         // this.ctxShadow.stroke()
         this.ctxShadow.fill()
-        // console.log(this.canvas)
-        // console.log(this.canvasShadow)
 
     }
-    
 }
 
 // DRAWING MOUNTAIN RANGES
-for (let m = 0; m < mountainsAmount; m++ ) {
-    const height = 1000 * mountainHeightMultiplier * ((mountainsAmount - (m* mountainTrimCloser))/(mountainsAmount))
-    const bottom = horizonHeight +  (mountainRangeWidth/mountainsAmount) * m
+function drawMountains () {
+    for (let m = 0; m < mountainsAmount; m++ ) {
+        const height = 1000 * mountainHeightMultiplier * ((mountainsAmount - (m* mountainTrimCloser))/(mountainsAmount))
+        const bottom = horizonHeight +  (mountainRangeWidth/mountainsAmount) * m
 
-    const groundHeight = window.innerHeight - horizonHeight
-    const colorProportion = 1 - ((bottom - horizonHeight) / groundHeight)
-    const groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight)/2
-    const scaleByTheGroundPosition = (bottom - groundMiddle)/groundHeight * distanceScaling * 1.8
-    // console.log(colorProportion) // 1 - 0
-    let colorTop = blendRgbaColorsInProportions(mistColor, mountainColor, colorProportion)
-    colorTop = rgbaSetAlpha1(colorTop)
-    const colorProportionBottom = colorProportion * 1/2 + 1/4
-    // const colorBottom = blendRgbaColorsInProportions(mistColor, shadowColor, colorProportion)
-    let colorBottom = blendRgbaColorsInProportions(colorTop, shadowColor, colorProportionBottom)
-    colorBottom = rgbaSetAlpha1(colorBottom)
-    const mountain = new Mountain(4,10, height + height*scaleByTheGroundPosition*1, bottom, colorTop, colorBottom)
-    mountain //silence TS
+        const groundHeight = window.innerHeight - horizonHeight
+        const colorProportion = 1 - ((bottom - horizonHeight) / groundHeight)
+        const groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight)/2
+        const scaleByTheGroundPosition = (bottom - groundMiddle)/groundHeight * distanceScaling * 1.8
+        // console.log(colorProportion) // 1 - 0
+        let colorTop = blendRgbaColorsInProportions(mistColor, mountainColor, colorProportion)
+        colorTop = rgbaSetAlpha1(colorTop)
+        const colorProportionBottom = colorProportion * 1/2 + 1/4
+        // const colorBottom = blendRgbaColorsInProportions(mistColor, shadowColor, colorProportion)
+        let colorBottom = blendRgbaColorsInProportions(colorTop, shadowColor, colorProportionBottom)
+        colorBottom = rgbaSetAlpha1(colorBottom)
+        const mountain = new Mountain(4,10, height + height*scaleByTheGroundPosition*1, bottom, colorTop, colorBottom)
+        mountain //silence TS
+    }
 }
+drawMountains ()
 // ________________________________________ MOUNTAIN ________________________________________
 
 
@@ -1294,29 +1298,6 @@ for (let m = 0; m < mountainsAmount; m++ ) {
 
 
 
-
-
-// SIN WAVES TESTS
-// const wavePointsList = []
-
-// for (let i = 0; i< perlinCanvas.width; i++) {
-//     let sinWave = 600 + Math.sin(-Math.PI/2 + (i/perlinCanvas.width)*Math.PI*2)*200
-//     let randomPoint = Math.random()*100
-//     let sumofWaves =  sinWave + randomPoint
-//     wavePointsList.push(sumofWaves)
-// }
-// console.log(wavePointsList)
-
-// for (let i = 0; i < wavePointsList.length-1; i++) {
-//     // perlinCtx.filter = 'blur(0px)'
-//     console.log(wavePointsList[i])
-//     perlinCtx.beginPath();
-//     perlinCtx.strokeStyle = 'rgba(150,150,150, 1)'
-//     perlinCtx.moveTo(i, wavePointsList[i])
-//     perlinCtx.lineTo(i+1, wavePointsList[i+1])
-//     perlinCtx.stroke()
-//     perlinCtx.closePath()
-// }
 
 
 

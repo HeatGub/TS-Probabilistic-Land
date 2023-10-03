@@ -2,10 +2,11 @@
     /* background: rgb(64, 64, 64); */
     /* background: rgb(255,241,0); */
     /* background: linear-gradient(90deg, rgba(255,241,0,1) 9%, rgba(255,233,0,1) 12%, rgba(0,212,255,1) 21%); */
-    /* --horizonHeight: 50%; */
-    /*image-rendering: optimizeSpeed;*/ /* keep it or not? */
-    --lightSourceColor: rgba(126, 230, 204, 0.861);
     /* --skyColor: rgb(5, 70, 119); */
+    /*image-rendering: optimizeSpeed;*/ /* keep it or not? */
+    --horizonHeight: 50%;
+    --lightSourceColor: rgba(126, 230, 204, 0.861);
+    --textInputWidth: 3rem;
 }
 
 * {
@@ -166,12 +167,14 @@
 }
 
 input[type="range"]{
-    width: 90%;
+    width: calc(95% - var(--textInputWidth));
+    /* margin-bottom: -20px; */
 }
 
 input[type="text"]{
     font-size: 10px;
-    width: 20px;
+    width: var(--textInputWidth);
+    margin: 2px;
 }
 
 #closeSidebarButton {
