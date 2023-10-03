@@ -24,16 +24,17 @@ lightSourceGlowCanvas.style.left = (lightSourcePositionX - lightSourceSize) + 'p
 lightSourceGlowCanvas.style.top = (lightSourcePositionY - lightSourceSize) + 'px'
 
 // create Branch public shadowSegments,
-const trunkLen = 40
-const initialsegmentingLen = trunkLen/1
-const lenMultiplier = 0.9
+const trunkLen = 70
+const initialsegmentingLen = trunkLen/4
+const lenMultiplier = 0.8
+const branchLenRandomizer = 0.15 // keep it const
 const trunkWidthAsPartOfLen = 0.3
-const widthMultiplier = 0.7
-const rebranchingAngle = 23
-const maxLevelGlobal = 8
-const branchingProbabilityBooster = 0.5 // when 0 trees look like sick
-const occasionalBranchesLimit = 2
-const levelShiftRangeAddition = maxLevelGlobal/2
+const widthMultiplier = 0.6
+const rebranchingAngle = 10
+const maxLevelGlobal = 10
+const branchingProbabilityBooster = 0 // when 0 trees look like sick
+const occasionalBranchesLimit = 10
+const levelShiftRangeAddition = 1
 // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
 // ratio is relative to Leaf's this.len
 const axis1WidthRatio = 1
@@ -41,21 +42,22 @@ const axis2WidthRatio  = 0.5
 const axis1LenRatio = -0.15
 const axis2LenRatio = 0.5
 const petioleLenRatio = 0.2 //of the whole length
-const leafyLevels = 5
+
+const globalLeafProbability = 0.0000001 // SAME PROBABILITY FOR EACH SIDE
+const leafyLevels = 3
 const leafLineWidthAsPartOfLeafLen = 0.05
-const globalLeafProbability = 0.25 // SAME PROBABILITY FOR EACH SIDE
 const leafLenScaling = 1
 const leafDistanceMultiplier = 0.5 // > 0 !
 const leavesGrowingOrder = 0.25
 const growLimitingLeavesAmount = 10 // branches drawing will stop when this amount of growing leaves is reached
 const leafMaxStageGlobal = 2
-const whileLoopRetriesEachFrameLeaves = 100 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
+const whileLoopRetriesEachFrameLeaves = 10 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
 
-const distanceScaling = 1 // range 0-1
+const distanceScaling = 0.8 // range 0-1
 
 const mountainsAmount = 10
 const mountainRangeWidth = (window.innerHeight - horizonHeight) * 0.2
-const mountainTrimCloser = 0.7 // 0-1
+const mountainTrimCloser = 0.9 // 0-1
 const mountainHeightMultiplier = 0.8 // 0.1 - 1?
 
 const shadowAngleMultiplier = 3
@@ -66,7 +68,7 @@ const blurStrength = 10
 
 const colorTreeInitialGlobal = 'rgba(20, 30, 0, 1)'
 const colorTreeFinalGlobal = 'rgba(100, 160, 160, 1)'
-const leafLineDarkness = -1 // 0-1 range (or even -1 to +1)
+const leafLineDarkness = -0.2 // 0-1 range (or even -1 to +1)
 const leafBrightnessRandomizer = 0 // +- in rgb scale (0-255)
 const leafColorRandomizerR = 50 // +- in rgb scale (0-255)
 const leafColorRandomizerG = 50 // +- in rgb scale (0-255)
@@ -80,9 +82,9 @@ const shadowColor = 'rgba(10, 10, 40, 1)' // alpha affects leaves and mountain s
 const mountainColor = 'rgba(40, 0, 0, 1)'
 const groundColor = 'rgba(50, 100, 50, 1)'
 
-const treeMistBlendingProportion = 0.6
-const treeShapeShadow = 0.2 // not much, not needed as a parameter 
-const treeShadowBlendingProportion = 0.8 // blend shadow color with ground color
+const treeMistBlendingProportion = 0.9
+const treeShapeShadow = 0.4 // not much, not needed as a parameter 
+const treeShadowBlendingProportion = 0.9 // blend shadow color with ground color
 
 
 const undoButton = this.document.getElementById('undoButton') as HTMLBodyElement
@@ -150,9 +152,6 @@ function blendRgbaColorsInProportions (color1: string, color2: string, initColor
 // const colorTreeFinalGlobal0 = 'rgba(10, 250, 250, 1)'
 // blendRgbaColorsInProportions(skyColor, colorTreeFinalGlobal0, 0.5)
 
-
-
-
 //  SET CANVASES SIZES AND CHANGE THEM AT WINDOW RESIZE
 window.addEventListener('resize', function() {
     // globalCanvasesList.forEach( (canvas) => {
@@ -201,7 +200,7 @@ class Branch {
         // Occasional branch length (or width) = orig.len * lenMultipl^levelShift
         this.branchWidth = this.branchWidth * Math.pow(widthMultiplier, this.levelShift)
         this.len = this.len * Math.pow(lenMultiplier, this.levelShift)
-        this.len = this.len + this.len*Math.random()*0.15  //randomize len
+        this.len = this.len + (- this.len*branchLenRandomizer/2 + this.len*Math.random()*branchLenRandomizer) //randomize len
 
         // recalculate the angle according to parent branch first 
         this.angle = this.parent.angle + this.angle
@@ -211,7 +210,7 @@ class Branch {
 
         // ____________ SEGMENTING A BRANCH ____________
         // let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level) )
-        let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level) )
+        let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) )
 
         for (let seg=0; seg < segAmountByLevel; seg++){
             // EXIT LOOP IF SEGMENT IS NEARLY TOUCHING THE GROUND (this.tree.initY-this.tree.trunkLen/10)
@@ -236,7 +235,9 @@ class Branch {
             this.shadowSegments[seg].yF = this.tree.initY + (this.tree.initY - this.segments[seg].yF) * shadowSpread
             this.shadowSegments[seg].x0 = this.segments[seg].x0 + (this.tree.initY - this.segments[seg].y0) * shadowSpread * this.tree.shadowAngle
             this.shadowSegments[seg].xF = this.segments[seg].xF + (this.tree.initY - this.segments[seg].yF) * shadowSpread * this.tree.shadowAngle
-            this.shadowSegments[seg].width = this.segments[this.drawnSegments].width + ((this.tree.initY - this.segments[this.drawnSegments].y0)*(shadowSpread/200)) + (Math.abs((this.tree.initX - this.segments[this.drawnSegments].x0)))*(shadowSpread/200)
+            // this.shadowSegments[seg].width = this.segments[this.drawnSegments].width + ((this.tree.initY - this.segments[this.drawnSegments].y0)*(shadowSpread/200)) + (Math.abs((this.tree.initX - this.segments[this.drawnSegments].x0)))*(shadowSpread/200)
+            this.shadowSegments[seg].width = this.segments[seg].width + ((this.tree.initY - this.segments[seg].y0)*(shadowSpread/200)) + (Math.abs((this.tree.initX - this.segments[seg].x0)))*(shadowSpread/200)
+            
             this.shadowSegments[seg].blur = (this.tree.initY - this.segments[seg].y0) / this.tree.canvas.height* blurStrength
             this.segments[seg].leaves.forEach( (leaf) => {  // pass the same blur to children leaves
                 leaf.blur = this.shadowSegments[seg].blur
@@ -447,6 +448,7 @@ class Tree {
         this.canvasShadows.width = window.innerWidth
         this.canvasShadows.height = window.innerHeight
         globalCanvasesList.push(this.canvasShadows)
+        // this.canvasShadows.style.zIndex = String(initY-1)
 
         const root = new Root (this)
         const startTime = Date.now()
@@ -926,106 +928,6 @@ function animateTheTree (tree: Tree) {
 
 // ________________________________________ ANIMATION ________________________________________
 
-// ________________________________________ SIDEBAR ________________________________________
-const CATEGORY1 = document.getElementById('category1') as HTMLElement
-const CATEGORY2 = document.getElementById('category2') as HTMLElement
-
-const parametersObjectsList = [] 
-// type parameterObject = {name: string, category: string, min: number, max: number, value:number}
-for (let i=0; i< 10; i++){
-    let ctgr = CATEGORY1
-    if (i>3) {
-        ctgr = CATEGORY2
-    }
-    const obj = {name: String(i), category: ctgr, min: i, max: i*2, value: (i+i*2)/2, title: 'title ' + i }
-    parametersObjectsList.push(obj)
-}
-
-function createSliderWithTextInput (name: string, category: HTMLElement, min: number, max: number, value: number, title: string) {
-    const sidebarElement = document.createElement("div")
-    sidebarElement.classList.add("sidebarElement")
-    // console.log(sidebarElement)
-    category.appendChild(sidebarElement)
-    const namePar = document.createElement("p")
-    namePar.innerText = name
-    sidebarElement.appendChild(namePar)
-
-    const span = document.createElement("span")
-    sidebarElement.appendChild(span)
-
-    const slider = document.createElement("input") // create canvas
-    slider.type = 'range';
-    slider.classList.add("sliderClass")
-    slider.setAttribute('data-slider', 'dejtaset' + name)
-    slider.id = name + 'RangeInput'
-    slider.min = String(min)
-    slider.max = String(max)
-    slider.step = String(0.1)
-    slider.value = String(value)
-    slider.title = title
-    span.appendChild(slider)
-
-    const sliderText = document.createElement("input")
-    sliderText.setAttribute('data-sliderText', 'dejtaset' + name)
-    slider.id = name + 'TextInput'
-    sliderText.type = 'text';
-    sliderText.value = String(value)
-    span.appendChild(sliderText)
-}
-
-// __________ CREATE SLIDERS __________
-parametersObjectsList.forEach ( element => {
-    createSliderWithTextInput(element.name, element.category, element.min, element.max, element.value, element.title)
-})
-const rangeInputs = document.querySelectorAll('.sidebarElement input[type="range"]')
-const textInputs = document.querySelectorAll('.sidebarElement input[type="text"]')
-// __________ CREATE SLIDERS __________
-
-// UPDATE NUMBER INPUT BY SLIDER
-rangeInputs.forEach((rangeInput) => {
-    rangeInput.addEventListener("input", (event) => {
-        const eventTarget = event.target as HTMLInputElement
-        const dataOf = eventTarget.dataset.slider
-        const sliderText = document.querySelector(`[data-sliderText="${dataOf}"]`) as HTMLInputElement
-        sliderText.value = String(eventTarget.value)
-    })
-})
-
-// UPDATE SLIDER BY NUMBER INPUT
-textInputs.forEach((textInput) => {
-    textInput.addEventListener("change", (event) => {
-        const eventTarget = event.target as HTMLInputElement
-        const dataOf = eventTarget.dataset.slidertext
-        const slider = document.querySelector(`[data-slider="${dataOf}"]`) as HTMLInputElement
-        slider.value = String(eventTarget.value)
-    })
-})
-
-// // SNAP PARAMETERS
-// function snapCurrentParameters () {
-//     rangeInputs.forEach((rangeInput) => {
-//         const inputElement = rangeInput as HTMLInputElement  // because (rangeInput: HTMLInputElement) was not accepted by TS
-//         console.log(inputElement.dataset.slider, inputElement.value)
-//     })
-// }
-// snapCurrentParameters()
-
-// SIDEBAR OPENING AND CLOSING
-const closeSidebarButton = document.getElementById('closeSidebarButton') as HTMLBodyElement
-const sidebar = document.getElementById('sidebar') as HTMLBodyElement
-sidebar.style.display = 'none'
-closeSidebarButton.addEventListener("click", () => {
-    if (sidebar.style.display == 'none') {
-        closeSidebarButton.style.left = String(500) + 'px'
-        sidebar.style.display = 'block'
-    }
-    else if (sidebar.style.display != 'none') {
-        closeSidebarButton.style.left = String(0)
-        sidebar.style.display = 'none'
-    }
-})
-// ________________________________________ SIDEBAR ________________________________________
-
 // ________________________________________ MOUNTAIN ________________________________________
 
 class Mountain {
@@ -1215,7 +1117,6 @@ class Mountain {
         this.ctxShadow.lineTo(this.allPoints.length, (h -  this.highestPoint) * shadowSpreadMountain)
         this.ctxShadow.lineTo(0, (h -  this.highestPoint) * shadowSpreadMountain)
 
-
         // this.ctxShadow.lineTo(0, (h -  this.allPoints[0]) * shadowSpreadMountain)
         this.ctxShadow.closePath()
         // this.ctxShadow.stroke()
@@ -1246,10 +1147,147 @@ for (let m = 0; m < mountainsAmount; m++ ) {
     const mountain = new Mountain(4,10, height + height*scaleByTheGroundPosition*1, bottom, colorTop, colorBottom)
     mountain //silence TS
 }
-
-
-
 // ________________________________________ MOUNTAIN ________________________________________
+
+
+
+
+
+
+
+
+
+// ________________________________________ SIDEBAR ________________________________________
+const CATEGORY1 = document.getElementById('category1') as HTMLElement
+const CATEGORY2 = document.getElementById('category2') as HTMLElement
+
+const parametersObjectsList = [] 
+// type parameterObject = {name: string, category: string, min: number, max: number, value:number}
+for (let i=0; i< 10; i++){
+    let ctgr = CATEGORY1
+    if (i>3) {
+        ctgr = CATEGORY2
+    }
+    let obj = {name: 'name' + String(i), category: ctgr, min: i, max: i*2, value: (i+i*2)/2, title: 'title ' + i }
+    // obj.keys
+    // Object.defineProperty(obj, 'sdf', key)
+    // Object.getOwnPropertyDescriptor(obj, min)
+    parametersObjectsList.push(obj)
+}
+
+function createSliderWithTextInput (name: string, category: HTMLElement, min: number, max: number, value: number, title: string) {
+    const sidebarElement = document.createElement("div")
+    sidebarElement.classList.add("sidebarElement")
+    // console.log(sidebarElement)
+    category.appendChild(sidebarElement)
+    const namePar = document.createElement("p")
+    namePar.innerText = name
+    sidebarElement.appendChild(namePar)
+
+    const span = document.createElement("span")
+    sidebarElement.appendChild(span)
+
+    const slider = document.createElement("input") // create canvas
+    slider.type = 'range';
+    slider.classList.add("sliderClass")
+    slider.setAttribute('data-slider', name)
+    slider.id = name + 'RangeInput'
+    slider.min = String(min)
+    slider.max = String(max)
+    slider.step = String(0.1)
+    slider.value = String(value)
+    slider.title = title
+    span.appendChild(slider)
+
+    const sliderText = document.createElement("input")
+    sliderText.setAttribute('data-sliderText', name)
+    slider.id = name + 'TextInput'
+    sliderText.type = 'text';
+    sliderText.value = String(value)
+    span.appendChild(sliderText)
+}
+
+// __________ CREATE SLIDERS __________
+parametersObjectsList.forEach ( element => {
+    createSliderWithTextInput(element.name, element.category, element.min, element.max, element.value, element.title)
+})
+const rangeInputs = document.querySelectorAll('.sidebarElement input[type="range"]')
+const textInputs = document.querySelectorAll('.sidebarElement input[type="text"]')
+// __________ CREATE SLIDERS __________
+
+// UPDATE NUMBER INPUT BY SLIDER
+rangeInputs.forEach((rangeInput) => {
+    rangeInput.addEventListener("input", (event) => {
+        const eventTarget = event.target as HTMLInputElement
+        const dataOf = eventTarget.dataset.slider
+        const sliderText = document.querySelector(`[data-sliderText="${dataOf}"]`) as HTMLInputElement
+        sliderText.value = String(eventTarget.value)
+    })
+})
+
+// UPDATE SLIDER BY NUMBER INPUT
+textInputs.forEach((textInput) => {
+    textInput.addEventListener("change", (event) => {
+        const eventTarget = event.target as HTMLInputElement
+        const dataOf = eventTarget.dataset.slidertext
+        const slider = document.querySelector(`[data-slider="${dataOf}"]`) as HTMLInputElement
+        slider.value = String(eventTarget.value)
+    })
+})
+
+// // SNAP PARAMETERS
+// function snapCurrentParameters () {
+//     rangeInputs.forEach((rangeInput) => {
+//         const inputElement = rangeInput as HTMLInputElement  // because (rangeInput: HTMLInputElement) was not accepted by TS
+//         console.log(inputElement.dataset.slider, inputElement.value)
+//         // console.log(inputElement.id)
+//     })
+// }
+// snapCurrentParameters()
+
+// SIDEBAR OPENING AND CLOSING
+const closeSidebarButton = document.getElementById('closeSidebarButton') as HTMLBodyElement
+const sidebar = document.getElementById('sidebar') as HTMLBodyElement
+sidebar.style.display = 'none'
+closeSidebarButton.addEventListener("click", () => {
+    if (sidebar.style.display == 'none') {
+        closeSidebarButton.style.left = String(500) + 'px'
+        sidebar.style.display = 'block'
+    }
+    else if (sidebar.style.display != 'none') {
+        closeSidebarButton.style.left = String(0)
+        sidebar.style.display = 'none'
+    }
+})
+// const nejm = 'John'
+// console.log(Object.keys({nejm})[0]) // 'nejm'
+
+console.log(parametersObjectsList)
+// console.log(Object(parametersObjectsList))
+console.log(parametersObjectsList[0].name)
+
+
+
+
+// // const nejm = 'John'
+// function findVariableByName (name: any) {
+//     console.log(Object.keys({name})[0]) // 'namee'
+// }
+// findVariableByName(distanceScaling)
+
+
+// ________________________________________ SIDEBAR ________________________________________
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1276,6 +1314,7 @@ for (let m = 0; m < mountainsAmount; m++ ) {
 //     perlinCtx.stroke()
 //     perlinCtx.closePath()
 // }
+
 
 
 
