@@ -1,54 +1,94 @@
 "use strict";
 // START ON LOAD
 window.addEventListener('load', function () {
-    // ________________________________________ SIDEBAR ________________________________________
-    const SIDEBAR_WIDTH = 250;
-    const CTGR_PERSPECTIVE = document.getElementById('CTGR_PERSPECTIVE');
-    // const CTGR_LIGHTSOURCE = document.getElementById('CTGR_LIGHTSOURCE') as HTMLElement
-    const CTGR_BRANCH = document.getElementById('CTGR_BRANCH');
-    // const CTGR_LEAF = document.getElementById('CTGR_LEAF') as HTMLElement
-    // const CTGR_MOUNTAINS = document.getElementById('CTGR_MOUNTAINS') as HTMLElement
-    const canvasContainer = document.getElementById('canvasContainer');
-    // HORIZON HEIGHT
-    const horizonHeight = canvasContainer.offsetHeight * 0.2 + Math.random() * canvasContainer.offsetHeight * 0.6;
-    document.documentElement.style.cssText = "--horizonHeight:" + horizonHeight + "px";
-    // LIGHTSOURCE
-    const lightSourceCanvas = document.getElementById('lightSourceCanvas');
-    const lightSourceGlowCanvas = document.getElementById('lightSourceGlowCanvas');
-    const lightSourcePositionX = Math.random() * this.window.innerWidth;
-    const lightSourcePositionY = Math.random() * horizonHeight * 0.8;
-    const lightSourceSize = 100 + Math.random() * 150;
-    function moveLightsource() {
+    var _a, _b, _c, _d;
+    function updateLightSource() {
         lightSourceCanvas.style.width = lightSourceSize + 'px';
         lightSourceCanvas.style.height = lightSourceSize + 'px';
-        lightSourceCanvas.style.left = (lightSourcePositionX - lightSourceSize / 2) + 'px';
-        lightSourceCanvas.style.top = (lightSourcePositionY - lightSourceSize / 2) + 'px';
+        lightSourceCanvas.style.left = (lightSourcePositionXGlobal - lightSourceSize / 2) + 'px';
+        lightSourceCanvas.style.top = (lightSourcePositionYGlobal - lightSourceSize / 2) + 'px';
         lightSourceGlowCanvas.style.width = lightSourceSize * 2 + 'px';
         lightSourceGlowCanvas.style.height = lightSourceSize * 2 + 'px';
-        lightSourceGlowCanvas.style.left = (lightSourcePositionX - lightSourceSize) + 'px';
-        lightSourceGlowCanvas.style.top = (lightSourcePositionY - lightSourceSize) + 'px';
+        lightSourceGlowCanvas.style.left = (lightSourcePositionXGlobal - lightSourceSize) + 'px';
+        lightSourceGlowCanvas.style.top = (lightSourcePositionYGlobal - lightSourceSize) + 'px';
     }
-    moveLightsource();
     function valById(id) {
         return Number(document.getElementById(id).value);
     }
-    // function recalculatePerspective () {
-    // }
-    // recalculatePerspective()
-    const paramsList = [];
-    paramsList;
-    // // PERSPECTIVE
-    // PERSPECTIVE
-    createSliderWithTextInput(CTGR_PERSPECTIVE, 'horizonHeight', 'hrzn h', '', 0, 1500, 1, Math.round(Math.random() * 1200));
+    function recalculateShadowParameters() {
+        shadowSpread = (lightSourcePositionYGlobal / horizonHeightGlobal) * (lightSourceSize * 2 / horizonHeightGlobal) * shadowSpreadMultiplier + 0.15; // + for minimal shadow length
+        shadowSpreadMountain = (lightSourcePositionYGlobal) / horizonHeightGlobal * (lightSourceSize * 2 / horizonHeightGlobal) * shadowSpreadMultiplier + 0.8;
+    }
+    // ________________________________________ SIDEBAR ________________________________________
+    const SIDEBAR_WIDTH = 250;
+    const CTGR_PERSPECTIVE = document.getElementById('CTGR_PERSPECTIVE');
+    const CTGR_LIGHTSOURCE = document.getElementById('CTGR_LIGHTSOURCE');
+    const CTGR_BRANCH = document.getElementById('CTGR_BRANCH');
+    // const CTGR_LEAF = document.getElementById('CTGR_LEAF') as HTMLElement
+    const CTGR_MOUNTAINS = document.getElementById('CTGR_MOUNTAINS');
+    const canvasContainer = document.getElementById('canvasContainer');
+    // HORIZON HEIGHT
+    // let horizonHeightGlobal = Math.round(canvasContainer.offsetHeight*0.2 + Math.random()*canvasContainer.offsetHeight*0.6)
+    let horizonHeightGlobal = Math.round(window.innerHeight * 0.2 + Math.random() * window.innerHeight * 0.6);
+    document.documentElement.style.cssText = "--horizonHeight:" + horizonHeightGlobal + "px";
     // LIGHTSOURCE
-    // createSliderWithTextInput('lightSourcePositionX', 'x coordinate' , CTGR_LIGHTSOURCE, 0, this.window.innerWidth, Math.random()*this.window.innerWidth, '')
-    // createSliderWithTextInput({id: 'lightSourcePositionY', name: 'y coordinate' , category: CTGR_LIGHTSOURCE, min: 0, max: 10, value: Math.random()*valById('horizonHeight_R')*0.8, title: ''})
+    const lightSourceCanvas = document.getElementById('lightSourceCanvas');
+    const lightSourceGlowCanvas = document.getElementById('lightSourceGlowCanvas');
+    let lightSourcePositionXGlobal = Math.round(Math.random() * this.window.innerWidth);
+    let lightSourcePositionYGlobal = Math.round(Math.random() * horizonHeightGlobal * 0.8);
+    const lightSourceSize = 100 + Math.random() * 150;
+    let mountainRangeWidthMultiplierGlobal = Number((Math.random() * 0.8).toFixed(2));
+    let mountainRangeWidthGlobal = (window.innerHeight - horizonHeightGlobal) * 0.1 + (window.innerHeight - horizonHeightGlobal) * mountainRangeWidthMultiplierGlobal;
+    const shadowAngleMultiplier = 3;
+    const shadowSpreadMultiplier = 1;
+    let shadowSpread = (lightSourcePositionYGlobal / horizonHeightGlobal) * (lightSourceSize * 2 / horizonHeightGlobal) * shadowSpreadMultiplier + 0.15; // + for minimal shadow length
+    let shadowSpreadMountain = (lightSourcePositionYGlobal) / horizonHeightGlobal * (lightSourceSize * 2 / horizonHeightGlobal) * shadowSpreadMultiplier + 0.8;
+    const blurStrength = 10;
+    updateLightSource();
+    // ________________________________________ PARAMETERS ________________________________________
+    // FIRST THERE IS A SLIDER CREATED AND RIGHT BELOW THERE MIGHT BE LISTENERES FOR THAT SLIDER
+    // THEY ARE THERE BECAUSE SOME VARIABLES ARE IN MANY EQUATIONS AFTERWARDS (like shadow length depends on lightsource position and that depends on horizon height)
+    // PERSPECTIVE
+    createSliderWithTextInput(CTGR_PERSPECTIVE, 'horizonHeight', 'sky (horizon) height', '', Math.round(window.innerHeight * 0.1), Math.round(window.innerHeight * 0.9), 1, horizonHeightGlobal);
+    (_a = document.getElementById('horizonHeight')) === null || _a === void 0 ? void 0 : _a.addEventListener('input', () => {
+        horizonHeightGlobal = valById('horizonHeight');
+        document.documentElement.style.cssText = "--horizonHeight:" + horizonHeightGlobal + "px";
+        mountainRangeWidthGlobal = (window.innerHeight - horizonHeightGlobal) * mountainRangeWidthMultiplierGlobal;
+        redrawMountains();
+        updateLightSource();
+        // change max lightsource position not to stay below horizon
+        let lightSourceMaxCoordY = document.getElementById('lightSourcePositionY');
+        lightSourceMaxCoordY.max = String(horizonHeightGlobal);
+        if (lightSourcePositionYGlobal >= horizonHeightGlobal) {
+            lightSourcePositionYGlobal = horizonHeightGlobal;
+        }
+    }); // change global variable
+    // LIGHTSOURCE
+    createSliderWithTextInput(CTGR_LIGHTSOURCE, 'lightSourcePositionX', 'x coordinate', '', 0, window.innerWidth, 1, lightSourcePositionXGlobal);
+    (_b = document.getElementById('lightSourcePositionX')) === null || _b === void 0 ? void 0 : _b.addEventListener('input', () => {
+        lightSourcePositionXGlobal = valById('lightSourcePositionX');
+        updateLightSource();
+        redrawMountainsShadows();
+    }); // change global variable
+    createSliderWithTextInput(CTGR_LIGHTSOURCE, 'lightSourcePositionY', 'y coordinate', '', 0, horizonHeightGlobal, 1, lightSourcePositionYGlobal);
+    (_c = document.getElementById('lightSourcePositionY')) === null || _c === void 0 ? void 0 : _c.addEventListener('input', () => {
+        lightSourcePositionYGlobal = valById('lightSourcePositionY');
+        updateLightSource();
+        redrawMountainsShadows();
+        recalculateShadowParameters();
+    }); // change global variable
     // BRANCH
     createSliderWithTextInput(CTGR_BRANCH, 'maxLevelGlobal', 'max level', 'title', 1, 12, 1, Math.round(Math.random() * 2)); // min > 0!
     createSliderWithTextInput(CTGR_BRANCH, 'trunkLen', 'trunk length', '', 0, 200, 0.1, 50);
-    createSliderWithTextInput(CTGR_BRANCH, 'initialsegmentingLen', 'segment length', 'as a part of trunk length', 0.01, 1, 0.01, 0.5);
+    createSliderWithTextInput(CTGR_BRANCH, 'initialsegmentingLen', 'segment length', 'as a part of trunk length', 0.01, 1, 0.01, 0.25);
     // LEAF
     // MOUNTAINS
+    createSliderWithTextInput(CTGR_MOUNTAINS, 'mountainRangeWidthMultiplierGlobal', 'mountains width', 'as a part of ground height', 0.01, 1, 0.01, mountainRangeWidthMultiplierGlobal);
+    (_d = document.getElementById('mountainRangeWidthMultiplierGlobal')) === null || _d === void 0 ? void 0 : _d.addEventListener('input', () => {
+        mountainRangeWidthMultiplierGlobal = valById('mountainRangeWidthMultiplierGlobal');
+        mountainRangeWidthGlobal = (window.innerHeight - horizonHeightGlobal) * mountainRangeWidthMultiplierGlobal;
+        redrawMountains();
+    });
     function createSliderWithTextInput(category, id, name, title, min, max, step, value) {
         const sidebarElement = document.createElement("div");
         sidebarElement.classList.add("sidebarElement");
@@ -98,7 +138,7 @@ window.addEventListener('load', function () {
     });
     // UPDATE SLIDER BY NUMBER INPUT
     textInputs.forEach((textInput) => {
-        textInput.addEventListener("change", (event) => {
+        textInput.addEventListener("input", (event) => {
             const eventTarget = event.target;
             const dataOf = eventTarget.dataset.slidertext;
             const slider = document.querySelector(`[data-slider="${dataOf}"]`);
@@ -163,15 +203,14 @@ window.addEventListener('load', function () {
     const leafMaxStageGlobal = 2;
     const whileLoopRetriesEachFrameLeaves = 10; // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
     const distanceScaling = 0.8; // range 0-1
-    const mountainsAmount = 1;
-    const mountainRangeWidth = (window.innerHeight - horizonHeight) * 0.2;
+    const mountainsAmount = 3;
     const mountainTrimCloser = 0.9; // 0-1
-    const mountainHeightMultiplier = 0.8; // 0.1 - 1?
-    const shadowAngleMultiplier = 3;
-    const shadowSpreadMultiplier = 1;
-    const shadowSpread = (lightSourcePositionY / horizonHeight) * (lightSourceSize * 2 / horizonHeight) * shadowSpreadMultiplier + 0.15; // + for minimal shadow length
-    const shadowSpreadMountain = (lightSourcePositionY) / horizonHeight * (lightSourceSize * 2 / horizonHeight) * shadowSpreadMultiplier + 0.8;
-    const blurStrength = 10;
+    const mountainHeightMultiplier = 0.25; // 0.1 - 1?
+    // const shadowAngleMultiplier = 3
+    // const shadowSpreadMultiplier = 1
+    // const shadowSpread = (lightSourcePositionYGlobal/horizonHeightGlobal) * (lightSourceSize*2/horizonHeightGlobal) * shadowSpreadMultiplier + 0.15 // + for minimal shadow length
+    // const shadowSpreadMountain = (lightSourcePositionYGlobal)/horizonHeightGlobal * (lightSourceSize*2/horizonHeightGlobal) * shadowSpreadMultiplier + 0.8
+    // const blurStrength = 10
     const colorTreeInitialGlobal = 'rgba(20, 30, 0, 1)';
     const colorTreeFinalGlobal = 'rgba(100, 160, 160, 1)';
     const leafLineDarkness = -0.2; // 0-1 range (or even -1 to +1)
@@ -199,6 +238,7 @@ window.addEventListener('load', function () {
         }
     }
     function paintTheSky() {
+        document.body.style.background = skyColor;
         const skyCanvas = document.getElementById('skyCanvas');
         const skyCtx = skyCanvas.getContext('2d');
         const gradient = skyCtx.createLinearGradient(skyCanvas.width / 2, 0, skyCanvas.width / 2, skyCanvas.height);
@@ -827,15 +867,15 @@ window.addEventListener('load', function () {
     let alreadyAnimating = false;
     // PLANT (SPAWN) TREE AT CLICK COORDS
     canvasContainer.addEventListener("click", (event) => {
-        if (alreadyAnimating === false && event.y > horizonHeight) {
+        if (alreadyAnimating === false && event.y > horizonHeightGlobal) {
             // console.log(event.y)
             // let verticalAngleInfluence = 1+ ( (this.window.innerHeight - event.y) / this.window.innerHeight ) ** 0.9
             // let shadowAngle = - (lightSourcePositionX - event.x) / window.innerWidth * shadowAngleMultiplier * verticalAngleInfluence
-            let shadowAngle = -(lightSourcePositionX - event.x) / window.innerWidth * shadowAngleMultiplier;
-            let groundHeight = window.innerHeight - horizonHeight;
-            let groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight) / 2;
+            let shadowAngle = -(lightSourcePositionXGlobal - event.x) / window.innerWidth * shadowAngleMultiplier;
+            let groundHeight = window.innerHeight - horizonHeightGlobal;
+            let groundMiddle = window.innerHeight - (window.innerHeight - horizonHeightGlobal) / 2;
             let scaleByTheGroundPosition = (event.y - groundMiddle) / groundHeight * 2; // in range -1 to 1
-            const colorDistortionProportion = 1 - ((event.y - horizonHeight) / groundHeight); // 1 - 0
+            const colorDistortionProportion = 1 - ((event.y - horizonHeightGlobal) / groundHeight); // 1 - 0
             let colorInitial = blendRgbaColorsInProportions(mistColor, colorTreeInitialGlobal, colorDistortionProportion * treeMistBlendingProportion);
             let colorFinal = blendRgbaColorsInProportions(mistColor, colorTreeFinalGlobal, colorDistortionProportion * treeMistBlendingProportion);
             // NOW BLEND AGAIN WITH SHADOW
@@ -954,7 +994,7 @@ window.addEventListener('load', function () {
     class Mountain {
         constructor(initialAmountOfNodes, octaves, targetHeight, canvasBottom, colorTop, colorBottom, 
         // let width = 600,
-        width = canvasContainer.offsetWidth * 1.02, // a little overlap for reassuring
+        width = window.outerWidth * 1.02, // a little overlap for reassuring
         lowestPoint = Infinity, highestPoint = 0, currentAmountOfNodes = initialAmountOfNodes, currentOctave = 0, allPoints = [], randomPoints = [], canvas = canvasContainer.appendChild(document.createElement("canvas")), ctx = canvas.getContext('2d'), canvasShadow = canvasContainer.appendChild(document.createElement("canvas")), ctxShadow = canvasShadow.getContext('2d')) {
             this.initialAmountOfNodes = initialAmountOfNodes;
             this.octaves = octaves;
@@ -1005,6 +1045,7 @@ window.addEventListener('load', function () {
         fillPointsOnTheLineBetweenNodes(nodes_amount) {
             this.randomPoints = []; // clean up for next iteration
             let amplitude = this.initialAmountOfNodes ** this.octaves / nodes_amount; // has to be >1
+            // console.log(amplitude)
             let stepLen = Math.ceil(this.width / (nodes_amount - 1));
             // console.log(stepLen)
             let step = 0;
@@ -1109,7 +1150,7 @@ window.addEventListener('load', function () {
                 // let verticalAngleInfluence = ( (h - this.allPoints[point]) / h ) ** 0.7
                 // let shadowAngle = - ((lightSourcePositionX - point) / window.innerWidth)/4 * shadowAngleMultiplier * verticalAngleInfluence
                 let verticalAngleInfluence = ((h - this.allPoints[point]) / h) ** 1;
-                let shadowAngle = -((lightSourcePositionX - point) / window.innerWidth) * shadowAngleMultiplier * verticalAngleInfluence;
+                let shadowAngle = -((lightSourcePositionXGlobal - point) / window.innerWidth) * shadowAngleMultiplier * verticalAngleInfluence;
                 // console.log(shadowAngle)
                 this.ctxShadow.lineTo(point + point * shadowAngle, (h - this.allPoints[point]) * shadowSpreadMountain);
                 this.ctxShadow.lineTo(point + 1 + (point + 1) * shadowAngle, (h - this.allPoints[point + 1]) * shadowSpreadMountain);
@@ -1122,15 +1163,22 @@ window.addEventListener('load', function () {
             // this.ctxShadow.stroke()
             this.ctxShadow.fill();
         }
+        redrawShadow() {
+            this.ctxShadow.clearRect(0, 0, this.canvasShadow.width, this.canvasShadow.height);
+            this.drawShadow();
+        }
     }
     // DRAWING MOUNTAIN RANGES
+    let mountainsDrawn = [];
     function drawMountains() {
         for (let m = 0; m < mountainsAmount; m++) {
             const height = 1000 * mountainHeightMultiplier * ((mountainsAmount - (m * mountainTrimCloser)) / (mountainsAmount));
-            const bottom = horizonHeight + (mountainRangeWidth / mountainsAmount) * m;
-            const groundHeight = window.innerHeight - horizonHeight;
-            const colorProportion = 1 - ((bottom - horizonHeight) / groundHeight);
-            const groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight) / 2;
+            const bottom = horizonHeightGlobal + (mountainRangeWidthGlobal / mountainsAmount) * m;
+            const groundHeight = window.innerHeight - horizonHeightGlobal;
+            // console.log(groundHeight)
+            const colorProportion = 1 - ((bottom - horizonHeightGlobal) / groundHeight); // don't divide by 0 here (limit horizon)
+            // console.log(colorProportion)
+            const groundMiddle = window.innerHeight - (window.innerHeight - horizonHeightGlobal) / 2;
             const scaleByTheGroundPosition = (bottom - groundMiddle) / groundHeight * distanceScaling * 1.8;
             // console.log(colorProportion) // 1 - 0
             let colorTop = blendRgbaColorsInProportions(mistColor, mountainColor, colorProportion);
@@ -1139,11 +1187,25 @@ window.addEventListener('load', function () {
             // const colorBottom = blendRgbaColorsInProportions(mistColor, shadowColor, colorProportion)
             let colorBottom = blendRgbaColorsInProportions(colorTop, shadowColor, colorProportionBottom);
             colorBottom = rgbaSetAlpha1(colorBottom);
-            const mountain = new Mountain(4, 10, height + height * scaleByTheGroundPosition * 1, bottom, colorTop, colorBottom);
-            mountain; //silence TS
+            const mountain = new Mountain(4, 10, height + height * scaleByTheGroundPosition, bottom, colorTop, colorBottom);
+            // mountain //silence TS
+            mountainsDrawn.push(mountain);
         }
     }
     drawMountains();
+    function redrawMountains() {
+        mountainsDrawn.forEach(mountain => {
+            mountain.canvas.remove();
+            mountain.canvasShadow.remove();
+        });
+        mountainsDrawn = [];
+        drawMountains();
+    }
+    function redrawMountainsShadows() {
+        mountainsDrawn.forEach(mountain => {
+            mountain.redrawShadow();
+        });
+    }
     // ________________________________________ MOUNTAIN ________________________________________
 }); //window.addEventListener('load', function(){ }) ENDS HERE
 //# sourceMappingURL=script.js.map
