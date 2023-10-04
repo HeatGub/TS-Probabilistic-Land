@@ -1,58 +1,55 @@
 // START ON LOAD
 window.addEventListener('load', function() {
-
 function updateLightSource() {
-    lightSourceCanvas.style.width = lightSourceSize + 'px'
-    lightSourceCanvas.style.height = lightSourceSize + 'px'
-    lightSourceCanvas.style.left = (lightSourcePositionXGlobal - lightSourceSize/2) + 'px'
-    lightSourceCanvas.style.top = (lightSourcePositionYGlobal - lightSourceSize/2) + 'px'
-    lightSourceGlowCanvas.style.width = lightSourceSize*2 + 'px'
-    lightSourceGlowCanvas.style.height = lightSourceSize*2 + 'px'
-    lightSourceGlowCanvas.style.left = (lightSourcePositionXGlobal - lightSourceSize) + 'px'
-    lightSourceGlowCanvas.style.top = (lightSourcePositionYGlobal - lightSourceSize) + 'px'
+    lightSourceCanvas.style.width = lightSourceSizeGlobal + 'px'
+    lightSourceCanvas.style.height = lightSourceSizeGlobal + 'px'
+    lightSourceCanvas.style.left = (lightSourcePositionXGlobal - lightSourceSizeGlobal/2) + 'px'
+    lightSourceCanvas.style.top = (lightSourcePositionYGlobal - lightSourceSizeGlobal/2) + 'px'
+    lightSourceGlowCanvas.style.width = lightSourceSizeGlobal*2 + 'px'
+    lightSourceGlowCanvas.style.height = lightSourceSizeGlobal*2 + 'px'
+    lightSourceGlowCanvas.style.left = (lightSourcePositionXGlobal - lightSourceSizeGlobal) + 'px'
+    lightSourceGlowCanvas.style.top = (lightSourcePositionYGlobal - lightSourceSizeGlobal) + 'px'
 }
+
 function valById(id: string) {
     return Number( (<HTMLInputElement>document.getElementById(id)).value )
 }
 
 function recalculateShadowParameters () {
-    shadowSpread = (lightSourcePositionYGlobal/horizonHeightGlobal) * (lightSourceSize*2/horizonHeightGlobal) * shadowSpreadMultiplier + 0.15 // + for minimal shadow length
-    shadowSpreadMountain = (lightSourcePositionYGlobal)/horizonHeightGlobal * (lightSourceSize*2/horizonHeightGlobal) * shadowSpreadMultiplier + 0.8
+    // shadowSpreadGlobal = (lightSourcePositionYGlobal/horizonHeightGlobal) * (lightSourceSizeGlobal*2/horizonHeightGlobal) * shadowSpreadMultiplier + 0.15 // + for minimal shadow length
+    // shadowSpreadMountainGlobal = (lightSourcePositionYGlobal)/horizonHeightGlobal * (lightSourceSizeGlobal*2/horizonHeightGlobal) * shadowSpreadMultiplier + 0.8
+    shadowSpreadGlobal = (lightSourcePositionYGlobal/horizonHeightGlobal) * shadowSpreadMultiplier + 0.15 // + for minimal shadow length
+    shadowSpreadMountainGlobal = (lightSourcePositionYGlobal)/horizonHeightGlobal * shadowSpreadMultiplier + 0.8
 }
 
 // ________________________________________ SIDEBAR ________________________________________
 const SIDEBAR_WIDTH = 250
 const CTGR_PERSPECTIVE = document.getElementById('CTGR_PERSPECTIVE') as HTMLElement
 const CTGR_LIGHTSOURCE = document.getElementById('CTGR_LIGHTSOURCE') as HTMLElement
+const CTGR_SHADOWS = document.getElementById('CTGR_SHADOWS') as HTMLElement
 const CTGR_BRANCH = document.getElementById('CTGR_BRANCH') as HTMLElement
 // const CTGR_LEAF = document.getElementById('CTGR_LEAF') as HTMLElement
 const CTGR_MOUNTAINS = document.getElementById('CTGR_MOUNTAINS') as HTMLElement
 
 const canvasContainer = document.getElementById('canvasContainer') as HTMLBodyElement
-// HORIZON HEIGHT
 // let horizonHeightGlobal = Math.round(canvasContainer.offsetHeight*0.2 + Math.random()*canvasContainer.offsetHeight*0.6)
 let horizonHeightGlobal = Math.round(window.innerHeight*0.2 + Math.random()*window.innerHeight*0.6)
-
-document.documentElement.style.cssText = "--horizonHeight:" + horizonHeightGlobal + "px"
-
+document.documentElement.style.cssText = "--horizonHeight:" + horizonHeightGlobal + "px" // set css property
 // LIGHTSOURCE
 const lightSourceCanvas = document.getElementById('lightSourceCanvas') as HTMLBodyElement
 const lightSourceGlowCanvas = document.getElementById('lightSourceGlowCanvas') as HTMLBodyElement
-
 let lightSourcePositionXGlobal = Math.round(Math.random() * this.window.innerWidth)
 let lightSourcePositionYGlobal = Math.round(Math.random() * horizonHeightGlobal*0.8)
-const lightSourceSize = 100 + Math.random()*150
+let lightSourceSizeGlobal = Math.round(50 + Math.random()*horizonHeightGlobal/2)
 
 let mountainRangeWidthMultiplierGlobal = Number((Math.random()*0.8).toFixed(2))
 let mountainRangeWidthGlobal = (window.innerHeight - horizonHeightGlobal)*0.1 + (window.innerHeight - horizonHeightGlobal)*mountainRangeWidthMultiplierGlobal
 
-const shadowAngleMultiplier = 3
-const shadowSpreadMultiplier = 1
-let shadowSpread = (lightSourcePositionYGlobal/horizonHeightGlobal) * (lightSourceSize*2/horizonHeightGlobal) * shadowSpreadMultiplier + 0.15 // + for minimal shadow length
-let shadowSpreadMountain = (lightSourcePositionYGlobal)/horizonHeightGlobal * (lightSourceSize*2/horizonHeightGlobal) * shadowSpreadMultiplier + 0.8
+let shadowSpreadMultiplier = Number((Math.random()*10).toFixed(1)) // change that later?
+let shadowAngleMultiplier =  Number((Math.random()*3).toFixed(1))
+let shadowSpreadGlobal = (lightSourcePositionYGlobal/horizonHeightGlobal) *shadowSpreadMultiplier + 0.15 // + for minimal shadow length
+let shadowSpreadMountainGlobal = (lightSourcePositionYGlobal)/horizonHeightGlobal * shadowSpreadMultiplier + 0.8
 const blurStrength = 10
-
-
 
 updateLightSource()
 
@@ -68,14 +65,14 @@ document.getElementById('horizonHeight')?.addEventListener('input', () => {
     mountainRangeWidthGlobal = (window.innerHeight - horizonHeightGlobal) * mountainRangeWidthMultiplierGlobal
     redrawMountains()
     updateLightSource()
+    recalculateShadowParameters()
     // change max lightsource position not to stay below horizon
     let lightSourceMaxCoordY = document.getElementById('lightSourcePositionY') as HTMLInputElement
     lightSourceMaxCoordY.max = String(horizonHeightGlobal)
     if (lightSourcePositionYGlobal >= horizonHeightGlobal) {
         lightSourcePositionYGlobal = horizonHeightGlobal
     }
-
-} ) // change global variable
+} )
 
 // LIGHTSOURCE
 createSliderWithTextInput(CTGR_LIGHTSOURCE, 'lightSourcePositionX', 'x coordinate' , '',  0 , window.innerWidth ,  1, lightSourcePositionXGlobal)
@@ -83,18 +80,38 @@ document.getElementById('lightSourcePositionX')?.addEventListener('input', () =>
     lightSourcePositionXGlobal = valById('lightSourcePositionX')
     updateLightSource()
     redrawMountainsShadows()
-} ) // change global variable
+} )
 createSliderWithTextInput(CTGR_LIGHTSOURCE, 'lightSourcePositionY', 'y coordinate' , '',  0 , horizonHeightGlobal ,  1, lightSourcePositionYGlobal)
 document.getElementById('lightSourcePositionY')?.addEventListener('input', () => {
     lightSourcePositionYGlobal = valById('lightSourcePositionY')
     updateLightSource() 
-    redrawMountainsShadows()
     recalculateShadowParameters()
+    redrawMountainsShadows()
+} )
+createSliderWithTextInput(CTGR_LIGHTSOURCE, 'lightSourceSize', 'size' , '',  0 , Math.round(window.innerHeight/2) ,  1, lightSourceSizeGlobal)
+document.getElementById('lightSourceSize')?.addEventListener('input', () => {
+    lightSourceSizeGlobal = valById('lightSourceSize')
+    updateLightSource() 
+} )
+
+//SHADOW
+createSliderWithTextInput(CTGR_SHADOWS, 'shadowSpreadMultiplier', 'vertical stretch' , '',  0 , 20 ,  0.1, shadowSpreadMultiplier)
+document.getElementById('shadowSpreadMultiplier')?.addEventListener('input', () => {
+    shadowSpreadMultiplier = valById('shadowSpreadMultiplier')
+    recalculateShadowParameters()
+    redrawMountainsShadows()
+} )
+createSliderWithTextInput(CTGR_SHADOWS, 'shadowAngleMultiplier', 'horizontal stretch' , '',  0 , 5 ,  0.1, shadowAngleMultiplier)
+document.getElementById('shadowAngleMultiplier')?.addEventListener('input', () => {
+    shadowAngleMultiplier = valById('shadowAngleMultiplier')
+    recalculateShadowParameters()
+    redrawMountainsShadows()
 } ) // change global variable
 
 
+
 // BRANCH
-createSliderWithTextInput(CTGR_BRANCH , 'maxLevelGlobal', 'max level' , 'title', 1, 12, 1, Math.round(Math.random()*2)) // min > 0!
+createSliderWithTextInput(CTGR_BRANCH , 'maxLevelTree', 'max level' , 'title', 1, 12, 1, Math.round(Math.random()*2)) // min > 0!
 createSliderWithTextInput(CTGR_BRANCH , 'trunkLen', 'trunk length' , '',  0, 200 , 0.1, 50)
 createSliderWithTextInput(CTGR_BRANCH , 'initialsegmentingLen', 'segment length' , 'as a part of trunk length',  0.01, 1 , 0.01, 0.25)
 // LEAF
@@ -214,7 +231,7 @@ const branchLenRandomizer = 0.15 // keep it const
 const trunkWidthAsPartOfLen = 0.3
 const widthMultiplier = 0.6
 const rebranchingAngle = 10
-// const maxLevelGlobal = 10 // -> valById('maxLevelGlobal')
+// const maxLevelTree = 10 // -> valById('maxLevelTree')
 const branchingProbabilityBooster = 0 // when 0 trees look like sick
 const occasionalBranchesLimit = 10
 const levelShiftRangeAddition = 1
@@ -242,12 +259,6 @@ const distanceScaling = 0.8 // range 0-1
 const mountainsAmount = 3
 const mountainTrimCloser = 0.9 // 0-1
 const mountainHeightMultiplier = 0.25 // 0.1 - 1?
-
-// const shadowAngleMultiplier = 3
-// const shadowSpreadMultiplier = 1
-// const shadowSpread = (lightSourcePositionYGlobal/horizonHeightGlobal) * (lightSourceSize*2/horizonHeightGlobal) * shadowSpreadMultiplier + 0.15 // + for minimal shadow length
-// const shadowSpreadMountain = (lightSourcePositionYGlobal)/horizonHeightGlobal * (lightSourceSize*2/horizonHeightGlobal) * shadowSpreadMultiplier + 0.8
-// const blurStrength = 10
 
 const colorTreeInitialGlobal = 'rgba(20, 30, 0, 1)'
 const colorTreeFinalGlobal = 'rgba(100, 160, 160, 1)'
@@ -409,12 +420,12 @@ class Branch {
 
             // // SHADOW SEGMENT
             this.shadowSegments.push({x0: 0, y0: 0, xF: 0, yF: 0, width: 0, blur: 0})
-            this.shadowSegments[seg].y0 = this.tree.initY + (this.tree.initY - this.segments[seg].y0) * shadowSpread
-            this.shadowSegments[seg].yF = this.tree.initY + (this.tree.initY - this.segments[seg].yF) * shadowSpread
-            this.shadowSegments[seg].x0 = this.segments[seg].x0 + (this.tree.initY - this.segments[seg].y0) * shadowSpread * this.tree.shadowAngle
-            this.shadowSegments[seg].xF = this.segments[seg].xF + (this.tree.initY - this.segments[seg].yF) * shadowSpread * this.tree.shadowAngle
-            // this.shadowSegments[seg].width = this.segments[this.drawnSegments].width + ((this.tree.initY - this.segments[this.drawnSegments].y0)*(shadowSpread/200)) + (Math.abs((this.tree.initX - this.segments[this.drawnSegments].x0)))*(shadowSpread/200)
-            this.shadowSegments[seg].width = this.segments[seg].width + ((this.tree.initY - this.segments[seg].y0)*(shadowSpread/200)) + (Math.abs((this.tree.initX - this.segments[seg].x0)))*(shadowSpread/200)
+            this.shadowSegments[seg].y0 = this.tree.initY + (this.tree.initY - this.segments[seg].y0) * shadowSpreadGlobal
+            this.shadowSegments[seg].yF = this.tree.initY + (this.tree.initY - this.segments[seg].yF) * shadowSpreadGlobal
+            this.shadowSegments[seg].x0 = this.segments[seg].x0 + (this.tree.initY - this.segments[seg].y0) * shadowSpreadGlobal * this.tree.shadowAngle
+            this.shadowSegments[seg].xF = this.segments[seg].xF + (this.tree.initY - this.segments[seg].yF) * shadowSpreadGlobal * this.tree.shadowAngle
+            // this.shadowSegments[seg].width = this.segments[this.drawnSegments].width + ((this.tree.initY - this.segments[this.drawnSegments].y0)*(shadowSpreadGlobal/200)) + (Math.abs((this.tree.initX - this.segments[this.drawnSegments].x0)))*(shadowSpreadGlobal/200)
+            this.shadowSegments[seg].width = this.segments[seg].width + ((this.tree.initY - this.segments[seg].y0)*(shadowSpreadGlobal/200)) + (Math.abs((this.tree.initX - this.segments[seg].x0)))*(shadowSpreadGlobal/200)
             
             this.shadowSegments[seg].blur = (this.tree.initY - this.segments[seg].y0) / this.tree.canvas.height* blurStrength
             this.segments[seg].leaves.forEach( (leaf) => {  // pass the same blur to children leaves
@@ -422,14 +433,14 @@ class Branch {
             } )
 
             // _________________ ADD LEAVES AT SEGMENT _________________
-            // if (maxLevelGlobal - leafyLevels < this.level && seg >= segAmountByLevel/6 && seg % spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
+            // if (maxLevelTree - leafyLevels < this.level && seg >= segAmountByLevel/6 && seg % spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
             const singleSegmentLength = this.len * (1/segAmountByLevel)
             const spawnLeafEverySegments = Math.ceil(this.tree.minimalDistanceBetweenLeaves / singleSegmentLength)
 
-            if (valById('maxLevelGlobal')-leafyLevels < this.level  &&  seg%spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
+            if (valById('maxLevelTree')-leafyLevels < this.level  &&  seg%spawnLeafEverySegments === 0) { // seg >= segAmountByLevel/6  to disable appearing leaves at the very beginning (overlapping branches)
                 const thisLeafSize = (this.tree.averageLeafSize*0.7 + this.tree.averageLeafSize*0.3*Math.random()) * leafLenScaling // randomize leaf size
 
-                const leafProbabilityByLevel = globalLeafProbability - globalLeafProbability*((valById('maxLevelGlobal')-this.level)/leafyLevels/2) // linearly change probability with level from around globalLeafProbability/2 to globalLeafProbability (for leafy levels)
+                const leafProbabilityByLevel = globalLeafProbability - globalLeafProbability*((valById('maxLevelTree')-this.level)/leafyLevels/2) // linearly change probability with level from around globalLeafProbability/2 to globalLeafProbability (for leafy levels)
                 // console.log(leafProbabilityByLevel)
     
                 // LEFT LEAF
@@ -603,7 +614,7 @@ class Tree {
         public ctxShadows = canvasShadows.getContext('2d') as CanvasRenderingContext2D,
         public averageLeafSize = trunkLen/5,
         public minimalDistanceBetweenLeaves = averageLeafSize * leafLenScaling * leafDistanceMultiplier, // doesnt count the distance between leaves of different branches
-        readonly maxLevel: number = valById('maxLevelGlobal'),
+        readonly maxLevel: number = valById('maxLevelTree'),
         readonly initialsegmentingLen = trunkLen * valById('initialsegmentingLen'),
 
         // public rgbColorByLevel
@@ -787,8 +798,8 @@ class Leaf {
         this.ctx.lineWidth = this.lineWidth // petiole width
 
         // _____________________________ LEAF SHADOW _____________________________
-        // this.shadowLen = this.len + (this.tree.initY+this.y0LeafShadow)*shadowSpread/100 + Math.abs((this.tree.initX-this.x0LeafShadow)*shadowSpread/100) // shadow len depends on x and y distance from the tree init coords
-        this.shadowLen = this.len + (this.tree.initY-this.y0LeafShadow)*-shadowSpread/80 + Math.abs((this.tree.initX-this.x0LeafShadow)*shadowSpread/80)
+        // this.shadowLen = this.len + (this.tree.initY+this.y0LeafShadow)*shadowSpreadGlobal/100 + Math.abs((this.tree.initX-this.x0LeafShadow)*shadowSpreadGlobal/100) // shadow len depends on x and y distance from the tree init coords
+        this.shadowLen = this.len + (this.tree.initY-this.y0LeafShadow)*-shadowSpreadGlobal/80 + Math.abs((this.tree.initX-this.x0LeafShadow)*shadowSpreadGlobal/80)
         // console.log(-(this.tree.initY - this.y0LeafShadow ))
 
         this.canvasShadow.width = this.shadowLen * 2 // little bit bigger area for blurring
@@ -935,7 +946,7 @@ class Leaf {
         this.ctxShadow.filter = 'blur(' + blur + 'px)'
         
         // petiole's shadow width
-        this.ctxShadow.lineWidth = this.lineWidth + (this.tree.initY-this.y0LeafShadow)*-shadowSpread/1000 + Math.abs((this.tree.initX-this.x0LeafShadow)*shadowSpread/1000)
+        this.ctxShadow.lineWidth = this.lineWidth + (this.tree.initY-this.y0LeafShadow)*-shadowSpreadGlobal/1000 + Math.abs((this.tree.initX-this.x0LeafShadow)*shadowSpreadGlobal/1000)
         this.ctxShadow.beginPath()
         // this.ctxShadow.strokeStyle = shadowColor
 
@@ -1154,7 +1165,7 @@ class Mountain {
 
         this.canvasShadow.style.top = this.canvasBottom + 'px'
         this.canvasShadow.classList.add('mountainShadowCanvas')
-        this.canvasShadow.height = this.targetHeight*shadowSpreadMountain * 1.5 // little bit more for blur
+        this.canvasShadow.height = this.targetHeight*shadowSpreadMountainGlobal // more for blur and not to resize canvas at perspective change?
         this.canvasShadow.width = window.innerWidth
 
         this.ctx.globalCompositeOperation = 'destination-atop' // for drawing stroke in the same color as fill
@@ -1286,15 +1297,15 @@ class Mountain {
             let verticalAngleInfluence = ( (h - this.allPoints[point]) / h ) ** 1
             let shadowAngle = - ((lightSourcePositionXGlobal - point) / window.innerWidth) * shadowAngleMultiplier * verticalAngleInfluence
             // console.log(shadowAngle)
-            this.ctxShadow.lineTo(point+ point*shadowAngle, (h - this.allPoints[point]) * shadowSpreadMountain)
-            this.ctxShadow.lineTo(point+1 + (point+1)*shadowAngle, (h - this.allPoints[point+1]) * shadowSpreadMountain)
+            this.ctxShadow.lineTo(point+ point*shadowAngle, (h - this.allPoints[point]) * shadowSpreadMountainGlobal)
+            this.ctxShadow.lineTo(point+1 + (point+1)*shadowAngle, (h - this.allPoints[point+1]) * shadowSpreadMountainGlobal)
         }
 
-        this.ctxShadow.lineTo(this.allPoints.length, (h - this.allPoints[this.allPoints.length]) * shadowSpreadMountain)
-        this.ctxShadow.lineTo(this.allPoints.length, (h -  this.highestPoint) * shadowSpreadMountain)
-        this.ctxShadow.lineTo(0, (h -  this.highestPoint) * shadowSpreadMountain)
+        this.ctxShadow.lineTo(this.allPoints.length, (h - this.allPoints[this.allPoints.length]) * shadowSpreadMountainGlobal)
+        this.ctxShadow.lineTo(this.allPoints.length, (h -  this.highestPoint) * shadowSpreadMountainGlobal)
+        this.ctxShadow.lineTo(0, (h -  this.highestPoint) * shadowSpreadMountainGlobal)
 
-        // this.ctxShadow.lineTo(0, (h -  this.allPoints[0]) * shadowSpreadMountain)
+        // this.ctxShadow.lineTo(0, (h -  this.allPoints[0]) * shadowSpreadMountainGlobal)
         this.ctxShadow.closePath()
         // this.ctxShadow.stroke()
         this.ctxShadow.fill()
@@ -1303,6 +1314,7 @@ class Mountain {
 
     redrawShadow () {
         this.ctxShadow.clearRect(0, 0, this.canvasShadow.width, this.canvasShadow.height)
+        this.canvasShadow.height = this.targetHeight*shadowSpreadMountainGlobal // resize canvas
         this.drawShadow()
     }
 
