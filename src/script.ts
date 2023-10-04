@@ -14,22 +14,15 @@ function updateLightSource() {
 function valById(id: string) {
     return Number( (<HTMLInputElement>document.getElementById(id)).value )
 }
+function hexColorById(id: string) {
+    return  (<HTMLInputElement>document.getElementById(id)).value
+}
 
 function recalculateShadowParameters () {
     shadowSpreadGlobal = (lightSourcePositionYGlobal/horizonHeightGlobal) * shadowSpreadMultiplier + 0.15 // + for minimal shadow length
     shadowSpreadMountainGlobal = (lightSourcePositionYGlobal)/horizonHeightGlobal * shadowSpreadMultiplier + 0.25
 }
 
-// ________________________________________ SIDEBAR ________________________________________
-const SIDEBAR_WIDTH = 250
-const PERSPECTIVE = document.getElementById('PERSPECTIVE_ELEMENTS') as HTMLElement
-const CTGR_LIGHTSOURCE = document.getElementById('CTGR_LIGHTSOURCE') as HTMLElement
-const CTGR_SHADOWS = document.getElementById('CTGR_SHADOWS') as HTMLElement
-const CTGR_BRANCH = document.getElementById('CTGR_BRANCH') as HTMLElement
-// const CTGR_LEAF = document.getElementById('CTGR_LEAF') as HTMLElement
-const CTGR_MOUNTAINS = document.getElementById('CTGR_MOUNTAINS') as HTMLElement
-let sidebarCategories = document.querySelectorAll(".sidebarCategory")
-sidebarCategories.forEach(function(elem) {elem.addEventListener("click", hideShowCategoryElements)})
 function hideShowCategoryElements (event: Event) {
     const clickedElemClass = ((event.target as Element).className)
     if (clickedElemClass.includes('sidebarCategory')){ //to disable hiding more inner elements
@@ -43,8 +36,52 @@ function hideShowCategoryElements (event: Event) {
                 thisTarget.style.display = 'block'
             }
         }
-    }     
+    }
 }
+
+function hexToRgba(hex: string, alpha: number) {
+    let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+    if (result) {
+        const rgbObj = {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        }
+        return 'rgba(' + rgbObj.r + ', ' + rgbObj.g + ', ' + rgbObj.b + ', ' + alpha + ')'
+    }
+    return 'rgba(0,0,0,1)' // if result invalid paint black
+}
+
+function randomRgba() {
+    return 'rgba(' + Math.round(Math.random()*255) + ', ' + Math.round(Math.random()*255) + ', ' + Math.round(Math.random()*255) + ', ' + 1 + ')'
+}
+
+// function randomHexColor() {
+//     return '#' + Math.floor(Math.random()*16777215).toString(16)
+// }
+
+function rgbaToHex (rgba: string) {
+    const rgbaVals = rgba.substring(4, rgba.length-1).replace(/[[\(\))]/g,'').split(',') // /g is global
+    let r = parseInt(rgbaVals[0]).toString(16)
+    if (r.length==1) {r = "0" + r} // add zero if just one symbol
+    let g = parseInt(rgbaVals[1]).toString(16)
+    if (g.length==1) {g = "0" + g}
+    let b = parseInt(rgbaVals[2]).toString(16)
+    if (b.length==1) {b = "0" + b}
+    return '#'+r+g+b
+}
+
+// ________________________________________ SIDEBAR ________________________________________
+const SIDEBAR_WIDTH = 250
+const PERSPECTIVE = document.getElementById('PERSPECTIVE_ELEMENTS') as HTMLElement
+const CTGR_LIGHTSOURCE = document.getElementById('CTGR_LIGHTSOURCE') as HTMLElement
+const CTGR_SHADOWS = document.getElementById('CTGR_SHADOWS') as HTMLElement
+const CTGR_BRANCH = document.getElementById('CTGR_BRANCH') as HTMLElement
+// const CTGR_LEAF = document.getElementById('CTGR_LEAF') as HTMLElement
+const CTGR_MOUNTAINS = document.getElementById('CTGR_MOUNTAINS') as HTMLElement
+
+let sidebarCategories = document.querySelectorAll(".sidebarCategory")
+sidebarCategories.forEach(function(category) {category.addEventListener("click", hideShowCategoryElements)})
 
 const canvasContainer = document.getElementById('canvasContainer') as HTMLBodyElement
 // let horizonHeightGlobal = Math.round(canvasContainer.offsetHeight*0.2 + Math.random()*canvasContainer.offsetHeight*0.6)
@@ -64,7 +101,10 @@ let shadowSpreadMultiplier = Number((Math.random()*10).toFixed(1)) // change tha
 let shadowAngleMultiplier =  Number((Math.random()*3).toFixed(1))
 let shadowSpreadGlobal = (lightSourcePositionYGlobal/horizonHeightGlobal) *shadowSpreadMultiplier + 0.15 // + for minimal shadow length
 let shadowSpreadMountainGlobal = (lightSourcePositionYGlobal)/horizonHeightGlobal * shadowSpreadMultiplier + 0
-const blurStrength = 10
+const blurStrengthTree = 10
+
+// let shadowColorGlobal = hexToRgba(randomHexColor(), 1)
+let shadowColorGlobal = randomRgba()
 
 updateLightSource()
 
@@ -110,7 +150,7 @@ document.getElementById('lightSourceSize')?.addEventListener('input', () => {
 } )
 
 //SHADOW
-createSliderWithTextInput(CTGR_SHADOWS, 'shadowSpreadMultiplier', 'vertical stretch' , '',  0 , 20 ,  0.1, shadowSpreadMultiplier)
+createSliderWithTextInput(CTGR_SHADOWS, 'shadowSpreadMultiplier', 'vertical stretch' , '',  0 , 10 ,  0.1, shadowSpreadMultiplier)
 document.getElementById('shadowSpreadMultiplier')?.addEventListener('input', () => {
     shadowSpreadMultiplier = valById('shadowSpreadMultiplier')
     recalculateShadowParameters()
@@ -123,7 +163,11 @@ document.getElementById('shadowAngleMultiplier')?.addEventListener('input', () =
     redrawMountainsShadows()
 } ) // change global variable
 
-
+createColorInput(CTGR_SHADOWS, 'shadowColor', 'shadow color', '', rgbaToHex(shadowColorGlobal))
+document.getElementById('shadowColor')?.addEventListener('input', () => {
+    shadowColorGlobal = hexToRgba(hexColorById('shadowColor'), 1) // alpha =1
+    redrawMountainsShadows()
+} )
 
 // BRANCH
 createSliderWithTextInput(CTGR_BRANCH , 'maxLevelTree', 'max level' , 'title', 1, 12, 1, Math.round(Math.random()*2)) // min > 0!
@@ -140,6 +184,26 @@ document.getElementById('mountainRangeWidthMultiplierGlobal')?.addEventListener(
 } )
 
 
+
+function createColorInput (category: HTMLElement, id: string, name: string, title: string, value: string) {
+    const sidebarElement = document.createElement("div")
+    sidebarElement.classList.add("sidebarElement")
+    sidebarElement.title = title
+    // console.log(sidebarElement)
+    category.appendChild(sidebarElement)
+    const namePar = document.createElement("p")
+    namePar.innerText = name
+    sidebarElement.appendChild(namePar)
+
+    const slider = document.createElement("input") // create canvas
+    slider.type = 'color'
+    // slider.classList.add("sliderClass")
+    // slider.setAttribute('data-slider', name)
+    slider.id = id // Range
+    slider.value = String(value)
+    sidebarElement.appendChild(slider)
+}
+
 function createSliderWithTextInput (category: HTMLElement, id: string, name: string, title: string,  min: number, max: number, step: number, value: number, ) {
     const sidebarElement = document.createElement("div")
     sidebarElement.classList.add("sidebarElement")
@@ -155,7 +219,7 @@ function createSliderWithTextInput (category: HTMLElement, id: string, name: str
 
     const slider = document.createElement("input") // create canvas
     slider.type = 'range';
-    slider.classList.add("sliderClass")
+    // slider.classList.add("sliderClass")
     slider.setAttribute('data-slider', name)
     slider.id = id // Range
     slider.min = String(min)
@@ -287,7 +351,7 @@ const colorLeaf = 'rgba(10, 140, 160, 1)'
 
 const skyColor = 'rgba(80, 20, 140, 1)'
 const mistColor = 'rgba(200, 200, 200, 1)'
-const shadowColor = 'rgba(10, 10, 40, 1)' // alpha affects leaves and mountain shadow
+// const shadowColor = 'rgba(10, 10, 40, 1)' // alpha affects leaves and mountain shadow
 const mountainColor = 'rgba(40, 0, 0, 1)'
 const groundColor = 'rgba(50, 100, 50, 1)'
 
@@ -442,7 +506,7 @@ class Branch {
             // this.shadowSegments[seg].width = this.segments[this.drawnSegments].width + ((this.tree.initY - this.segments[this.drawnSegments].y0)*(shadowSpreadGlobal/200)) + (Math.abs((this.tree.initX - this.segments[this.drawnSegments].x0)))*(shadowSpreadGlobal/200)
             this.shadowSegments[seg].width = this.segments[seg].width + ((this.tree.initY - this.segments[seg].y0)*(shadowSpreadGlobal/200)) + (Math.abs((this.tree.initX - this.segments[seg].x0)))*(shadowSpreadGlobal/200)
             
-            this.shadowSegments[seg].blur = (this.tree.initY - this.segments[seg].y0) / this.tree.canvas.height* blurStrength
+            this.shadowSegments[seg].blur = (this.tree.initY - this.segments[seg].y0) / this.tree.canvas.height* blurStrengthTree
             this.segments[seg].leaves.forEach( (leaf) => {  // pass the same blur to children leaves
                 leaf.blur = this.shadowSegments[seg].blur
             } )
@@ -614,7 +678,7 @@ class Tree {
         readonly shadowAngle: number,
         public colorTreeInitial = colorTreeInitialGlobal,
         public colorTreeFinal = colorTreeFinalGlobal,
-        public shadowColorTree = shadowColor,
+        public shadowColorTree = shadowColorGlobal,
         public colorDistortionProportion = 0,
         readonly trunkWidth = trunkLen * trunkWidthAsPartOfLen,
         readonly initAngle: number = 0,
@@ -785,7 +849,7 @@ class Leaf {
         let leafColor = 'rgba(' + this.color.r + ',' + this.color.g +  ',' + this.color.b + ')'
         let colorResulting = blendRgbaColorsInProportions(mistColor, leafColor, this.tree.colorDistortionProportion * treeMistBlendingProportion)
         // NOW BLEND AGAIN WITH SHADOW
-        colorResulting = blendRgbaColorsInProportions(shadowColor, colorResulting, this.tree.colorDistortionProportion * treeShapeShadow)
+        colorResulting = blendRgbaColorsInProportions(shadowColorGlobal, colorResulting, this.tree.colorDistortionProportion * treeShapeShadow)
         const colorFinalValues = rgbaStrToObj(colorResulting)
 
         this.color = {r: colorFinalValues.r, g: colorFinalValues.g, b: colorFinalValues.b}
@@ -957,13 +1021,12 @@ class Leaf {
     drawLeafShadow () {
         // clear whole previous frame
         this.ctxShadow.clearRect(0, 0, this.canvasShadow.width, this.canvasShadow.height)
-        let blur = (this.tree.initY - this.y0) / this.tree.canvas.height* blurStrength
+        let blur = (this.tree.initY - this.y0) / this.tree.canvas.height* blurStrengthTree
         this.ctxShadow.filter = 'blur(' + blur + 'px)'
         
         // petiole's shadow width
         this.ctxShadow.lineWidth = this.lineWidth + (this.tree.initY-this.y0LeafShadow)*-shadowSpreadGlobal/1000 + Math.abs((this.tree.initX-this.x0LeafShadow)*shadowSpreadGlobal/1000)
         this.ctxShadow.beginPath()
-        // this.ctxShadow.strokeStyle = shadowColor
 
         this.ctxShadow.strokeStyle = this.tree.shadowColorTree
         //MAIN NERVE
@@ -1007,12 +1070,12 @@ canvasContainer.addEventListener("click", (event) => {
         let colorInitial = blendRgbaColorsInProportions(mistColor, colorTreeInitialGlobal, colorDistortionProportion*treeMistBlendingProportion)
         let colorFinal = blendRgbaColorsInProportions(mistColor, colorTreeFinalGlobal, colorDistortionProportion*treeMistBlendingProportion)
         // NOW BLEND AGAIN WITH SHADOW
-        colorInitial = blendRgbaColorsInProportions(shadowColor, colorInitial, colorDistortionProportion*treeShapeShadow)
-        colorFinal = blendRgbaColorsInProportions(shadowColor, colorFinal, colorDistortionProportion*treeShapeShadow)
+        colorInitial = blendRgbaColorsInProportions(shadowColorGlobal, colorInitial, colorDistortionProportion*treeShapeShadow)
+        colorFinal = blendRgbaColorsInProportions(shadowColorGlobal, colorFinal, colorDistortionProportion*treeShapeShadow)
 
         // a color of the ground at the trunk bottom blended with shadow color
         let shadowColorTree = blendRgbaColorsInProportions(mistColor, groundColor, colorDistortionProportion*treeShadowBlendingProportion)
-        shadowColorTree = blendRgbaColorsInProportions(shadowColorTree, shadowColor, colorDistortionProportion*treeShadowBlendingProportion)
+        shadowColorTree = blendRgbaColorsInProportions(shadowColorTree, shadowColorGlobal, colorDistortionProportion*treeShadowBlendingProportion)
         const vals = rgbaStrToObj(shadowColorTree)
         shadowColorTree = 'rgba(' + vals.r + ',' + vals.g  +',' + vals.b + ',1)' // alpha =1
                 
@@ -1180,7 +1243,7 @@ class Mountain {
 
         this.canvasShadow.style.top = this.canvasBottom + 'px'
         this.canvasShadow.classList.add('mountainShadowCanvas')
-        this.canvasShadow.height = this.targetHeight*shadowSpreadMountainGlobal * 1.2 // more area for blur
+        this.canvasShadow.height = this.targetHeight*shadowSpreadMountainGlobal * 2 // more area for blur
         this.canvasShadow.width = window.innerWidth
 
         this.ctx.globalCompositeOperation = 'destination-atop' // for drawing stroke in the same color as fill
@@ -1256,18 +1319,12 @@ class Mountain {
     drawMountain () {
         this.ctx.lineWidth = 1
         const gradient = this.ctx.createLinearGradient(this.canvasShadow.width/2, 0, this.canvasShadow.width/2, this.canvas.height)
-        // const shadowColorValues = rgbaStrToObj(shadowColor)
-        // const shadowColorAlpha1= 'rgba(' + shadowColorValues.r + ',' + shadowColorValues.g +  ',' + shadowColorValues.b +  ', 1)'
-        // gradient.addColorStop(0, mountainColor)
-        // gradient.addColorStop(1, this.colorBottom)
         gradient.addColorStop(0, this.colorTop)
         gradient.addColorStop(1, this.colorBottom)
         this.ctx.fillStyle = gradient
         this.ctx.strokeStyle = gradient
         this.ctx.stroke()
-
         // this.ctx.filter = 'blur(3px)'
-
         this.ctx.beginPath()
         this.ctx.moveTo(0, this.allPoints[0])
     
@@ -1291,7 +1348,7 @@ class Mountain {
         const gradient = this.ctxShadow.createLinearGradient(this.canvasShadow.width/2, 0, this.canvasShadow.width/2, this.canvasShadow.height)
         gradient.addColorStop(0, this.colorBottom)
 
-        const shadowColorValues =  rgbaStrToObj(shadowColor)
+        const shadowColorValues =  rgbaStrToObj(shadowColorGlobal)
         const shadowColorTransparent = 'rgba(' + shadowColorValues.r + ',' + shadowColorValues.g +  ',' + shadowColorValues.b +  ',' + shadowColorValues.a/4 + ')'
         gradient.addColorStop(1, shadowColorTransparent)
         this.ctxShadow.fillStyle = gradient
@@ -1329,7 +1386,7 @@ class Mountain {
 
     redrawShadow () {
         this.ctxShadow.clearRect(0, 0, this.canvasShadow.width, this.canvasShadow.height)
-        this.canvasShadow.height = this.targetHeight*shadowSpreadMountainGlobal*1.2 // resize canvas - bit more for blur
+        this.canvasShadow.height = this.targetHeight*shadowSpreadMountainGlobal*2 // resize canvas - more area for blur
         this.drawShadow()
     }
 
@@ -1353,7 +1410,7 @@ function drawMountains () {
         colorTop = rgbaSetAlpha1(colorTop)
         const colorProportionBottom = colorProportion * 1/2 + 1/4
         // const colorBottom = blendRgbaColorsInProportions(mistColor, shadowColor, colorProportion)
-        let colorBottom = blendRgbaColorsInProportions(colorTop, shadowColor, colorProportionBottom)
+        let colorBottom = blendRgbaColorsInProportions(colorTop, shadowColorGlobal, colorProportionBottom)
         colorBottom = rgbaSetAlpha1(colorBottom)
         const mountain = new Mountain(4,10, height + height*scaleByTheGroundPosition, bottom, colorTop, colorBottom)
         // mountain //silence TS
