@@ -154,11 +154,11 @@
     text-align: center;
 }
 
-.category {
+.sidebarCategory {
     width: 100%;
     /* position: absolute; */
     background-color: rgba(204, 255, 0, 0.867);
-    padding: 1px;
+    /* padding: 1px; */
 }
 
 .sidebarElement{

@@ -16,19 +16,34 @@ window.addEventListener('load', function () {
         return Number(document.getElementById(id).value);
     }
     function recalculateShadowParameters() {
-        // shadowSpreadGlobal = (lightSourcePositionYGlobal/horizonHeightGlobal) * (lightSourceSizeGlobal*2/horizonHeightGlobal) * shadowSpreadMultiplier + 0.15 // + for minimal shadow length
-        // shadowSpreadMountainGlobal = (lightSourcePositionYGlobal)/horizonHeightGlobal * (lightSourceSizeGlobal*2/horizonHeightGlobal) * shadowSpreadMultiplier + 0.8
         shadowSpreadGlobal = (lightSourcePositionYGlobal / horizonHeightGlobal) * shadowSpreadMultiplier + 0.15; // + for minimal shadow length
-        shadowSpreadMountainGlobal = (lightSourcePositionYGlobal) / horizonHeightGlobal * shadowSpreadMultiplier + 0.8;
+        shadowSpreadMountainGlobal = (lightSourcePositionYGlobal) / horizonHeightGlobal * shadowSpreadMultiplier + 0.25;
     }
     // ________________________________________ SIDEBAR ________________________________________
     const SIDEBAR_WIDTH = 250;
-    const CTGR_PERSPECTIVE = document.getElementById('CTGR_PERSPECTIVE');
+    const PERSPECTIVE = document.getElementById('PERSPECTIVE_ELEMENTS');
     const CTGR_LIGHTSOURCE = document.getElementById('CTGR_LIGHTSOURCE');
     const CTGR_SHADOWS = document.getElementById('CTGR_SHADOWS');
     const CTGR_BRANCH = document.getElementById('CTGR_BRANCH');
     // const CTGR_LEAF = document.getElementById('CTGR_LEAF') as HTMLElement
     const CTGR_MOUNTAINS = document.getElementById('CTGR_MOUNTAINS');
+    let sidebarCategories = document.querySelectorAll(".sidebarCategory");
+    sidebarCategories.forEach(function (elem) { elem.addEventListener("click", hideShowCategoryElements); });
+    function hideShowCategoryElements(event) {
+        const clickedElemClass = (event.target.className);
+        if (clickedElemClass.includes('sidebarCategory')) { //to disable hiding more inner elements
+            const targetsChildren = event.target.children;
+            for (let i = 0; i < (targetsChildren.length); i++) {
+                const thisTarget = targetsChildren[i];
+                if (thisTarget.style.display != 'none') {
+                    thisTarget.style.display = 'none';
+                }
+                else {
+                    thisTarget.style.display = 'block';
+                }
+            }
+        }
+    }
     const canvasContainer = document.getElementById('canvasContainer');
     // let horizonHeightGlobal = Math.round(canvasContainer.offsetHeight*0.2 + Math.random()*canvasContainer.offsetHeight*0.6)
     let horizonHeightGlobal = Math.round(window.innerHeight * 0.2 + Math.random() * window.innerHeight * 0.6);
@@ -44,14 +59,14 @@ window.addEventListener('load', function () {
     let shadowSpreadMultiplier = Number((Math.random() * 10).toFixed(1)); // change that later?
     let shadowAngleMultiplier = Number((Math.random() * 3).toFixed(1));
     let shadowSpreadGlobal = (lightSourcePositionYGlobal / horizonHeightGlobal) * shadowSpreadMultiplier + 0.15; // + for minimal shadow length
-    let shadowSpreadMountainGlobal = (lightSourcePositionYGlobal) / horizonHeightGlobal * shadowSpreadMultiplier + 0.8;
+    let shadowSpreadMountainGlobal = (lightSourcePositionYGlobal) / horizonHeightGlobal * shadowSpreadMultiplier + 0;
     const blurStrength = 10;
     updateLightSource();
     // ________________________________________ PARAMETERS ________________________________________
     // FIRST THERE IS A SLIDER CREATED AND RIGHT BELOW THERE MIGHT BE LISTENERES FOR THAT SLIDER
     // THEY ARE THERE BECAUSE SOME VARIABLES ARE IN MANY EQUATIONS AFTERWARDS (like shadow length depends on lightsource position and that depends on horizon height)
     // PERSPECTIVE
-    createSliderWithTextInput(CTGR_PERSPECTIVE, 'horizonHeight', 'sky (horizon) height', '', Math.round(window.innerHeight * 0.1), Math.round(window.innerHeight * 0.9), 1, horizonHeightGlobal);
+    createSliderWithTextInput(PERSPECTIVE, 'horizonHeight', 'sky (horizon) height', '', Math.round(window.innerHeight * 0.1), Math.round(window.innerHeight * 0.9), 1, horizonHeightGlobal);
     (_a = document.getElementById('horizonHeight')) === null || _a === void 0 ? void 0 : _a.addEventListener('input', () => {
         horizonHeightGlobal = valById('horizonHeight');
         document.documentElement.style.cssText = "--horizonHeight:" + horizonHeightGlobal + "px";
@@ -1051,7 +1066,7 @@ window.addEventListener('load', function () {
             this.canvas.height = this.targetHeight; // ADD VAL FOR HIGHER MOUNTAIN
             this.canvasShadow.style.top = this.canvasBottom + 'px';
             this.canvasShadow.classList.add('mountainShadowCanvas');
-            this.canvasShadow.height = this.targetHeight * shadowSpreadMountainGlobal; // more for blur and not to resize canvas at perspective change?
+            this.canvasShadow.height = this.targetHeight * shadowSpreadMountainGlobal * 1.2; // more area for blur
             this.canvasShadow.width = window.innerWidth;
             this.ctx.globalCompositeOperation = 'destination-atop'; // for drawing stroke in the same color as fill
             this.ctxShadow.globalCompositeOperation = 'destination-atop'; // for drawing stroke in the same color as fill
@@ -1181,7 +1196,7 @@ window.addEventListener('load', function () {
         }
         redrawShadow() {
             this.ctxShadow.clearRect(0, 0, this.canvasShadow.width, this.canvasShadow.height);
-            this.canvasShadow.height = this.targetHeight * shadowSpreadMountainGlobal; // resize canvas
+            this.canvasShadow.height = this.targetHeight * shadowSpreadMountainGlobal * 1.2; // resize canvas - bit more for blur
             this.drawShadow();
         }
     }
