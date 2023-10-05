@@ -55,11 +55,7 @@ function hexToRgba(hex: string, alpha: number) {
 function randomRgba() {
     return 'rgba(' + Math.round(Math.random()*255) + ', ' + Math.round(Math.random()*255) + ', ' + Math.round(Math.random()*255) + ', ' + 1 + ')'
 }
-
-// function randomHexColor() {
-//     return '#' + Math.floor(Math.random()*16777215).toString(16)
-// }
-
+// function randomHexColor() {return '#' + Math.floor(Math.random()*16777215).toString(16)}
 function rgbaToHex (rgba: string) {
     const rgbaVals = rgba.substring(4, rgba.length-1).replace(/[[\(\))]/g,'').split(',') // /g is global
     let r = parseInt(rgbaVals[0]).toString(16)
@@ -97,13 +93,12 @@ let lightSourceSizeGlobal = Math.round(50 + Math.random()*horizonHeightGlobal/2)
 let mountainRangeWidthMultiplierGlobal = Number((Math.random()*0.8).toFixed(2))
 let mountainRangeWidthGlobal = (window.innerHeight - horizonHeightGlobal)*0.1 + (window.innerHeight - horizonHeightGlobal)*mountainRangeWidthMultiplierGlobal
 
-let shadowSpreadMultiplier = Number((Math.random()*10).toFixed(1)) // change that later?
-let shadowAngleMultiplier =  Number((Math.random()*3).toFixed(1))
+let shadowSpreadMultiplier = Number((1 + (Math.random()*5)).toFixed(1)) // change that later?
+let shadowHorizontalStretch =  Number((1 + (Math.random()*3)).toFixed(1))
 let shadowSpreadGlobal = (lightSourcePositionYGlobal/horizonHeightGlobal) *shadowSpreadMultiplier + 0.15 // + for minimal shadow length
-let shadowSpreadMountainGlobal = (lightSourcePositionYGlobal)/horizonHeightGlobal * shadowSpreadMultiplier + 0
-const blurStrengthTree = 10
+let shadowSpreadMountainGlobal = (lightSourcePositionYGlobal)/horizonHeightGlobal * shadowSpreadMultiplier + 0.5
+let treeShadowBlur = 0
 
-// let shadowColorGlobal = hexToRgba(randomHexColor(), 1)
 let shadowColorGlobal = randomRgba()
 
 updateLightSource()
@@ -118,9 +113,9 @@ document.getElementById('horizonHeight')?.addEventListener('input', () => {
     horizonHeightGlobal = valById('horizonHeight')
     document.documentElement.style.cssText = "--horizonHeight:" + horizonHeightGlobal + "px"
     mountainRangeWidthGlobal = (window.innerHeight - horizonHeightGlobal) * mountainRangeWidthMultiplierGlobal
-    redrawMountains()
     updateLightSource()
     recalculateShadowParameters()
+    redrawMountains()
     // change max lightsource position not to stay below horizon
     let lightSourceMaxCoordY = document.getElementById('lightSourcePositionY') as HTMLInputElement
     lightSourceMaxCoordY.max = String(horizonHeightGlobal)
@@ -130,12 +125,12 @@ document.getElementById('horizonHeight')?.addEventListener('input', () => {
 } )
 
 // LIGHTSOURCE
-createSliderWithTextInput(CTGR_LIGHTSOURCE, 'lightSourcePositionX', 'x coordinate' , '',  0 , window.innerWidth ,  1, lightSourcePositionXGlobal)
-document.getElementById('lightSourcePositionX')?.addEventListener('input', () => {
+addSlider(CTGR_LIGHTSOURCE, 'lightSourcePositionX', 'x coordinate' , '',  0 , window.innerWidth ,  1, lightSourcePositionXGlobal, () => {
     lightSourcePositionXGlobal = valById('lightSourcePositionX')
     updateLightSource()
     redrawMountainsShadows()
 } )
+
 createSliderWithTextInput(CTGR_LIGHTSOURCE, 'lightSourcePositionY', 'y coordinate' , '',  0 , horizonHeightGlobal ,  1, lightSourcePositionYGlobal)
 document.getElementById('lightSourcePositionY')?.addEventListener('input', () => {
     lightSourcePositionYGlobal = valById('lightSourcePositionY')
@@ -156,18 +151,22 @@ document.getElementById('shadowSpreadMultiplier')?.addEventListener('input', () 
     recalculateShadowParameters()
     redrawMountainsShadows()
 } )
-createSliderWithTextInput(CTGR_SHADOWS, 'shadowAngleMultiplier', 'horizontal stretch' , '',  0 , 5 ,  0.1, shadowAngleMultiplier)
-document.getElementById('shadowAngleMultiplier')?.addEventListener('input', () => {
-    shadowAngleMultiplier = valById('shadowAngleMultiplier')
+createSliderWithTextInput(CTGR_SHADOWS, 'shadowHorizontalStretch', 'horizontal stretch' , '',  0.1 , 5 ,  0.1, shadowHorizontalStretch)
+document.getElementById('shadowHorizontalStretch')?.addEventListener('input', () => {
+    shadowHorizontalStretch = valById('shadowHorizontalStretch')
     recalculateShadowParameters()
     redrawMountainsShadows()
 } ) // change global variable
-
+createSliderWithTextInput(CTGR_SHADOWS, 'treeShadowBlur', 'tree shadow blur' , '',  0 , 100 ,  0.1, treeShadowBlur)
+document.getElementById('treeShadowBlur')?.addEventListener('input', () => {
+    treeShadowBlur = valById('treeShadowBlur')
+} )
 createColorInput(CTGR_SHADOWS, 'shadowColor', 'shadow color', '', rgbaToHex(shadowColorGlobal))
 document.getElementById('shadowColor')?.addEventListener('input', () => {
     shadowColorGlobal = hexToRgba(hexColorById('shadowColor'), 1) // alpha =1
     redrawMountainsShadows()
 } )
+
 
 // BRANCH
 createSliderWithTextInput(CTGR_BRANCH , 'maxLevelTree', 'max level' , 'title', 1, 12, 1, Math.round(Math.random()*2)) // min > 0!
@@ -183,6 +182,7 @@ document.getElementById('mountainRangeWidthMultiplierGlobal')?.addEventListener(
     redrawMountains()
 } )
 
+// ________________________________________ PARAMETERS ________________________________________
 
 
 function createColorInput (category: HTMLElement, id: string, name: string, title: string, value: string) {
@@ -203,6 +203,51 @@ function createColorInput (category: HTMLElement, id: string, name: string, titl
     slider.value = String(value)
     sidebarElement.appendChild(slider)
 }
+// console.log(document.querySelectorAll(`[data-lightSourcePositionX]`))
+
+function addSlider (category: HTMLElement, id: string, name: string, title: string,  min: number, max: number, step: number, value: number, passedFunction: Function) {
+    const sidebarElement = document.createElement("div")
+    sidebarElement.classList.add("sidebarElement")
+    sidebarElement.title = title
+    // console.log(sidebarElement)
+    category.appendChild(sidebarElement)
+    const namePar = document.createElement("p")
+    namePar.innerText = name
+    sidebarElement.appendChild(namePar)
+
+    const span = document.createElement("span")
+    sidebarElement.appendChild(span)
+
+    const slider = document.createElement("input") // create canvas
+    slider.type = 'range'
+    // slider.classList.add("sliderClass")
+    slider.setAttribute('data', id)
+    slider.id = id // Range
+    slider.min = String(min)
+    slider.max = String(max)
+    slider.step = String(step)
+    slider.value = String(value)
+    span.appendChild(slider)
+
+    const sliderText = document.createElement("input")
+    sliderText.setAttribute('data', id)
+    sliderText.id = id + '_T' // Text
+    sliderText.type = 'text'
+    sliderText.value = String(value)
+    span.appendChild(sliderText)
+
+    // EVENT LISTENERS - BOTH FIRE func()
+    slider.addEventListener('input', () => {
+        sliderText.value = slider.value
+        passedFunction()
+    })
+
+    sliderText.addEventListener('input', () => {
+        slider.value = sliderText.value
+        passedFunction()
+    })
+    
+}
 
 function createSliderWithTextInput (category: HTMLElement, id: string, name: string, title: string,  min: number, max: number, step: number, value: number, ) {
     const sidebarElement = document.createElement("div")
@@ -218,9 +263,9 @@ function createSliderWithTextInput (category: HTMLElement, id: string, name: str
     sidebarElement.appendChild(span)
 
     const slider = document.createElement("input") // create canvas
-    slider.type = 'range';
+    slider.type = 'range'
     // slider.classList.add("sliderClass")
-    slider.setAttribute('data-slider', name)
+    slider.setAttribute('data', id)
     slider.id = id // Range
     slider.min = String(min)
     slider.max = String(max)
@@ -229,44 +274,63 @@ function createSliderWithTextInput (category: HTMLElement, id: string, name: str
     span.appendChild(slider)
 
     const sliderText = document.createElement("input")
-    sliderText.setAttribute('data-sliderText', name)
+    sliderText.setAttribute('data', id)
     sliderText.id = id + '_T' // Text
-    sliderText.type = 'text';
+    sliderText.type = 'text'
     sliderText.value = String(value)
     span.appendChild(sliderText)
+
+    // sliderText.addEventListener('input', () => {
+    //     slider.value = String(sliderText.value)
+        
+    // })
+    
 }
+
+
 
 // // __________ CREATE SLIDERS __________
 // paramsList.forEach ( element => {
 //     createSliderWithTextInput(element.id, element.name, element.category, element.min, element.max, element.value, element.title)
 // })
-const rangeInputs = document.querySelectorAll('.sidebarElement input[type="range"]')
-const textInputs = document.querySelectorAll('.sidebarElement input[type="text"]')
+// const rangeInputs = document.querySelectorAll('.sidebarElement input[type="range"]')
+// const textInputs = document.querySelectorAll('.sidebarElement input[type="text"]')
 // console.log(rangeInputs)
 // console.log(textInputs)
 
 // __________ CREATE SLIDERS __________
 
 // UPDATE NUMBER INPUT BY SLIDER
-rangeInputs.forEach((rangeInput) => {
-    rangeInput.addEventListener("input", (event) => {
-        const eventTarget = event.target as HTMLInputElement
-        const dataOf = eventTarget.dataset.slider as string
-        const sliderText = document.querySelector(`[data-sliderText="${dataOf}"]`) as HTMLInputElement
-        sliderText.value = String(eventTarget.value)
-        // console.log(sliderText.value)
-    })
-})
+// rangeInputs.forEach((rangeInput) => {
+//     rangeInput.addEventListener("input", (event) => {
+//         const eventTarget = event.target as HTMLInputElement
+//         const dataOf = eventTarget.dataset.slider as string
+//         const sliderText = document.querySelector(`[data-sliderText="${dataOf}"]`) as HTMLInputElement
+//         sliderText.value = String(eventTarget.value)
+//         console.log(sliderText.value)
+//     })
+// })
 
-// UPDATE SLIDER BY NUMBER INPUT
-textInputs.forEach((textInput) => {
-    textInput.addEventListener("input", (event) => {
-        const eventTarget = event.target as HTMLInputElement
-        const dataOf = eventTarget.dataset.slidertext
-        const slider = document.querySelector(`[data-slider="${dataOf}"]`) as HTMLInputElement
-        slider.value = String(eventTarget.value)
-    })
-})
+// // UPDATE SLIDER BY NUMBER INPUT
+// textInputs.forEach((textInput) => {
+//     textInput.addEventListener("input", (event) => {
+//         const eventTarget = event.target as HTMLInputElement
+//         const dataOf = eventTarget.dataset.slidertext
+//         const slider = document.querySelector(`[data-slider="${dataOf}"]`) as HTMLInputElement
+//         slider.value = String(eventTarget.value)
+//     })
+// })
+
+
+// // UPDATE SLIDER BY NUMBER INPUT
+// textInputs.forEach((textInput) => {
+//     textInput.addEventListener("input", (event) => {
+//         const eventTarget = event.target as HTMLInputElement
+//         const dataOf = eventTarget.dataset.slidertext
+//         const slider = document.querySelector(`[data-slider="${dataOf}"]`) as HTMLInputElement
+//         slider.value = String(eventTarget.value)
+//     })
+// })
 
 // // SNAP PARAMETERS
 // function snapCurrentParameters () {
@@ -302,11 +366,11 @@ closeSidebarButton.addEventListener("click", () => {
 // const globalCanvasesList = [] as HTMLCanvasElement[]
 
 
+const branchLenRandomizer = 0.15 // keep it const
 // create Branch public shadowSegments,
 // const trunkLen = 70
 // const initialsegmentingLen = valById('trunkLen')/4
 const lenMultiplier = 0.8
-const branchLenRandomizer = 0.15 // keep it const
 const trunkWidthAsPartOfLen = 0.3
 const widthMultiplier = 0.6
 const rebranchingAngle = 10
@@ -335,7 +399,7 @@ const whileLoopRetriesEachFrameLeaves = 10 // when that = 1 --> ~1 FPS for leafM
 
 const distanceScaling = 0.8 // range 0-1
 
-const mountainsAmount = 3
+const mountainsAmount = 4
 const mountainTrimCloser = 0.9 // 0-1
 const mountainHeightMultiplier = 0.25 // 0.1 - 1?
 
@@ -358,6 +422,8 @@ const groundColor = 'rgba(50, 100, 50, 1)'
 const treeMistBlendingProportion = 0.9
 const treeShapeShadow = 0.4 // not much, not needed as a parameter 
 const treeShadowBlendingProportion = 0.9 // blend shadow color with ground color
+
+
 
 const undoButton = this.document.getElementById('undoButton') as HTMLBodyElement
 let treesList: Tree [] = []
@@ -506,7 +572,7 @@ class Branch {
             // this.shadowSegments[seg].width = this.segments[this.drawnSegments].width + ((this.tree.initY - this.segments[this.drawnSegments].y0)*(shadowSpreadGlobal/200)) + (Math.abs((this.tree.initX - this.segments[this.drawnSegments].x0)))*(shadowSpreadGlobal/200)
             this.shadowSegments[seg].width = this.segments[seg].width + ((this.tree.initY - this.segments[seg].y0)*(shadowSpreadGlobal/200)) + (Math.abs((this.tree.initX - this.segments[seg].x0)))*(shadowSpreadGlobal/200)
             
-            this.shadowSegments[seg].blur = (this.tree.initY - this.segments[seg].y0) / this.tree.canvas.height* blurStrengthTree
+            this.shadowSegments[seg].blur = (this.tree.initY - this.segments[seg].y0) / this.tree.canvas.height* treeShadowBlur
             this.segments[seg].leaves.forEach( (leaf) => {  // pass the same blur to children leaves
                 leaf.blur = this.shadowSegments[seg].blur
             } )
@@ -1021,7 +1087,7 @@ class Leaf {
     drawLeafShadow () {
         // clear whole previous frame
         this.ctxShadow.clearRect(0, 0, this.canvasShadow.width, this.canvasShadow.height)
-        let blur = (this.tree.initY - this.y0) / this.tree.canvas.height* blurStrengthTree
+        let blur = (this.tree.initY - this.y0) / this.tree.canvas.height* treeShadowBlur
         this.ctxShadow.filter = 'blur(' + blur + 'px)'
         
         // petiole's shadow width
@@ -1060,8 +1126,8 @@ canvasContainer.addEventListener("click", (event) => {
     if (alreadyAnimating === false && event.y > horizonHeightGlobal) {
         // console.log(event.y)
         // let verticalAngleInfluence = 1+ ( (this.window.innerHeight - event.y) / this.window.innerHeight ) ** 0.9
-        // let shadowAngle = - (lightSourcePositionX - event.x) / window.innerWidth * shadowAngleMultiplier * verticalAngleInfluence
-        let shadowAngle = - (lightSourcePositionXGlobal - event.x) / window.innerWidth * shadowAngleMultiplier
+        // let shadowAngle = - (lightSourcePositionX - event.x) / window.innerWidth * shadowHorizontalStretch * verticalAngleInfluence
+        let shadowAngle = - (lightSourcePositionXGlobal - event.x) / window.innerWidth * shadowHorizontalStretch
         let groundHeight = window.innerHeight - horizonHeightGlobal
         let groundMiddle = window.innerHeight - (window.innerHeight - horizonHeightGlobal)/2
         let scaleByTheGroundPosition = (event.y - groundMiddle)/groundHeight*2 // in range -1 to 1
@@ -1365,9 +1431,9 @@ class Mountain {
 
         for (let point = 0; point < this.allPoints.length-1; point++) {
             // let verticalAngleInfluence = ( (h - this.allPoints[point]) / h ) ** 0.7
-            // let shadowAngle = - ((lightSourcePositionX - point) / window.innerWidth)/4 * shadowAngleMultiplier * verticalAngleInfluence
+            // let shadowAngle = - ((lightSourcePositionX - point) / window.innerWidth)/4 * shadowHorizontalStretch * verticalAngleInfluence
             let verticalAngleInfluence = ( (h - this.allPoints[point]) / h ) ** 1
-            let shadowAngle = - ((lightSourcePositionXGlobal - point) / window.innerWidth) * shadowAngleMultiplier * verticalAngleInfluence
+            let shadowAngle = - ((lightSourcePositionXGlobal - point) / window.innerWidth) * shadowHorizontalStretch * verticalAngleInfluence
             // console.log(shadowAngle)
             this.ctxShadow.lineTo(point+ point*shadowAngle, (h - this.allPoints[point]) * shadowSpreadMountainGlobal)
             this.ctxShadow.lineTo(point+1 + (point+1)*shadowAngle, (h - this.allPoints[point+1]) * shadowSpreadMountainGlobal)
@@ -1388,6 +1454,21 @@ class Mountain {
         this.ctxShadow.clearRect(0, 0, this.canvasShadow.width, this.canvasShadow.height)
         this.canvasShadow.height = this.targetHeight*shadowSpreadMountainGlobal*2 // resize canvas - more area for blur
         this.drawShadow()
+    }
+
+    recolorMountain () {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+        const groundHeight = window.innerHeight - horizonHeightGlobal
+        const colorProportion = 1 - ((this.canvasBottom - horizonHeightGlobal) / groundHeight)
+        let colorTop = blendRgbaColorsInProportions(mistColor, mountainColor, colorProportion)
+        colorTop = rgbaSetAlpha1(colorTop)
+        const colorProportionBottom = colorProportion * 1/2 + 1/4
+        // const colorBottom = blendRgbaColorsInProportions(mistColor, shadowColor, colorProportion)
+        let colorBottom = blendRgbaColorsInProportions(colorTop, shadowColorGlobal, colorProportionBottom)
+        colorBottom = rgbaSetAlpha1(colorBottom)
+        this.colorTop = colorTop
+        this.colorBottom = colorBottom
+        this.drawMountain()
     }
 
 }
@@ -1430,22 +1511,13 @@ function redrawMountains() {
 
 function redrawMountainsShadows() {
     mountainsDrawn.forEach( mountain => {
+        mountain.recolorMountain()
         mountain.redrawShadow()
     })
 }
 
 
 // ________________________________________ MOUNTAIN ________________________________________
-
-
-
-
-
-
-
-
-
-
 
 
 
