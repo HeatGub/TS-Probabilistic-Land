@@ -1,6 +1,6 @@
 // START ON LOAD
 window.addEventListener('load', function() {
-
+// ____________________________________________________ FUNCTIONS ____________________________________________________
 function valById(id: string) {
     return Number( (<HTMLInputElement>document.getElementById(id)).value )
 }
@@ -183,7 +183,7 @@ function addSlider (category: HTMLElement, id: string, name: string, title: stri
     })
 }
 
-//  SET CANVASES SIZES AND CHANGE THEM AT WINDOW RESIZE? 
+//  SET CANVASES SIZES AND CHANGE THEM AT WINDOW RESIZE?
 window.addEventListener('resize', function() {
     // globalCanvasesList.forEach( (canvas) => {
     //     canvas.width = window.innerWidth
@@ -193,24 +193,28 @@ window.addEventListener('resize', function() {
     // tree.drawTheTree() // tree possibly not ready at resize
 })
 
-// ________________________________________ SIDEBAR ________________________________________
+// ____________________________________________________ FUNCTIONS ____________________________________________________
+
+// ____________________________________________________ SIDEBAR ____________________________________________________
 const SIDEBAR_WIDTH = 250
+const branchLenRandomizer = 0.15 // keep it const
+
 let sidebarCategories = document.querySelectorAll(".sidebarCategory")
 sidebarCategories.forEach(function(category) {category.addEventListener("click", hideShowCategoryElements)})
 // SIDEBAR OPENING AND CLOSING
 const closeSidebarButton = document.getElementById('closeSidebarButton') as HTMLBodyElement
-const sidebar = document.getElementById('sidebar') as HTMLBodyElement
+const SIDEBAR = document.getElementById('sidebar') as HTMLBodyElement
 // sidebar.style.display = 'none'
-sidebar.style.width = SIDEBAR_WIDTH + 'px'
+SIDEBAR.style.width = SIDEBAR_WIDTH + 'px'
 closeSidebarButton.style.left = SIDEBAR_WIDTH + 'px'
 closeSidebarButton.addEventListener("click", () => {
-    if (sidebar.style.display == 'none') {
+    if (SIDEBAR.style.display == 'none') {
         closeSidebarButton.style.left = String(SIDEBAR_WIDTH) + 'px'
-        sidebar.style.display = 'block'
+        SIDEBAR.style.display = 'block'
     }
-    else if (sidebar.style.display != 'none') {
+    else if (SIDEBAR.style.display != 'none') {
         closeSidebarButton.style.left = String(0)
-        sidebar.style.display = 'none'
+        SIDEBAR.style.display = 'none'
     }
 })
 const undoButton = this.document.getElementById('undoButton') as HTMLBodyElement
@@ -223,18 +227,18 @@ function removeLastTree () {
     }
 }
 
-let mountainsDrawn: Mountain[] = [] // just a list
-const PERSPECTIVE = document.getElementById('PERSPECTIVE_ELEMENTS') as HTMLElement
+let mountainsDrawn: Mountain[] = []
+const PERSPECTIVE = document.getElementById('CTGR_PERSPECTIVE') as HTMLElement
 const CTGR_LIGHTSOURCE = document.getElementById('CTGR_LIGHTSOURCE') as HTMLElement
 const CTGR_SHADOWS = document.getElementById('CTGR_SHADOWS') as HTMLElement
 const CTGR_BRANCH = document.getElementById('CTGR_BRANCH') as HTMLElement
-// const CTGR_LEAF = document.getElementById('CTGR_LEAF') as HTMLElement
+const CTGR_LEAF = document.getElementById('CTGR_LEAF') as HTMLElement
 const CTGR_MOUNTAINS = document.getElementById('CTGR_MOUNTAINS') as HTMLElement
-
+CTGR_BRANCH.style.display = 'none' // completed - hide for now
 
 const canvasContainer = document.getElementById('canvasContainer') as HTMLBodyElement
 // let horizonHeight = Math.round(canvasContainer.offsetHeight*0.2 + Math.random()*canvasContainer.offsetHeight*0.6)
-let horizonHeight = Math.round(window.innerHeight*0.2 + Math.random()*window.innerHeight*0.6)
+let horizonHeight = Math.round(window.innerHeight*0.2 + Math.random()*window.innerHeight*0.4)
 document.documentElement.style.cssText = "--horizonHeight:" + horizonHeight + "px" // set css property
 // LIGHTSOURCE
 const lightSourceCanvas = document.getElementById('lightSourceCanvas') as HTMLBodyElement
@@ -243,7 +247,7 @@ let lightSourcePositionX = Math.round(Math.random() * this.window.innerWidth)
 let lightSourcePositionY = Math.round(Math.random() * horizonHeight*0.8)
 let lightSourceSize = Math.round(50 + Math.random()*horizonHeight/2)
 
-let mountainRangeWidthMultiplier = Number((Math.random()*0.8).toFixed(2))
+let mountainRangeWidthMultiplier = Number((Math.random()*0.5).toFixed(2))
 let mountainRangeWidth = (window.innerHeight - horizonHeight)*0.1 + (window.innerHeight - horizonHeight)*mountainRangeWidthMultiplier
 
 let shadowSpreadMultiplier = Number((1 + (Math.random()*5)).toFixed(1)) // change that later?
@@ -251,32 +255,33 @@ let shadowHorizontalStretch =  Number((1 + (Math.random()*3)).toFixed(1))
 let shadowSpread = (lightSourcePositionY/horizonHeight) *shadowSpreadMultiplier + 0.15 // + for minimal shadow length
 let shadowSpreadMountain = (lightSourcePositionY)/horizonHeight * shadowSpreadMultiplier + 0.5
 let treeShadowBlur = 0
-
 let shadowColorGlobal = randomRgba()
-
-let maxLevelTree = Math.round(2 + Math.random() * 6)
-let trunkLen = Math.round(50 + Math.random() * 50)
-let initialsegmentingLen = Number((0.1 + Math.random()*0.8).toFixed(2))
 
 let distanceScaling = Number((0.1 + Math.random()*0.8).toFixed(2))
 let mountainsAmount = Math.round(Math.random()*20)
 let mountainTrimCloser = Number((0.1 + Math.random()*0.8).toFixed(2)) // 0-1
 let mountainHeightMultiplier = Number((0.25 + Math.random()*0.25).toFixed(2)) // 0.1 - 1?
 
-const branchLenRandomizer = 0.15 // keep it const
+let maxLevelTree = Math.round(2 + Math.random() * 6)
+let trunkLen = Math.round(80 + Math.random() * 50)
+let initialsegmentingLen = Number((0.1 + Math.random()*0.8).toFixed(2))
+let lenMultiplier = Number((0.6 + Math.random()*0.3).toFixed(2))
+let trunkWidthAsPartOfLen = Number((0.1 + Math.random()*0.4).toFixed(2))
+let widthMultiplier = Number((0.5 + Math.random()*0.2).toFixed(2))
+let rebranchingAngle = Number((15 + Math.random() * 15).toFixed(1))
+let branchingProbabilityBooster = Number(Math.random().toFixed(2)) // when 0 trees look more like sick
+let occasionalBranchesLimit = Math.round(Math.random()*4)
+let levelShiftRangeAddition = Math.round(Math.random()*2)
 
-const lenMultiplier = 0.8
-const trunkWidthAsPartOfLen = 0.3
-const widthMultiplier = 0.6
-const rebranchingAngle = 10
-// const maxLevelTree = 10 // -> maxLevelTree
-const branchingProbabilityBooster = 0 // when 0 trees look like sick
-const occasionalBranchesLimit = 10
-const levelShiftRangeAddition = 1
 // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
 // ratio is relative to Leaf's this.len
-const axis1WidthRatio = 1
-const axis2WidthRatio  = 0.5
+let axis1WidthRatio = Number((0.5 + Math.random()*0.5).toFixed(2))
+let axis2WidthRatio  = Number((0.5 + Math.random()*0.5).toFixed(2))
+
+// ____________________________________________________________ HERE PASSLINE____________________________________________________________
+
+
+
 const axis1LenRatio = -0.15
 const axis2LenRatio = 0.5
 const petioleLenRatio = 0.2 //of the whole length
@@ -291,7 +296,6 @@ const leavesGrowingOrder = 0.25
 const growLimitingLeavesAmount = 10 // branches drawing will stop when this amount of growing leaves is reached
 const leafMaxStageGlobal = 2
 const whileLoopRetriesEachFrameLeaves = 10 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
-
 
 const colorTreeInitialGlobal = 'rgba(20, 30, 0, 1)'
 const colorTreeFinalGlobal = 'rgba(100, 160, 160, 1)'
@@ -317,7 +321,7 @@ updateLightSource()
 paintTheSky()
 paintTheGround()
 
-// ________________________________________ PARAMETERS ________________________________________
+// ____________________________________________________ PARAMETERS ____________________________________________________
 // CREATE SLIDER AND PASS LISTERENS FUNCTION TO IT. FUNCTION FIRES ON SLIDER'S TEXT INPUT ALSO.
 // SOME VARIABLES ARE IN MANY EQUATIONS AFTERWARDS (like shadow length depends on lightsource position and that depends on horizon height)
 
@@ -377,18 +381,6 @@ addColorInput(CTGR_SHADOWS, 'shadowColor', 'shadow color', '', rgbaToHex(shadowC
     redrawMountainsShadows()
 })
 
-// BRANCH
-addSlider(CTGR_BRANCH , 'maxLevelTree', 'max level' , 'title', 1, 16, 1, maxLevelTree, () => {
-    maxLevelTree = valById('maxLevelTree')
-}) // min > 0!
-addSlider(CTGR_BRANCH , 'trunkLen', 'trunk length' , '',  1, 200 , 0.1, trunkLen, () => {
-    trunkLen = valById('trunkLen')
-})
-addSlider(CTGR_BRANCH , 'initialsegmentingLen', 'segment length' , 'as a part of trunk length',  0.01, 1 , 0.01, initialsegmentingLen, () => {
-    initialsegmentingLen = valById('trunkLen')
-})
-// LEAF
-
 // MOUNTAINS
 addSlider(CTGR_MOUNTAINS , 'mountainRangeWidthMultiplier', 'width' , 'as a part of ground height',  0.01, 1 , 0.01, mountainRangeWidthMultiplier, () => {
     mountainRangeWidthMultiplier = valById('mountainRangeWidthMultiplier')
@@ -408,43 +400,78 @@ addSlider(CTGR_MOUNTAINS , 'mountainHeightMultiplier', 'height' , '',  0, 1 , 0.
     redrawMountains()
 })
 
+// BRANCH
+addSlider(CTGR_BRANCH , 'maxLevelTree', 'max level' , 'title', 1, 16, 1, maxLevelTree, () => {
+    maxLevelTree = valById('maxLevelTree')
+}) // min > 0!
+addSlider(CTGR_BRANCH , 'trunkLen', 'trunk length' , '',  1, 200 , 0.1, trunkLen, () => {
+    trunkLen = valById('trunkLen')
+})
+addSlider(CTGR_BRANCH , 'trunkWidthAsPartOfLen', 'trunk width' , 'as part of its length',  0.01, 1 , 0.01, trunkWidthAsPartOfLen, () => {
+    trunkWidthAsPartOfLen = valById('trunkWidthAsPartOfLen')
+})
+addSlider(CTGR_BRANCH , 'initialsegmentingLen', 'segment length' , 'as a part of trunk length',  0.01, 1 , 0.01, initialsegmentingLen, () => {
+    initialsegmentingLen = valById('trunkLen')
+})
+addSlider(CTGR_BRANCH , 'lenMultiplier', 'child length' , 'part of parent branch length',  0.1, 1 , 0.01, lenMultiplier, () => {
+    lenMultiplier = valById('lenMultiplier')
+})
+addSlider(CTGR_BRANCH , 'widthMultiplier', 'child width' , 'part of parent branch width',  0.1, 1 , 0.01, widthMultiplier, () => {
+    widthMultiplier = valById('widthMultiplier')
+})
+addSlider(CTGR_BRANCH , 'rebranchingAngle', 'rebranching angle' , 'angle between parent and child branch (it\'s randomized arterwards) ',  1, 45 , 0.1, rebranchingAngle, () => {
+    rebranchingAngle = valById('rebranchingAngle')
+})
+addSlider(CTGR_BRANCH , 'branchingProbabilityBooster', 'branching booster' , '',  0, 1 , 0.01, branchingProbabilityBooster, () => {
+    branchingProbabilityBooster = valById('branchingProbabilityBooster')
+})
+addSlider(CTGR_BRANCH , 'occasionalBranchesLimit', 'occasional branches limit' , '',  0, 4 , 1, occasionalBranchesLimit, () => {
+    occasionalBranchesLimit = valById('occasionalBranchesLimit')
+})
+addSlider(CTGR_BRANCH , 'levelShiftRangeAddition', 'level shift addition' , 'level shifts happen with occasional branching - when level of branch is not parent level +1',  0, 4 , 1, levelShiftRangeAddition, () => {
+    levelShiftRangeAddition = valById('levelShiftRangeAddition')
+})
 
-// ________________________________________ PARAMETERS ________________________________________
+// LEAF
+addSlider(CTGR_LEAF , 'axis1WidthRatio', 'axis 1 width' , 'closer to petiole',  0, 2 , 0.01, axis1WidthRatio, () => {
+    axis1WidthRatio = valById('axis1WidthRatio')
+})
+addSlider(CTGR_LEAF , 'axis2WidthRatio', 'axis 2 width' , 'further to petiole',  0, 2 , 0.01, axis2WidthRatio, () => {
+    axis2WidthRatio = valById('axis2WidthRatio')
+})
 
 
-// ________________________________________ SIDEBAR ________________________________________
 
 
-// ________________________________________ GLOBALS ________________________________________
 
-// ________________________________________ GLOBALS ________________________________________
 
-// ________________________________________ BRANCH ________________________________________
+
+// ____________________________________________________ PARAMETERS ____________________________________________________
+// ____________________________________________________ SIDEBAR ____________________________________________________
+
+// ____________________________________________________ BRANCH ____________________________________________________
 class Branch {
     constructor(
-        public parent: Branch|Root, // parent branch or root
-        public x0: number,
-        public y0: number,
-        public len: number,
-        public angle: number,
-        public branchWidth: number,
-        public levelShift: number = 0,
-        public xF: number = 0, //could be ? but then lineTo errors with null
-        public yF: number  = 0,
-        public level: number = 0,
-        public children: Branch[] = [], // list of children branches
-        public segments: { x0: number, y0: number, xF: number, yF: number, width: number, leaves: Leaf[] }[] = [], // segments endpoints to draw lines between
+        readonly parent: Branch|Root, // parent branch or root
+        readonly x0: number,
+        readonly y0: number,
+        readonly len: number,
+        readonly angle: number,
+        readonly branchWidth: number,
+        readonly levelShift: number = 0,
+        readonly xF: number = 0, //could be ? but then lineTo errors with null
+        readonly yF: number  = 0,
+        readonly level: number = 0,
+        readonly children: Branch[] = [], // list of children branches
+        readonly segments: { x0: number, y0: number, xF: number, yF: number, width: number, leaves: Leaf[] }[] = [], // segments endpoints to draw lines between
         public drawnSegments: number = 0, //to track branch drawing progress
         public occasionalBranches = 0,
-        public tree: Tree = parent.tree,
-        public shadowSegments: { x0: number, y0: number, xF: number, yF: number, width: number, blur: number}[] = [],
+        readonly tree: Tree = parent.tree,
+        readonly shadowSegments: { x0: number, y0: number, xF: number, yF: number, width: number, blur: number}[] = [],
         // public color: {r: number, g: number, b: number, a:number} = {r: 0, g: parent.color.g+20, b: 0, a: 1},
-        public color: {r: number, g: number, b: number, a:number} = {r: 0, g:0, b: 0, a: 1},
+        readonly color: {r: number, g: number, b: number, a:number} = {r: 0, g:0, b: 0, a: 1},
     ){
-        this.parent = parent
-        // console.log(this.leaves)
         // RECALCULATE LEN AND WIDTH WITH levelShift
-        
         this.level = this.parent.level + 1 + this.levelShift
         this.color = {
             r: rgbaStrToObj(this.tree.colorTreeInitial).r + tree.redPerLevel*(this.level+1), // level +1 because trunk is level 0
@@ -655,9 +682,9 @@ class Branch {
         return false
     }
 }
-// ________________________________________ BRANCH ________________________________________
+// ____________________________________________________ BRANCH ____________________________________________________
 
-// ________________________________________ TREE ________________________________________
+// ____________________________________________________ TREE ____________________________________________________
 class Tree {
     constructor(
         readonly initX: number,
@@ -680,7 +707,7 @@ class Tree {
         public canvasShadows = canvasContainer.appendChild(document.createElement("canvas")), // create canvas for tree shadow
         public ctxShadows = canvasShadows.getContext('2d') as CanvasRenderingContext2D,
         public averageLeafSize = trunkLen/5,
-        public minimalDistanceBetweenLeaves = averageLeafSize * leafLenScaling * leafDistanceMultiplier, // doesnt count the distance between leaves of different branches
+        readonly minimalDistanceBetweenLeaves = averageLeafSize * leafLenScaling * leafDistanceMultiplier, // doesnt count the distance between leaves of different branches
         readonly maxLevel: number = maxLevelTree,
         readonly initialsegmentingLen = trunkLen * valById('initialsegmentingLen'),
 
@@ -735,7 +762,7 @@ class Tree {
                     }
                     // OCCASIONAL BRANCHING WITH LEVEL SHIFT (children level is not parent level + 1)
                     // compare occasionalBranches to occasionalBranchesLimit  
-                    if (Math.random() < occasionalBranchingProbability && element.occasionalBranches <= occasionalBranchesLimit) {
+                    if ((Math.random() < occasionalBranchingProbability) && (element.occasionalBranches < occasionalBranchesLimit)) {
                         // random level shift
                         let levelShift = 1 + Math.round(Math.random()*levelShiftRangeAddition)
                         // console.log('occasional branching')
@@ -773,56 +800,56 @@ class Tree {
         })
     }
 }
-// ________________________________________ TREE ________________________________________
+// ____________________________________________________ TREE ____________________________________________________
 
-// ________________________________________ ROOT ________________________________________
+// ____________________________________________________ ROOT ____________________________________________________
 // Root just acts as a parent element for the trunk. 
 // With the root there is no need to check for parent element in Branch constructor
 class Root {
     constructor(
-        public tree: Tree,
-        public angle: number = 0, // Rotates the tree
-        public level: number = -1,
-        public color = rgbaStrToObj(tree.colorTreeInitial)
+        readonly tree: Tree,
+        readonly angle: number = 0, // Rotates the tree
+        readonly level: number = -1,
+        readonly color = rgbaStrToObj(tree.colorTreeInitial)
     ){
 }}
-// ________________________________________ ROOT ________________________________________
+// ____________________________________________________ ROOT ____________________________________________________
 
-// ________________________________________ LEAF ________________________________________
+// ____________________________________________________ LEAF ____________________________________________________
 class Leaf {
     constructor (
         // public parentSeg: {x0: number, y0: number, xF: number, yF: number, width: number}, // parent segment
-        public parentBranch: Branch,
-        public x0: number,
-        public y0: number,
-        public len: number,
-        public angle: number,
-        public x0LeafShadow: number,
-        public y0LeafShadow: number,
-        public lineWidth: number = len*leafLineWidthAsPartOfLeafLen,
-        public xF: number = 0,
-        public yF: number  = 0,
-        public maxStages = -1 + leafMaxStageGlobal,
+        readonly parentBranch: Branch,
+        private x0: number,
+        private y0: number,
+        private len: number,
+        private angle: number,
+        private x0LeafShadow: number,
+        private y0LeafShadow: number,
+        private lineWidth: number = len*leafLineWidthAsPartOfLeafLen,
+        private xF: number = 0,
+        private yF: number  = 0,
+        readonly maxStages = leafMaxStageGlobal - 1,
         public currentStage = 0,
-        public growthStages: {stageLen:number, xF: number, yF: number, xFPetiole: number, yFPetiole: number, xR1: number, yR1: number, xL1: number, yL1: number, xR2: number, yR2: number, xL2: number, yL2: number}[] = [],
-        public canvas = canvasContainer.appendChild(document.createElement("canvas")), // create canvas
-        public ctx = canvas.getContext('2d') as CanvasRenderingContext2D,
-        public canvasCoords = {x: 0, y: 0}, // canvasTopLeftCorner
-        public x0rel = 0, // relative coordinates (for the leaf canvas positioning)
-        public y0rel = 0,
+        private growthStages: {stageLen:number, xF: number, yF: number, xFPetiole: number, yFPetiole: number, xR1: number, yR1: number, xL1: number, yL1: number, xR2: number, yR2: number, xL2: number, yL2: number}[] = [],
+        readonly canvas = canvasContainer.appendChild(document.createElement("canvas")), // create canvas
+        readonly ctx = canvas.getContext('2d') as CanvasRenderingContext2D,
+        readonly canvasCoords = {x: 0, y: 0}, // canvasTopLeftCorner
+        readonly x0rel = 0, // relative coordinates (for the leaf canvas positioning)
+        readonly y0rel = 0,
         public state : "hidden" | "growing" | "grown" = "hidden",
-        public tree: Tree = parentBranch.tree,
-        public canvasShadow = canvasContainer.appendChild(document.createElement("canvas")),
-        public ctxShadow = canvasShadow.getContext('2d') as CanvasRenderingContext2D,
-        public shadowStages: {stageLen:number, xF: number, yF: number, xFPetiole: number, yFPetiole: number, xR1: number, yR1: number, xL1: number, yL1: number, xR2: number, yR2: number, xL2: number, yL2: number}[] = [],
-        public xFLeafShadow: number = 0,
-        public yFLeafShadow: number = 0,
-        public shadowCanvasCoords = {x: 0, y: 0}, // canvasTopLeftCorner
-        public x0relShadow = 0, // relative coordinates (for the leaf canvas positioning)
-        public y0relShadow = 0,
-        public shadowLen = 0,
+        readonly tree: Tree = parentBranch.tree,
+        readonly canvasShadow = canvasContainer.appendChild(document.createElement("canvas")),
+        readonly ctxShadow = canvasShadow.getContext('2d') as CanvasRenderingContext2D,
+        readonly shadowStages: {stageLen:number, xF: number, yF: number, xFPetiole: number, yFPetiole: number, xR1: number, yR1: number, xL1: number, yL1: number, xR2: number, yR2: number, xL2: number, yL2: number}[] = [],
+        readonly xFLeafShadow: number = 0,
+        readonly yFLeafShadow: number = 0,
+        readonly shadowCanvasCoords = {x: 0, y: 0}, // canvasTopLeftCorner
+        readonly x0relShadow = 0, // relative coordinates (for the leaf canvas positioning)
+        readonly y0relShadow = 0,
+        readonly shadowLen = 0,
         public blur = 0,
-        public color: {r:number, g: number, b: number} = {r:0, g:0, b:0},
+        private color: {r:number, g: number, b: number} = {r:0, g:0, b:0},
     ) {
         this.tree.leavesList.push(this)
         
@@ -842,10 +869,9 @@ class Leaf {
 
         this.color = {r: colorFinalValues.r, g: colorFinalValues.g, b: colorFinalValues.b}
 
-
         // RESIZE CANVAS (canvasCoords and 0rels depend on it)
-        this.canvas.width = this.len*1.4
-        this.canvas.height = this.len*1.4
+        this.canvas.width = this.len*3 // its just *3 but it's not a minimal value which depends on bezier curve shape
+        this.canvas.height = this.len*3
         // final len in final stage
         this.xF = this.x0 + Math.sin(this.angle/180* Math.PI) * this.len
         this.yF = this.y0 - Math.cos(this.angle/180* Math.PI) * this.len
@@ -1039,9 +1065,9 @@ class Leaf {
         this.ctxShadow.stroke()
     }
 }
-// ________________________________________ LEAF ________________________________________
+// ____________________________________________________ LEAF ____________________________________________________
 
-// ________________________________________ INITIATIONS ________________________________________
+// ____________________________________________________ INITIATIONS ____________________________________________________
 let alreadyAnimating = false
 // PLANT (SPAWN) TREE AT CLICK COORDS
 canvasContainer.addEventListener("click", (event) => {
@@ -1074,9 +1100,9 @@ canvasContainer.addEventListener("click", (event) => {
         animateTheTree(tree)
     }
 })
-// ________________________________________ INITIATIONS ________________________________________
+// ____________________________________________________ INITIATIONS ____________________________________________________
 
-// ________________________________________ ANIMATION ________________________________________
+// ____________________________________________________ ANIMATION ____________________________________________________
 function animateTheTree (tree: Tree) {
     document.body.style.cursor = 'wait' // waiting cursor
     alreadyAnimating = true
@@ -1130,10 +1156,9 @@ function animateTheTree (tree: Tree) {
         }
         whileLoopCounterLeaves = 0
 
-
         // ________________ BREAK THE LOOP ________________
         if (lvl > tree.maxLevel && tree.growingLeavesList.length === 0 ) {
-            console.log('___Animation_in___' + (Date.now() - start) + 'ms___')
+            console.log('___ Animation in ' + (Date.now() - start) + ' ms ___')
             // console.log(growingLeavesList)
             alreadyAnimating = false
             // accumulatedTime = 0
@@ -1183,9 +1208,9 @@ function animateTheTree (tree: Tree) {
     animate(0)
 }
 
-// ________________________________________ ANIMATION ________________________________________
+// ____________________________________________________ ANIMATION ____________________________________________________
 
-// ________________________________________ MOUNTAIN ________________________________________
+// ____________________________________________________ MOUNTAIN ____________________________________________________
 
 class Mountain {
     constructor (
@@ -1195,18 +1220,17 @@ class Mountain {
         public canvasBottom: number,
         private colorTop: string,
         private colorBottom: string,
-        // let width = 600,
         private width = window.outerWidth * 1.02, // a little overlap for reassuring
         private lowestPoint = Infinity,
         private highestPoint = 0,
         private currentAmountOfNodes = initialAmountOfNodes,
         private currentOctave = 0,
-        private allPoints = [] as number[],
+        readonly allPoints = [] as number[],
         private randomPoints = [] as {x: number, y:number}[],
-        public canvas = canvasContainer.appendChild(document.createElement("canvas")),
-        private ctx = canvas.getContext('2d') as CanvasRenderingContext2D,
-        public canvasShadow = canvasContainer.appendChild(document.createElement("canvas")),
-        private ctxShadow = canvasShadow.getContext('2d') as CanvasRenderingContext2D,
+        readonly canvas = canvasContainer.appendChild(document.createElement("canvas")),
+        readonly ctx = canvas.getContext('2d') as CanvasRenderingContext2D,
+        readonly canvasShadow = canvasContainer.appendChild(document.createElement("canvas")),
+        readonly ctxShadow = canvasShadow.getContext('2d') as CanvasRenderingContext2D,
     ){
         this.canvas.style.zIndex = String(Math.round(canvasBottom))
         this.canvasShadow.style.zIndex = this.canvas.style.zIndex
@@ -1397,7 +1421,7 @@ class Mountain {
 
 }
 
-// ________________________________________ DRAWING MOUNTAINS ________________________________________
+// ____________________________________________________ DRAWING MOUNTAINS ____________________________________________________
 // let mountainsDrawn: Mountain[] = []
 function drawMountains () {
     for (let m = 0; m < mountainsAmount; m++ ) {
@@ -1439,10 +1463,10 @@ function redrawMountainsShadows() {
         mountain.redrawShadow()
     })
 }
-// ________________________________________ DRAWING MOUNTAINS ________________________________________
+// ____________________________________________________ DRAWING MOUNTAINS ____________________________________________________
 
 
-// ________________________________________ MOUNTAIN ________________________________________
+// ____________________________________________________ MOUNTAIN ____________________________________________________
 
 
 

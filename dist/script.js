@@ -1,6 +1,7 @@
 "use strict";
 // START ON LOAD
 window.addEventListener('load', function () {
+    // ____________________________________________________ FUNCTIONS ____________________________________________________
     function valById(id) {
         return Number(document.getElementById(id).value);
     }
@@ -166,7 +167,7 @@ window.addEventListener('load', function () {
             passedFunction();
         });
     }
-    //  SET CANVASES SIZES AND CHANGE THEM AT WINDOW RESIZE? 
+    //  SET CANVASES SIZES AND CHANGE THEM AT WINDOW RESIZE?
     window.addEventListener('resize', function () {
         // globalCanvasesList.forEach( (canvas) => {
         //     canvas.width = window.innerWidth
@@ -175,24 +176,26 @@ window.addEventListener('load', function () {
         window.location.reload(); // refresh page
         // tree.drawTheTree() // tree possibly not ready at resize
     });
-    // ________________________________________ SIDEBAR ________________________________________
+    // ____________________________________________________ FUNCTIONS ____________________________________________________
+    // ____________________________________________________ SIDEBAR ____________________________________________________
     const SIDEBAR_WIDTH = 250;
+    const branchLenRandomizer = 0.15; // keep it const
     let sidebarCategories = document.querySelectorAll(".sidebarCategory");
     sidebarCategories.forEach(function (category) { category.addEventListener("click", hideShowCategoryElements); });
     // SIDEBAR OPENING AND CLOSING
     const closeSidebarButton = document.getElementById('closeSidebarButton');
-    const sidebar = document.getElementById('sidebar');
+    const SIDEBAR = document.getElementById('sidebar');
     // sidebar.style.display = 'none'
-    sidebar.style.width = SIDEBAR_WIDTH + 'px';
+    SIDEBAR.style.width = SIDEBAR_WIDTH + 'px';
     closeSidebarButton.style.left = SIDEBAR_WIDTH + 'px';
     closeSidebarButton.addEventListener("click", () => {
-        if (sidebar.style.display == 'none') {
+        if (SIDEBAR.style.display == 'none') {
             closeSidebarButton.style.left = String(SIDEBAR_WIDTH) + 'px';
-            sidebar.style.display = 'block';
+            SIDEBAR.style.display = 'block';
         }
-        else if (sidebar.style.display != 'none') {
+        else if (SIDEBAR.style.display != 'none') {
             closeSidebarButton.style.left = String(0);
-            sidebar.style.display = 'none';
+            SIDEBAR.style.display = 'none';
         }
     });
     const undoButton = this.document.getElementById('undoButton');
@@ -204,16 +207,17 @@ window.addEventListener('load', function () {
             treesList.splice(-1);
         }
     }
-    let mountainsDrawn = []; // just a list
-    const PERSPECTIVE = document.getElementById('PERSPECTIVE_ELEMENTS');
+    let mountainsDrawn = [];
+    const PERSPECTIVE = document.getElementById('CTGR_PERSPECTIVE');
     const CTGR_LIGHTSOURCE = document.getElementById('CTGR_LIGHTSOURCE');
     const CTGR_SHADOWS = document.getElementById('CTGR_SHADOWS');
     const CTGR_BRANCH = document.getElementById('CTGR_BRANCH');
-    // const CTGR_LEAF = document.getElementById('CTGR_LEAF') as HTMLElement
+    const CTGR_LEAF = document.getElementById('CTGR_LEAF');
     const CTGR_MOUNTAINS = document.getElementById('CTGR_MOUNTAINS');
+    CTGR_BRANCH.style.display = 'none'; // completed - hide for now
     const canvasContainer = document.getElementById('canvasContainer');
     // let horizonHeight = Math.round(canvasContainer.offsetHeight*0.2 + Math.random()*canvasContainer.offsetHeight*0.6)
-    let horizonHeight = Math.round(window.innerHeight * 0.2 + Math.random() * window.innerHeight * 0.6);
+    let horizonHeight = Math.round(window.innerHeight * 0.2 + Math.random() * window.innerHeight * 0.4);
     document.documentElement.style.cssText = "--horizonHeight:" + horizonHeight + "px"; // set css property
     // LIGHTSOURCE
     const lightSourceCanvas = document.getElementById('lightSourceCanvas');
@@ -221,7 +225,7 @@ window.addEventListener('load', function () {
     let lightSourcePositionX = Math.round(Math.random() * this.window.innerWidth);
     let lightSourcePositionY = Math.round(Math.random() * horizonHeight * 0.8);
     let lightSourceSize = Math.round(50 + Math.random() * horizonHeight / 2);
-    let mountainRangeWidthMultiplier = Number((Math.random() * 0.8).toFixed(2));
+    let mountainRangeWidthMultiplier = Number((Math.random() * 0.5).toFixed(2));
     let mountainRangeWidth = (window.innerHeight - horizonHeight) * 0.1 + (window.innerHeight - horizonHeight) * mountainRangeWidthMultiplier;
     let shadowSpreadMultiplier = Number((1 + (Math.random() * 5)).toFixed(1)); // change that later?
     let shadowHorizontalStretch = Number((1 + (Math.random() * 3)).toFixed(1));
@@ -229,26 +233,25 @@ window.addEventListener('load', function () {
     let shadowSpreadMountain = (lightSourcePositionY) / horizonHeight * shadowSpreadMultiplier + 0.5;
     let treeShadowBlur = 0;
     let shadowColorGlobal = randomRgba();
-    let maxLevelTree = Math.round(2 + Math.random() * 6);
-    let trunkLen = Math.round(50 + Math.random() * 50);
-    let initialsegmentingLen = Number((0.1 + Math.random() * 0.8).toFixed(2));
     let distanceScaling = Number((0.1 + Math.random() * 0.8).toFixed(2));
     let mountainsAmount = Math.round(Math.random() * 20);
     let mountainTrimCloser = Number((0.1 + Math.random() * 0.8).toFixed(2)); // 0-1
     let mountainHeightMultiplier = Number((0.25 + Math.random() * 0.25).toFixed(2)); // 0.1 - 1?
-    const branchLenRandomizer = 0.15; // keep it const
-    const lenMultiplier = 0.8;
-    const trunkWidthAsPartOfLen = 0.3;
-    const widthMultiplier = 0.6;
-    const rebranchingAngle = 10;
-    // const maxLevelTree = 10 // -> maxLevelTree
-    const branchingProbabilityBooster = 0; // when 0 trees look like sick
-    const occasionalBranchesLimit = 10;
-    const levelShiftRangeAddition = 1;
+    let maxLevelTree = Math.round(2 + Math.random() * 6);
+    let trunkLen = Math.round(80 + Math.random() * 50);
+    let initialsegmentingLen = Number((0.1 + Math.random() * 0.8).toFixed(2));
+    let lenMultiplier = Number((0.6 + Math.random() * 0.3).toFixed(2));
+    let trunkWidthAsPartOfLen = Number((0.1 + Math.random() * 0.4).toFixed(2));
+    let widthMultiplier = Number((0.5 + Math.random() * 0.2).toFixed(2));
+    let rebranchingAngle = Number((15 + Math.random() * 15).toFixed(1));
+    let branchingProbabilityBooster = Number(Math.random().toFixed(2)); // when 0 trees look more like sick
+    let occasionalBranchesLimit = Math.round(Math.random() * 4);
+    let levelShiftRangeAddition = Math.round(Math.random() * 2);
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
     // ratio is relative to Leaf's this.len
-    const axis1WidthRatio = 1;
-    const axis2WidthRatio = 0.5;
+    let axis1WidthRatio = Number((0.5 + Math.random() * 0.5).toFixed(2));
+    let axis2WidthRatio = Number((0.5 + Math.random() * 0.5).toFixed(2));
+    // ____________________________________________________________ HERE PASSLINE____________________________________________________________
     const axis1LenRatio = -0.15;
     const axis2LenRatio = 0.5;
     const petioleLenRatio = 0.2; //of the whole length
@@ -282,7 +285,7 @@ window.addEventListener('load', function () {
     updateLightSource();
     paintTheSky();
     paintTheGround();
-    // ________________________________________ PARAMETERS ________________________________________
+    // ____________________________________________________ PARAMETERS ____________________________________________________
     // CREATE SLIDER AND PASS LISTERENS FUNCTION TO IT. FUNCTION FIRES ON SLIDER'S TEXT INPUT ALSO.
     // SOME VARIABLES ARE IN MANY EQUATIONS AFTERWARDS (like shadow length depends on lightsource position and that depends on horizon height)
     // PERSPECTIVE
@@ -338,17 +341,6 @@ window.addEventListener('load', function () {
         shadowColorGlobal = hexToRgba(hexColorById('shadowColor'), 1); // alpha =1
         redrawMountainsShadows();
     });
-    // BRANCH
-    addSlider(CTGR_BRANCH, 'maxLevelTree', 'max level', 'title', 1, 16, 1, maxLevelTree, () => {
-        maxLevelTree = valById('maxLevelTree');
-    }); // min > 0!
-    addSlider(CTGR_BRANCH, 'trunkLen', 'trunk length', '', 1, 200, 0.1, trunkLen, () => {
-        trunkLen = valById('trunkLen');
-    });
-    addSlider(CTGR_BRANCH, 'initialsegmentingLen', 'segment length', 'as a part of trunk length', 0.01, 1, 0.01, initialsegmentingLen, () => {
-        initialsegmentingLen = valById('trunkLen');
-    });
-    // LEAF
     // MOUNTAINS
     addSlider(CTGR_MOUNTAINS, 'mountainRangeWidthMultiplier', 'width', 'as a part of ground height', 0.01, 1, 0.01, mountainRangeWidthMultiplier, () => {
         mountainRangeWidthMultiplier = valById('mountainRangeWidthMultiplier');
@@ -367,11 +359,47 @@ window.addEventListener('load', function () {
         mountainHeightMultiplier = valById('mountainHeightMultiplier');
         redrawMountains();
     });
-    // ________________________________________ PARAMETERS ________________________________________
-    // ________________________________________ SIDEBAR ________________________________________
-    // ________________________________________ GLOBALS ________________________________________
-    // ________________________________________ GLOBALS ________________________________________
-    // ________________________________________ BRANCH ________________________________________
+    // BRANCH
+    addSlider(CTGR_BRANCH, 'maxLevelTree', 'max level', 'title', 1, 16, 1, maxLevelTree, () => {
+        maxLevelTree = valById('maxLevelTree');
+    }); // min > 0!
+    addSlider(CTGR_BRANCH, 'trunkLen', 'trunk length', '', 1, 200, 0.1, trunkLen, () => {
+        trunkLen = valById('trunkLen');
+    });
+    addSlider(CTGR_BRANCH, 'trunkWidthAsPartOfLen', 'trunk width', 'as part of its length', 0.01, 1, 0.01, trunkWidthAsPartOfLen, () => {
+        trunkWidthAsPartOfLen = valById('trunkWidthAsPartOfLen');
+    });
+    addSlider(CTGR_BRANCH, 'initialsegmentingLen', 'segment length', 'as a part of trunk length', 0.01, 1, 0.01, initialsegmentingLen, () => {
+        initialsegmentingLen = valById('trunkLen');
+    });
+    addSlider(CTGR_BRANCH, 'lenMultiplier', 'child length', 'part of parent branch length', 0.1, 1, 0.01, lenMultiplier, () => {
+        lenMultiplier = valById('lenMultiplier');
+    });
+    addSlider(CTGR_BRANCH, 'widthMultiplier', 'child width', 'part of parent branch width', 0.1, 1, 0.01, widthMultiplier, () => {
+        widthMultiplier = valById('widthMultiplier');
+    });
+    addSlider(CTGR_BRANCH, 'rebranchingAngle', 'rebranching angle', 'angle between parent and child branch (it\'s randomized arterwards) ', 1, 45, 0.1, rebranchingAngle, () => {
+        rebranchingAngle = valById('rebranchingAngle');
+    });
+    addSlider(CTGR_BRANCH, 'branchingProbabilityBooster', 'branching booster', '', 0, 1, 0.01, branchingProbabilityBooster, () => {
+        branchingProbabilityBooster = valById('branchingProbabilityBooster');
+    });
+    addSlider(CTGR_BRANCH, 'occasionalBranchesLimit', 'occasional branches limit', '', 0, 4, 1, occasionalBranchesLimit, () => {
+        occasionalBranchesLimit = valById('occasionalBranchesLimit');
+    });
+    addSlider(CTGR_BRANCH, 'levelShiftRangeAddition', 'level shift addition', 'level shifts happen with occasional branching - when level of branch is not parent level +1', 0, 4, 1, levelShiftRangeAddition, () => {
+        levelShiftRangeAddition = valById('levelShiftRangeAddition');
+    });
+    // LEAF
+    addSlider(CTGR_LEAF, 'axis1WidthRatio', 'axis 1 width', 'closer to petiole', 0, 2, 0.01, axis1WidthRatio, () => {
+        axis1WidthRatio = valById('axis1WidthRatio');
+    });
+    addSlider(CTGR_LEAF, 'axis2WidthRatio', 'axis 2 width', 'further to petiole', 0, 2, 0.01, axis2WidthRatio, () => {
+        axis2WidthRatio = valById('axis2WidthRatio');
+    });
+    // ____________________________________________________ PARAMETERS ____________________________________________________
+    // ____________________________________________________ SIDEBAR ____________________________________________________
+    // ____________________________________________________ BRANCH ____________________________________________________
     class Branch {
         constructor(parent, // parent branch or root
         x0, y0, len, angle, branchWidth, levelShift = 0, xF = 0, //could be ? but then lineTo errors with null
@@ -398,8 +426,6 @@ window.addEventListener('load', function () {
             this.tree = tree;
             this.shadowSegments = shadowSegments;
             this.color = color;
-            this.parent = parent;
-            // console.log(this.leaves)
             // RECALCULATE LEN AND WIDTH WITH levelShift
             this.level = this.parent.level + 1 + this.levelShift;
             this.color = {
@@ -585,8 +611,8 @@ window.addEventListener('load', function () {
             return false;
         }
     }
-    // ________________________________________ BRANCH ________________________________________
-    // ________________________________________ TREE ________________________________________
+    // ____________________________________________________ BRANCH ____________________________________________________
+    // ____________________________________________________ TREE ____________________________________________________
     class Tree {
         constructor(initX, initY, trunkLen, shadowAngle, colorTreeInitial = colorTreeInitialGlobal, colorTreeFinal = colorTreeFinalGlobal, shadowColorTree = shadowColorGlobal, colorDistortionProportion = 0, trunkWidth = trunkLen * trunkWidthAsPartOfLen, initAngle = 0, branchingProbability = branchingProbabilityBooster, allBranches = [[]], growingLeavesList = [], leavesList = [], 
         // public canvas = document.getElementById('canvasBranches') as HTMLCanvasElement,
@@ -664,7 +690,7 @@ window.addEventListener('load', function () {
                         }
                         // OCCASIONAL BRANCHING WITH LEVEL SHIFT (children level is not parent level + 1)
                         // compare occasionalBranches to occasionalBranchesLimit  
-                        if (Math.random() < occasionalBranchingProbability && element.occasionalBranches <= occasionalBranchesLimit) {
+                        if ((Math.random() < occasionalBranchingProbability) && (element.occasionalBranches < occasionalBranchesLimit)) {
                             // random level shift
                             let levelShift = 1 + Math.round(Math.random() * levelShiftRangeAddition);
                             // console.log('occasional branching')
@@ -699,8 +725,8 @@ window.addEventListener('load', function () {
             });
         }
     }
-    // ________________________________________ TREE ________________________________________
-    // ________________________________________ ROOT ________________________________________
+    // ____________________________________________________ TREE ____________________________________________________
+    // ____________________________________________________ ROOT ____________________________________________________
     // Root just acts as a parent element for the trunk. 
     // With the root there is no need to check for parent element in Branch constructor
     class Root {
@@ -712,12 +738,12 @@ window.addEventListener('load', function () {
             this.color = color;
         }
     }
-    // ________________________________________ ROOT ________________________________________
-    // ________________________________________ LEAF ________________________________________
+    // ____________________________________________________ ROOT ____________________________________________________
+    // ____________________________________________________ LEAF ____________________________________________________
     class Leaf {
         constructor(
         // public parentSeg: {x0: number, y0: number, xF: number, yF: number, width: number}, // parent segment
-        parentBranch, x0, y0, len, angle, x0LeafShadow, y0LeafShadow, lineWidth = len * leafLineWidthAsPartOfLeafLen, xF = 0, yF = 0, maxStages = -1 + leafMaxStageGlobal, currentStage = 0, growthStages = [], canvas = canvasContainer.appendChild(document.createElement("canvas")), // create canvas
+        parentBranch, x0, y0, len, angle, x0LeafShadow, y0LeafShadow, lineWidth = len * leafLineWidthAsPartOfLeafLen, xF = 0, yF = 0, maxStages = leafMaxStageGlobal - 1, currentStage = 0, growthStages = [], canvas = canvasContainer.appendChild(document.createElement("canvas")), // create canvas
         ctx = canvas.getContext('2d'), canvasCoords = { x: 0, y: 0 }, // canvasTopLeftCorner
         x0rel = 0, // relative coordinates (for the leaf canvas positioning)
         y0rel = 0, state = "hidden", tree = parentBranch.tree, canvasShadow = canvasContainer.appendChild(document.createElement("canvas")), ctxShadow = canvasShadow.getContext('2d'), shadowStages = [], xFLeafShadow = 0, yFLeafShadow = 0, shadowCanvasCoords = { x: 0, y: 0 }, // canvasTopLeftCorner
@@ -768,8 +794,8 @@ window.addEventListener('load', function () {
             const colorFinalValues = rgbaStrToObj(colorResulting);
             this.color = { r: colorFinalValues.r, g: colorFinalValues.g, b: colorFinalValues.b };
             // RESIZE CANVAS (canvasCoords and 0rels depend on it)
-            this.canvas.width = this.len * 1.4;
-            this.canvas.height = this.len * 1.4;
+            this.canvas.width = this.len * 3; // its just *3 but it's not a minimal value which depends on bezier curve shape
+            this.canvas.height = this.len * 3;
             // final len in final stage
             this.xF = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len;
             this.yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len;
@@ -941,8 +967,8 @@ window.addEventListener('load', function () {
             this.ctxShadow.stroke();
         }
     }
-    // ________________________________________ LEAF ________________________________________
-    // ________________________________________ INITIATIONS ________________________________________
+    // ____________________________________________________ LEAF ____________________________________________________
+    // ____________________________________________________ INITIATIONS ____________________________________________________
     let alreadyAnimating = false;
     // PLANT (SPAWN) TREE AT CLICK COORDS
     canvasContainer.addEventListener("click", (event) => {
@@ -972,8 +998,8 @@ window.addEventListener('load', function () {
             animateTheTree(tree);
         }
     });
-    // ________________________________________ INITIATIONS ________________________________________
-    // ________________________________________ ANIMATION ________________________________________
+    // ____________________________________________________ INITIATIONS ____________________________________________________
+    // ____________________________________________________ ANIMATION ____________________________________________________
     function animateTheTree(tree) {
         document.body.style.cursor = 'wait'; // waiting cursor
         alreadyAnimating = true;
@@ -1027,7 +1053,7 @@ window.addEventListener('load', function () {
             whileLoopCounterLeaves = 0;
             // ________________ BREAK THE LOOP ________________
             if (lvl > tree.maxLevel && tree.growingLeavesList.length === 0) {
-                console.log('___Animation_in___' + (Date.now() - start) + 'ms___');
+                console.log('___ Animation in ' + (Date.now() - start) + ' ms ___');
                 // console.log(growingLeavesList)
                 alreadyAnimating = false;
                 // accumulatedTime = 0
@@ -1070,12 +1096,10 @@ window.addEventListener('load', function () {
         }
         animate(0);
     }
-    // ________________________________________ ANIMATION ________________________________________
-    // ________________________________________ MOUNTAIN ________________________________________
+    // ____________________________________________________ ANIMATION ____________________________________________________
+    // ____________________________________________________ MOUNTAIN ____________________________________________________
     class Mountain {
-        constructor(initialAmountOfNodes, octaves, targetHeight, canvasBottom, colorTop, colorBottom, 
-        // let width = 600,
-        width = window.outerWidth * 1.02, // a little overlap for reassuring
+        constructor(initialAmountOfNodes, octaves, targetHeight, canvasBottom, colorTop, colorBottom, width = window.outerWidth * 1.02, // a little overlap for reassuring
         lowestPoint = Infinity, highestPoint = 0, currentAmountOfNodes = initialAmountOfNodes, currentOctave = 0, allPoints = [], randomPoints = [], canvas = canvasContainer.appendChild(document.createElement("canvas")), ctx = canvas.getContext('2d'), canvasShadow = canvasContainer.appendChild(document.createElement("canvas")), ctxShadow = canvasShadow.getContext('2d')) {
             this.initialAmountOfNodes = initialAmountOfNodes;
             this.octaves = octaves;
@@ -1260,7 +1284,7 @@ window.addEventListener('load', function () {
             this.drawMountain();
         }
     }
-    // ________________________________________ DRAWING MOUNTAINS ________________________________________
+    // ____________________________________________________ DRAWING MOUNTAINS ____________________________________________________
     // let mountainsDrawn: Mountain[] = []
     function drawMountains() {
         for (let m = 0; m < mountainsAmount; m++) {
@@ -1299,7 +1323,7 @@ window.addEventListener('load', function () {
             mountain.redrawShadow();
         });
     }
-    // ________________________________________ DRAWING MOUNTAINS ________________________________________
-    // ________________________________________ MOUNTAIN ________________________________________
+    // ____________________________________________________ DRAWING MOUNTAINS ____________________________________________________
+    // ____________________________________________________ MOUNTAIN ____________________________________________________
 }); //window.addEventListener('load', function(){ }) ENDS HERE
 //# sourceMappingURL=script.js.map
