@@ -196,8 +196,13 @@ window.addEventListener('resize', function() {
 // ____________________________________________________ FUNCTIONS ____________________________________________________
 
 // ____________________________________________________ SIDEBAR ____________________________________________________
+// ___________________ CONSTANT PARAMETERS___________________
 const SIDEBAR_WIDTH = 250
 const branchLenRandomizer = 0.15 // keep it const
+const leavesGrowingOrder = 0.25
+const growLimitingLeavesAmount = 10 // branches drawing will stop when this amount of growing leaves is reached
+// ___________________ CONSTANT PARAMETERS___________________
+
 
 let sidebarCategories = document.querySelectorAll(".sidebarCategory")
 sidebarCategories.forEach(function(category) {category.addEventListener("click", hideShowCategoryElements)})
@@ -235,6 +240,10 @@ const CTGR_BRANCH = document.getElementById('CTGR_BRANCH') as HTMLElement
 const CTGR_LEAF = document.getElementById('CTGR_LEAF') as HTMLElement
 const CTGR_MOUNTAINS = document.getElementById('CTGR_MOUNTAINS') as HTMLElement
 CTGR_BRANCH.style.display = 'none' // completed - hide for now
+// CTGR_LEAF.style.display = 'none' // completed - hide for now
+CTGR_MOUNTAINS.style.display = 'none' // completed - hide for now
+
+
 
 const canvasContainer = document.getElementById('canvasContainer') as HTMLBodyElement
 // let horizonHeight = Math.round(canvasContainer.offsetHeight*0.2 + Math.random()*canvasContainer.offsetHeight*0.6)
@@ -262,9 +271,12 @@ let mountainsAmount = Math.round(Math.random()*20)
 let mountainTrimCloser = Number((0.1 + Math.random()*0.8).toFixed(2)) // 0-1
 let mountainHeightMultiplier = Number((0.25 + Math.random()*0.25).toFixed(2)) // 0.1 - 1?
 
-let maxLevelTree = Math.round(2 + Math.random() * 6)
-let trunkLen = Math.round(80 + Math.random() * 50)
-let initialsegmentingLen = Number((0.1 + Math.random()*0.8).toFixed(2))
+let maxLevelTree = Math.round(2 + Math.random() * 2)
+let trunkLen = Math.round(120 + Math.random() * 80)
+
+// let initialsegmentingLen = Number((0.1 + Math.random()*0.8).toFixed(2))
+let initialsegmentingLen = 0.1
+
 let lenMultiplier = Number((0.6 + Math.random()*0.3).toFixed(2))
 let trunkWidthAsPartOfLen = Number((0.1 + Math.random()*0.4).toFixed(2))
 let widthMultiplier = Number((0.5 + Math.random()*0.2).toFixed(2))
@@ -277,25 +289,21 @@ let levelShiftRangeAddition = Math.round(Math.random()*2)
 // ratio is relative to Leaf's this.len
 let axis1WidthRatio = Number((0.5 + Math.random()*0.5).toFixed(2))
 let axis2WidthRatio  = Number((0.5 + Math.random()*0.5).toFixed(2))
+let axis1PositionAsLenRatio = Number((-0.2 + Math.random()*0.5).toFixed(2))
+let axis2PositionAsLenRatio = Number((0.5 + Math.random()*0.5).toFixed(2))
+let petioleLenRatio = Number((0 + Math.random()*0.3).toFixed(2))
+let leafLenScaling = Math.round( 0.5 + Math.random())
+let leafDistanceMultiplier = Number((0.5 + Math.random()).toFixed(2))
+let leafLineWidth = Number((0.2 + Math.random()).toFixed(2))
+let globalLeafProbability = Number((0.15 + Math.random()*0.15).toFixed(2)) // SAME PROBABILITY FOR EACH SIDE
+// let globalLeafProbability = 1 // SAME PROBABILITY FOR EACH SIDE
+let leafyLevels = Math.round( 1 + Math.random() * 2)
+let leafMaxStageGlobal = Math.round( 2 + Math.random() * 10)
+
 
 // ____________________________________________________________ HERE PASSLINE____________________________________________________________
 
-
-
-const axis1LenRatio = -0.15
-const axis2LenRatio = 0.5
-const petioleLenRatio = 0.2 //of the whole length
-
-const globalLeafProbability = 0.2 // SAME PROBABILITY FOR EACH SIDE
-const leafyLevels = 3
-const leafLenScaling = 1
-const leafLineWidthAsPartOfLeafLen = 0.05
-// const leafLenScaling = 1
-const leafDistanceMultiplier = 0.5 // > 0 !
-const leavesGrowingOrder = 0.25
-const growLimitingLeavesAmount = 10 // branches drawing will stop when this amount of growing leaves is reached
-const leafMaxStageGlobal = 2
-const whileLoopRetriesEachFrameLeaves = 10 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
+let whileLoopRetriesEachFrameLeaves = 10 // when that = 1 --> ~1 FPS for leafMaxStageGlobal = 60
 
 const colorTreeInitialGlobal = 'rgba(20, 30, 0, 1)'
 const colorTreeFinalGlobal = 'rgba(100, 160, 160, 1)'
@@ -334,7 +342,7 @@ addSlider(PERSPECTIVE , 'horizonHeight', 'sky (horizon) height' , '', Math.round
     recalculateShadowParameters()
     redrawMountains()
     // change max lightsource position not to stay below horizon
-    let lightSourceMaxCoordY = document.getElementById('lightSourcePositionY') as HTMLInputElement
+    const lightSourceMaxCoordY = document.getElementById('lightSourcePositionY') as HTMLInputElement
     lightSourceMaxCoordY.max = String(horizonHeight)
     if (lightSourcePositionY >= horizonHeight) {
         lightSourcePositionY = horizonHeight
@@ -404,7 +412,7 @@ addSlider(CTGR_MOUNTAINS , 'mountainHeightMultiplier', 'height' , '',  0, 1 , 0.
 addSlider(CTGR_BRANCH , 'maxLevelTree', 'max level' , 'title', 1, 16, 1, maxLevelTree, () => {
     maxLevelTree = valById('maxLevelTree')
 }) // min > 0!
-addSlider(CTGR_BRANCH , 'trunkLen', 'trunk length' , '',  1, 200 , 0.1, trunkLen, () => {
+addSlider(CTGR_BRANCH , 'trunkLen', 'trunk length' , '',  1, 200 , 1, trunkLen, () => {
     trunkLen = valById('trunkLen')
 })
 addSlider(CTGR_BRANCH , 'trunkWidthAsPartOfLen', 'trunk width' , 'as part of its length',  0.01, 1 , 0.01, trunkWidthAsPartOfLen, () => {
@@ -439,11 +447,36 @@ addSlider(CTGR_LEAF , 'axis1WidthRatio', 'axis 1 width' , 'closer to petiole',  
 addSlider(CTGR_LEAF , 'axis2WidthRatio', 'axis 2 width' , 'further to petiole',  0, 2 , 0.01, axis2WidthRatio, () => {
     axis2WidthRatio = valById('axis2WidthRatio')
 })
-
-
-
-
-
+addSlider(CTGR_LEAF , 'axis1PositionAsLenRatio', 'axis 1 position' , 'as a part of leaf length. Negative values to make leaf blade growing back',  -0.5, 1 , 0.01, axis1PositionAsLenRatio, () => {
+    axis1PositionAsLenRatio = valById('axis1PositionAsLenRatio')
+})
+addSlider(CTGR_LEAF , 'axis2PositionAsLenRatio', 'axis 2 position' , 'as a part of leaf length',  0.5, 1.5 , 0.01, axis2PositionAsLenRatio, () => {
+    axis2PositionAsLenRatio = valById('axis2PositionAsLenRatio')
+})
+addSlider(CTGR_LEAF , 'petioleLenRatio', 'petiole lenght' , 'as a part of leaf length',  0, 1 , 0.01, petioleLenRatio, () => {
+    petioleLenRatio = valById('petioleLenRatio')
+})
+addSlider(CTGR_LEAF , 'globalLeafProbability', 'leaf probability' , 'at each leaf node 3 leaves have the same chance to appear. It is this value.',  0, 1 , 0.01, globalLeafProbability, () => {
+    globalLeafProbability = valById('globalLeafProbability')
+})
+addSlider(CTGR_LEAF , 'leafyLevels', 'leafy levels' , '',  0, 10 , 1, leafyLevels, () => {
+    leafyLevels = valById('leafyLevels')
+})
+addSlider(CTGR_LEAF , 'leafLenScaling', 'length scaling' , '',  0.01, 10 , 0.01, leafLenScaling, () => {
+    leafLenScaling = valById('leafLenScaling')
+})
+addSlider(CTGR_LEAF , 'leafDistanceMultiplier', 'distancing' , 'leaves spawn at segments, so this parameter works only if there is a segment to spawn a leaf on',  0.1, 2 , 0.1, leafDistanceMultiplier, () => {
+    leafDistanceMultiplier = valById('leafDistanceMultiplier')
+})
+addSlider(CTGR_LEAF , 'leafLineWidth', 'leaf line width' , '',  0.01, 3, 0.01, leafLineWidth, () => {
+    leafLineWidth = valById('leafLineWidth')
+})
+addSlider(CTGR_LEAF , 'leafMaxStageGlobal', 'amount of growth stages' , '',  2, 200, 1, leafMaxStageGlobal, () => {
+    leafMaxStageGlobal = valById('leafMaxStageGlobal')
+})
+addSlider(CTGR_LEAF , 'whileLoopRetriesEachFrameLeaves', 'drawing pack' , 'drawing attepmts in each frame',  1, 1000, 1, whileLoopRetriesEachFrameLeaves, () => {
+    whileLoopRetriesEachFrameLeaves = valById('whileLoopRetriesEachFrameLeaves')
+})
 
 
 // ____________________________________________________ PARAMETERS ____________________________________________________
@@ -540,10 +573,10 @@ class Branch {
                 // LEFT LEAF
                 if (Math.random() < leafProbabilityByLevel) {
                     // recalculate leaf starting point to match the segment width
-                    const x0Leaf  = this.segments[seg].x0 - Math.cos(this.angle/180* Math.PI) * this.segments[seg].width/2
-                    const y0Leaf  = this.segments[seg].y0 - Math.sin(this.angle/180* Math.PI) * this.segments[seg].width/2
-                    const x0LeafShadow  = this.shadowSegments[seg].x0 - Math.cos(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2
-                    const y0LeafShadow  = this.shadowSegments[seg].y0 + Math.sin(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2 // opposite sign to (y0Leaf) because shadow leaves are rotated
+                    const x0Leaf  = this.segments[seg].xF - Math.cos(this.angle/180* Math.PI) * this.segments[seg].width/2
+                    const y0Leaf  = this.segments[seg].yF - Math.sin(this.angle/180* Math.PI) * this.segments[seg].width/2
+                    const x0LeafShadow  = this.shadowSegments[seg].xF - Math.cos(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2
+                    const y0LeafShadow  = this.shadowSegments[seg].yF + Math.sin(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2 // opposite sign to (y0Leaf) because shadow leaves are rotated
                     const leafL = new Leaf (this, x0Leaf , y0Leaf , thisLeafSize*0.9, this.angle -40 - Math.random()*10, x0LeafShadow, y0LeafShadow)
                     this.segments[seg].leaves.push(leafL)
                     // console.log('L ')
@@ -552,26 +585,62 @@ class Branch {
                 if (Math.random() < leafProbabilityByLevel) {
                     //recalculate leaf starting point to match the segment width
                     // const x0Leaf  = this.segments[seg].x0
-                    const x0Leaf  = this.segments[seg].x0 - (Math.cos(this.angle/180* Math.PI) * this.segments[seg].width/4) + Math.random()*(Math.cos(this.angle/180* Math.PI) * this.segments[seg].width/2) // randomize to range 1/4 - 3/4 of segWidth
+                    const x0Leaf  = this.segments[seg].xF - (Math.cos(this.angle/180* Math.PI) * this.segments[seg].width/4) + Math.random()*(Math.cos(this.angle/180* Math.PI) * this.segments[seg].width/2) // randomize to range 1/4 - 3/4 of segWidth
                     // const y0Leaf  = this.segments[seg].y0 + Math.random()*(Math.sin(this.angle/180* Math.PI) * minimalDistanceBetweenLeaves/2) // randomized
-                    const y0Leaf  = this.segments[seg].y0
-                    const x0LeafShadow  = this.shadowSegments[seg].x0 - (Math.cos(this.angle/180* Math.PI) * this.shadowSegments[seg].width/4) + Math.random()*(Math.cos(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2)
-                    const y0LeafShadow  = this.shadowSegments[seg].y0
+                    const y0Leaf  = this.segments[seg].yF
+                    const x0LeafShadow  = this.shadowSegments[seg].xF - (Math.cos(this.angle/180* Math.PI) * this.shadowSegments[seg].width/4) + Math.random()*(Math.cos(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2)
+                    const y0LeafShadow  = this.shadowSegments[seg].yF
                     const leafM = new Leaf (this, x0Leaf , y0Leaf , thisLeafSize, this.angle -10 + Math.random()*20, x0LeafShadow, y0LeafShadow) // slightly bigger than side leaves
-                    this.segments[seg].leaves.push(leafM)                 
+                    this.segments[seg].leaves.push(leafM) 
                     // console.log(' M ')
                 }
                 // RIGHT LEAF
                 if (Math.random() < leafProbabilityByLevel) {
                     //recalculate leaf starting point to match the segment width
-                    const x0Leaf  = this.segments[seg].x0 + Math.cos(this.angle/180* Math.PI) * this.segments[seg].width/2
-                    const y0Leaf  = this.segments[seg].y0 + Math.sin(this.angle/180* Math.PI) * this.segments[seg].width/2
-                    const x0LeafShadow  = this.shadowSegments[seg].x0 + Math.cos(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2
-                    const y0LeafShadow  = this.shadowSegments[seg].y0 - Math.sin(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2 // opposite sign
+                    const x0Leaf  = this.segments[seg].xF + Math.cos(this.angle/180* Math.PI) * this.segments[seg].width/2
+                    const y0Leaf  = this.segments[seg].yF + Math.sin(this.angle/180* Math.PI) * this.segments[seg].width/2
+                    const x0LeafShadow  = this.shadowSegments[seg].xF + Math.cos(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2
+                    const y0LeafShadow  = this.shadowSegments[seg].yF - Math.sin(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2 // opposite sign
                     const leafR = new Leaf (this, x0Leaf , y0Leaf , thisLeafSize*0.9, this.angle + 40 + Math.random()*10, x0LeafShadow, y0LeafShadow)
                     this.segments[seg].leaves.push(leafR)
                     // console.log('   R ')
                 }
+
+                // // LEFT LEAF
+                // if (Math.random() < leafProbabilityByLevel) {
+                //     // recalculate leaf starting point to match the segment width
+                //     const x0Leaf  = this.segments[seg].x0 - Math.cos(this.angle/180* Math.PI) * this.segments[seg].width/2
+                //     const y0Leaf  = this.segments[seg].y0 - Math.sin(this.angle/180* Math.PI) * this.segments[seg].width/2
+                //     const x0LeafShadow  = this.shadowSegments[seg].x0 - Math.cos(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2
+                //     const y0LeafShadow  = this.shadowSegments[seg].y0 + Math.sin(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2 // opposite sign to (y0Leaf) because shadow leaves are rotated
+                //     const leafL = new Leaf (this, x0Leaf , y0Leaf , thisLeafSize*0.9, this.angle -40 - Math.random()*10, x0LeafShadow, y0LeafShadow)
+                //     this.segments[seg].leaves.push(leafL)
+                //     // console.log('L ')
+                // }
+                // // MIDDLE LEAF
+                // if (Math.random() < leafProbabilityByLevel) {
+                //     //recalculate leaf starting point to match the segment width
+                //     // const x0Leaf  = this.segments[seg].x0
+                //     const x0Leaf  = this.segments[seg].x0 - (Math.cos(this.angle/180* Math.PI) * this.segments[seg].width/4) + Math.random()*(Math.cos(this.angle/180* Math.PI) * this.segments[seg].width/2) // randomize to range 1/4 - 3/4 of segWidth
+                //     // const y0Leaf  = this.segments[seg].y0 + Math.random()*(Math.sin(this.angle/180* Math.PI) * minimalDistanceBetweenLeaves/2) // randomized
+                //     const y0Leaf  = this.segments[seg].y0
+                //     const x0LeafShadow  = this.shadowSegments[seg].x0 - (Math.cos(this.angle/180* Math.PI) * this.shadowSegments[seg].width/4) + Math.random()*(Math.cos(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2)
+                //     const y0LeafShadow  = this.shadowSegments[seg].y0
+                //     const leafM = new Leaf (this, x0Leaf , y0Leaf , thisLeafSize, this.angle -10 + Math.random()*20, x0LeafShadow, y0LeafShadow) // slightly bigger than side leaves
+                //     this.segments[seg].leaves.push(leafM)                 
+                //     // console.log(' M ')
+                // }
+                // // RIGHT LEAF
+                // if (Math.random() < leafProbabilityByLevel) {
+                //     //recalculate leaf starting point to match the segment width
+                //     const x0Leaf  = this.segments[seg].x0 + Math.cos(this.angle/180* Math.PI) * this.segments[seg].width/2
+                //     const y0Leaf  = this.segments[seg].y0 + Math.sin(this.angle/180* Math.PI) * this.segments[seg].width/2
+                //     const x0LeafShadow  = this.shadowSegments[seg].x0 + Math.cos(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2
+                //     const y0LeafShadow  = this.shadowSegments[seg].y0 - Math.sin(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2 // opposite sign
+                //     const leafR = new Leaf (this, x0Leaf , y0Leaf , thisLeafSize*0.9, this.angle + 40 + Math.random()*10, x0LeafShadow, y0LeafShadow)
+                //     this.segments[seg].leaves.push(leafR)
+                //     // console.log('   R ')
+                // }
             }
         }
     } // Branch constructor
@@ -826,7 +895,7 @@ class Leaf {
         private angle: number,
         private x0LeafShadow: number,
         private y0LeafShadow: number,
-        private lineWidth: number = len*leafLineWidthAsPartOfLeafLen,
+        private lineWidth: number = leafLineWidth,
         private xF: number = 0,
         private yF: number  = 0,
         readonly maxStages = leafMaxStageGlobal - 1,
@@ -870,8 +939,8 @@ class Leaf {
         this.color = {r: colorFinalValues.r, g: colorFinalValues.g, b: colorFinalValues.b}
 
         // RESIZE CANVAS (canvasCoords and 0rels depend on it)
-        this.canvas.width = this.len*3 // its just *3 but it's not a minimal value which depends on bezier curve shape
-        this.canvas.height = this.len*3
+        this.canvas.width = this.len*4 // its just *4 but it's not a minimal value which depends on bezier curve shape
+        this.canvas.height = this.len*4
         // final len in final stage
         this.xF = this.x0 + Math.sin(this.angle/180* Math.PI) * this.len
         this.yF = this.y0 - Math.cos(this.angle/180* Math.PI) * this.len
@@ -928,11 +997,13 @@ class Leaf {
             this.growthStages[stg].yFPetiole = this.y0rel - Math.cos(this.angle/180* Math.PI) * this.growthStages[stg].stageLen * petioleLenRatio
             // 0.5 is no rotation. 0-1 range
             // let rotateLeafRightFrom0To1 = 0.35 + Math.sin(this.angle/180* Math.PI)*0.3 + Math.random()*0.30
-            let rotateLeafRightFrom0To1 = 0.35 + Math.sin(this.angle/180* Math.PI)*0.3 // move up this line or add randomization
+            // let rotateLeafRightFrom0To1 = 0.35 + Math.sin(this.angle/180* Math.PI)*0.3 // move up this line or add randomization
+            let rotateLeafRightFrom0To1 = 0.5
+
             // BEZIER CURVES - AXIS 1
-            const axis1 = this.calcBezierPointsForPerpendicularAxis(axis1LenRatio, axis1WidthRatio, rotateLeafRightFrom0To1, stg)
+            const axis1 = this.calcBezierPointsForPerpendicularAxis(axis1PositionAsLenRatio, axis1WidthRatio, rotateLeafRightFrom0To1, stg)
             // BEZIER CURVES - AXIS 2
-            const axis2 = this.calcBezierPointsForPerpendicularAxis(axis2LenRatio, axis2WidthRatio, rotateLeafRightFrom0To1, stg)
+            const axis2 = this.calcBezierPointsForPerpendicularAxis(axis2PositionAsLenRatio, axis2WidthRatio, rotateLeafRightFrom0To1, stg)
             // FILL UP THIS STAGE
             this.growthStages[stg].xR1 = axis1.xR
             this.growthStages[stg].yR1 = axis1.yR
@@ -955,9 +1026,9 @@ class Leaf {
             // let shadowRotateLeafRightFrom0To1 = 0.35 + Math.sin(this.angle/180* Math.PI)*0.3 // move up this line or add randomization
 
             // BEZIER CURVES - AXIS 1
-            const axis1Shadow = this.calcBezierPointsForPerpendicularAxisShadow(axis1LenRatio, axis1WidthRatio, rotateLeafRightFrom0To1, stg)
+            const axis1Shadow = this.calcBezierPointsForPerpendicularAxisShadow(axis1PositionAsLenRatio, axis1WidthRatio, rotateLeafRightFrom0To1, stg)
             // BEZIER CURVES - AXIS 2
-            const axis2Shadow = this.calcBezierPointsForPerpendicularAxisShadow(axis2LenRatio, axis2WidthRatio, rotateLeafRightFrom0To1, stg)
+            const axis2Shadow = this.calcBezierPointsForPerpendicularAxisShadow(axis2PositionAsLenRatio, axis2WidthRatio, rotateLeafRightFrom0To1, stg)
             // FILL UP THIS STAGE
             this.shadowStages[stg].xR1 = axis1Shadow.xR
             this.shadowStages[stg].yR1 = axis1Shadow.yR
@@ -1101,114 +1172,6 @@ canvasContainer.addEventListener("click", (event) => {
     }
 })
 // ____________________________________________________ INITIATIONS ____________________________________________________
-
-// ____________________________________________________ ANIMATION ____________________________________________________
-function animateTheTree (tree: Tree) {
-    document.body.style.cursor = 'wait' // waiting cursor
-    alreadyAnimating = true
-    let lvl = 0
-    const start = Date.now()
-    let lastTime = 0
-    let accumulatedTime = 0
-    const timeLimit = 10
-
-    let branchesCompletedThisForEach = 0
-    let branchesCompletedThisLvl = 0
-
-    let currIndexLeaves = 0
-    let whileLoopCounterLeaves = 0
-
-    function animate(timeStamp: number,) {
-        const timeDelta = timeStamp - lastTime
-        lastTime = timeStamp
-
-        // TILL whileLoopCounterLeaves = whileLoopRetriesLeaves AND growingLeavesList.length = 0
-        while (whileLoopCounterLeaves <= whileLoopRetriesEachFrameLeaves && tree.growingLeavesList.length > 0) {
-            // console.log('len = ' + growingLeavesList.length + ', indx = ' + currIndexLeaves)
-            let leaf = tree.growingLeavesList[currIndexLeaves]
-
-            // GROWING - DRAW
-            if (leaf.state === "growing" && leaf.currentStage < leaf.maxStages) {
-                leaf.drawLeafStage()
-                leaf.currentStage ++
-                currIndexLeaves ++
-                if (Math.random() < leavesGrowingOrder) {currIndexLeaves--} // CHANCE TO DRAW THE SAME LEAF AGAIN.
-                if (Math.random() < 1/100) {currIndexLeaves = 0} // CHANCE TO RESET INDEX TO 0
-            }
-            // GROWN - label as grown if maxStage reached
-            else if (leaf.currentStage === leaf.maxStages) {
-                leaf.drawLeafStage()
-                leaf.currentStage ++
-                leaf.state === "grown"
-                // console.log('grwn')
-                let spliceIndex = tree.growingLeavesList.indexOf(leaf)
-                // remove already grown leaf from the growing list
-                tree.growingLeavesList.splice(spliceIndex, 1) // 2nd parameter means remove one item only
-                // currIndexLeaves--
-            }
-            // RESET currIndexLeaves if LAST LEAF from the list was reached
-            if (currIndexLeaves === tree.growingLeavesList.length) {
-                currIndexLeaves = 0
-                // console.log('currIndexLeaves = 0')
-            }
-            whileLoopCounterLeaves ++
-            // console.log(growingLeavesList.length)
-        }
-        whileLoopCounterLeaves = 0
-
-        // ________________ BREAK THE LOOP ________________
-        if (lvl > tree.maxLevel && tree.growingLeavesList.length === 0 ) {
-            console.log('___ Animation in ' + (Date.now() - start) + ' ms ___')
-            // console.log(growingLeavesList)
-            alreadyAnimating = false
-            // accumulatedTime = 0
-            document.body.style.cursor = 'auto' // waiting cursor
-            return
-        }
-
-        // OR ACCUMULATE PASSED TIME
-        else if (accumulatedTime < timeLimit){
-            accumulatedTime += timeDelta
-        }
-
-        // DRAW A FRAME IF TIMELIMIT PASSED
-        // else if (accumulatedTime >= timeLimit && lvl <= tree.maxLevel){
-
-        // WAIT TILL growingLeavesList.length < growgrowLimitingLeavesAmountAmount to draw further segments
-        else if (accumulatedTime >= timeLimit  &&  lvl <= tree.maxLevel  &&  tree.growingLeavesList.length <= growLimitingLeavesAmount){
-            // for every branch
-            tree.allBranches[lvl].forEach(branch => {
-                // if this branch is completly drawn 
-                if (branch.drawnSegments >= branch.segments.length) {
-                    branchesCompletedThisForEach ++
-                }
-                // if not, draw it
-                else if (branch.drawnSegments < branch.segments.length) {
-                    branch.drawBranchBySegments()
-                    accumulatedTime = 0
-                }
-            }) // forEach end
-            branchesCompletedThisLvl = branchesCompletedThisForEach
-            branchesCompletedThisForEach = 0
-
-            // go next level if completed all the branches at this frame
-            if (branchesCompletedThisLvl === tree.allBranches[lvl].length){
-                branchesCompletedThisLvl = 0
-                lvl++
-            // console.log('lvl = ' + lvl)
-            }
-        }
-
-        requestAnimationFrame(animate)
-
-        // if (Math.floor(1000/timeDelta) < 50){
-        //     console.log(Math.floor(1000/timeDelta) + ' FPS!!!') // FPS ALERT
-        // }
-    }
-    animate(0)
-}
-
-// ____________________________________________________ ANIMATION ____________________________________________________
 
 // ____________________________________________________ MOUNTAIN ____________________________________________________
 
@@ -1420,9 +1383,7 @@ class Mountain {
     }
 
 }
-
-// ____________________________________________________ DRAWING MOUNTAINS ____________________________________________________
-// let mountainsDrawn: Mountain[] = []
+// _____________________ DRAWING MOUNTAINS _____________________
 function drawMountains () {
     for (let m = 0; m < mountainsAmount; m++ ) {
         const height = 1000 * mountainHeightMultiplier * ((mountainsAmount - (m* mountainTrimCloser))/(mountainsAmount))
@@ -1463,16 +1424,115 @@ function redrawMountainsShadows() {
         mountain.redrawShadow()
     })
 }
-// ____________________________________________________ DRAWING MOUNTAINS ____________________________________________________
-
-
+// _____________________ DRAWING MOUNTAINS _____________________
 // ____________________________________________________ MOUNTAIN ____________________________________________________
 
+// ____________________________________________________ ANIMATION ____________________________________________________
+function animateTheTree (tree: Tree) {
+    document.body.style.cursor = 'wait' // waiting cursor
+    alreadyAnimating = true
+    let lvl = 0
+    const start = Date.now()
+    let lastTime = 0
+    let accumulatedTime = 0
+    const timeLimit = 10
 
+    let branchesCompletedThisForEach = 0
+    let branchesCompletedThisLvl = 0
 
+    let currIndexLeaves = 0
+    let whileLoopCounterLeaves = 0
 
+    function animate(timeStamp: number,) {
+        const timeDelta = timeStamp - lastTime
+        lastTime = timeStamp
 
+        // TILL whileLoopCounterLeaves = whileLoopRetriesLeaves AND growingLeavesList.length = 0
+        while (whileLoopCounterLeaves <= whileLoopRetriesEachFrameLeaves && tree.growingLeavesList.length > 0) {
+            // console.log('len = ' + growingLeavesList.length + ', indx = ' + currIndexLeaves)
+            let leaf = tree.growingLeavesList[currIndexLeaves]
 
+            // GROWING - DRAW
+            if (leaf.state === "growing" && leaf.currentStage < leaf.maxStages) {
+                leaf.drawLeafStage()
+                leaf.currentStage ++
+                currIndexLeaves ++
+                if (Math.random() < leavesGrowingOrder) {currIndexLeaves--} // CHANCE TO DRAW THE SAME LEAF AGAIN.
+                if (Math.random() < 1/100) {currIndexLeaves = 0} // CHANCE TO RESET INDEX TO 0
+            }
+            // GROWN - label as grown if maxStage reached
+            else if (leaf.currentStage === leaf.maxStages) {
+                leaf.drawLeafStage()
+                leaf.currentStage ++
+                leaf.state === "grown"
+                // console.log('grwn')
+                let spliceIndex = tree.growingLeavesList.indexOf(leaf)
+                // remove already grown leaf from the growing list
+                tree.growingLeavesList.splice(spliceIndex, 1) // 2nd parameter means remove one item only
+                // currIndexLeaves--
+            }
+            // RESET currIndexLeaves if LAST LEAF from the list was reached
+            if (currIndexLeaves === tree.growingLeavesList.length) {
+                currIndexLeaves = 0
+                // console.log('currIndexLeaves = 0')
+            }
+            whileLoopCounterLeaves ++
+            // console.log(growingLeavesList.length)
+        }
+        whileLoopCounterLeaves = 0
+
+        // ________________ BREAK THE LOOP ________________
+        if (lvl > tree.maxLevel && tree.growingLeavesList.length === 0 ) {
+            console.log('___ Animation in ' + (Date.now() - start) + ' ms ___')
+            // console.log(growingLeavesList)
+            alreadyAnimating = false
+            // accumulatedTime = 0
+            document.body.style.cursor = 'auto' // remove waiting cursor
+            return
+        }
+
+        // OR ACCUMULATE PASSED TIME
+        else if (accumulatedTime < timeLimit){
+            accumulatedTime += timeDelta
+        }
+
+        // DRAW A FRAME IF TIMELIMIT PASSED
+        // else if (accumulatedTime >= timeLimit && lvl <= tree.maxLevel){
+
+        // WAIT TILL growingLeavesList.length < growgrowLimitingLeavesAmountAmount to draw further segments
+        else if (accumulatedTime >= timeLimit  &&  lvl <= tree.maxLevel  &&  tree.growingLeavesList.length <= growLimitingLeavesAmount){
+            // for every branch
+            tree.allBranches[lvl].forEach(branch => {
+                // if this branch is completly drawn 
+                if (branch.drawnSegments >= branch.segments.length) {
+                    branchesCompletedThisForEach ++
+                }
+                // if not, draw it
+                else if (branch.drawnSegments < branch.segments.length) {
+                    branch.drawBranchBySegments()
+                    accumulatedTime = 0
+                }
+            }) // forEach end
+            branchesCompletedThisLvl = branchesCompletedThisForEach
+            branchesCompletedThisForEach = 0
+
+            // go next level if completed all the branches at this frame
+            if (branchesCompletedThisLvl === tree.allBranches[lvl].length){
+                branchesCompletedThisLvl = 0
+                lvl++
+            // console.log('lvl = ' + lvl)
+            }
+        }
+        requestAnimationFrame(animate)
+
+        // if (Math.floor(1000/timeDelta) < 50){
+        //     console.log(Math.floor(1000/timeDelta) + ' FPS!!!') // FPS ALERT
+        // }
+    }
+    animate(0)
+}
+
+// ____________________________________________________ ANIMATION ____________________________________________________
 
 
 
