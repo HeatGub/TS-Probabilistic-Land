@@ -218,6 +218,8 @@ window.addEventListener('load', function () {
             treesList.splice(-1);
         }
     }
+    // function cancelAnimation () {
+    // }
     let mountainsDrawn = [];
     const CTGR_PERSPECTIVE = document.getElementById('CTGR_PERSPECTIVE');
     const CTGR_LIGHTSOURCE = document.getElementById('CTGR_LIGHTSOURCE');
@@ -247,7 +249,7 @@ window.addEventListener('load', function () {
     let shadowHorizontalStretch = Number((1 + (Math.random() * 3)).toFixed(1));
     let shadowSpread = (lightSourcePositionY / horizonHeight) * shadowSpreadMultiplier + 0.15; // + for minimal shadow length
     let shadowSpreadMountain = (lightSourcePositionY) / horizonHeight * shadowSpreadMultiplier + 0.5;
-    let treeShadowBlur = 10;
+    let treeShadowBlur = 0;
     let shadowColorGlobal = randomRgba();
     let distanceScaling = Number((0.1 + Math.random() * 0.8).toFixed(2));
     let mountainsAmount = Math.round(1 + Math.random() * 9);
@@ -274,7 +276,7 @@ window.addEventListener('load', function () {
     let leafLenScaling = Number((0.75 + Math.random() * 0.5).toFixed(2));
     let leafDistanceMultiplier = Number((0.5 + Math.random() * 0.5).toFixed(2));
     let leafLineWidth = Number((0.01 + Math.random() * 0.05).toFixed(3));
-    let globalLeafProbability = Number((0.5 + Math.random() * 0.15).toFixed(2)); // SAME PROBABILITY FOR EACH SIDE
+    let globalLeafProbability = Number((0.15 + Math.random() * 0.15).toFixed(2)); // SAME PROBABILITY FOR EACH SIDE
     // let globalLeafProbability = 1 // SAME PROBABILITY FOR EACH SIDE
     let leafyLevels = Math.round(3 + Math.random() * 2);
     let leafMaxStageGlobal = Math.round(2 + Math.random() * 10);
@@ -1081,37 +1083,6 @@ window.addEventListener('load', function () {
         }
     }
     // ____________________________________________________ LEAF ____________________________________________________
-    // ____________________________________________________ INITIATIONS ____________________________________________________
-    let alreadyAnimating = false;
-    // PLANT (SPAWN) TREE AT CLICK COORDS
-    canvasContainer.addEventListener("click", (event) => {
-        if (alreadyAnimating === false && event.y > horizonHeight) {
-            // console.log(event.y)
-            // let verticalAngleInfluence = 1+ ( (this.window.innerHeight - event.y) / this.window.innerHeight ) ** 0.9
-            // let shadowAngle = - (lightSourcePositionX - event.x) / window.innerWidth * shadowHorizontalStretch * verticalAngleInfluence
-            let shadowAngle = -(lightSourcePositionX - event.x) / window.innerWidth * shadowHorizontalStretch;
-            let groundHeight = window.innerHeight - horizonHeight;
-            let groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight) / 2;
-            let scaleByTheGroundPosition = (event.y - groundMiddle) / groundHeight * 2; // in range -1 to 1
-            const colorDistortionProportion = 1 - ((event.y - horizonHeight) / groundHeight); // 1 - 0
-            let colorInitial = blendRgbaColorsInProportions(mistColor, colorTreeInitialGlobal, colorDistortionProportion * treeMistBlendingProportion);
-            let colorFinal = blendRgbaColorsInProportions(mistColor, colorTreeFinalGlobal, colorDistortionProportion * treeMistBlendingProportion);
-            // NOW BLEND AGAIN WITH SHADOW
-            colorInitial = blendRgbaColorsInProportions(shadowColorGlobal, colorInitial, colorDistortionProportion * treeShapeShadow);
-            colorFinal = blendRgbaColorsInProportions(shadowColorGlobal, colorFinal, colorDistortionProportion * treeShapeShadow);
-            // a color of the ground at the trunk bottom blended with shadow color
-            let shadowColorTree = blendRgbaColorsInProportions(mistColor, groundColor, colorDistortionProportion * treeShadowBlendingProportion);
-            shadowColorTree = blendRgbaColorsInProportions(shadowColorTree, shadowColorGlobal, colorDistortionProportion * treeShadowBlendingProportion);
-            const vals = rgbaStrToObj(shadowColorTree);
-            shadowColorTree = 'rgba(' + vals.r + ',' + vals.g + ',' + vals.b + ',1)'; // alpha =1
-            // _________ INITIALIZE THE TREE _________
-            let treeTrunkScaledLength = trunkLen + trunkLen * scaleByTheGroundPosition * distanceScaling; // normal scale at the half of ground canvas
-            const tree = new Tree(event.x, event.y, treeTrunkScaledLength, shadowAngle, colorInitial, colorFinal, shadowColorTree, colorDistortionProportion);
-            treesList.push(tree);
-            animateTheTree(tree);
-        }
-    });
-    // ____________________________________________________ INITIATIONS ____________________________________________________
     // ____________________________________________________ MOUNTAIN ____________________________________________________
     class Mountain {
         constructor(initialAmountOfNodes, octaves, targetHeight, canvasBottom, colorTop, colorBottom, width = window.outerWidth * 1.02, // a little overlap for reassuring
@@ -1339,8 +1310,51 @@ window.addEventListener('load', function () {
     }
     // _____________________ DRAWING MOUNTAINS _____________________
     // ____________________________________________________ MOUNTAIN ____________________________________________________
+    // ____________________________________________________ INITIATIONS ____________________________________________________
+    let alreadyAnimating = false;
+    // PLANT (SPAWN) TREE AT CLICK COORDS
+    canvasContainer.addEventListener("click", (event) => {
+        if (alreadyAnimating === false && event.y > horizonHeight) {
+            // console.log(event.y)
+            // let verticalAngleInfluence = 1+ ( (this.window.innerHeight - event.y) / this.window.innerHeight ) ** 0.9
+            // let shadowAngle = - (lightSourcePositionX - event.x) / window.innerWidth * shadowHorizontalStretch * verticalAngleInfluence
+            let shadowAngle = -(lightSourcePositionX - event.x) / window.innerWidth * shadowHorizontalStretch;
+            let groundHeight = window.innerHeight - horizonHeight;
+            let groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight) / 2;
+            let scaleByTheGroundPosition = (event.y - groundMiddle) / groundHeight * 2; // in range -1 to 1
+            const colorDistortionProportion = 1 - ((event.y - horizonHeight) / groundHeight); // 1 - 0
+            let colorInitial = blendRgbaColorsInProportions(mistColor, colorTreeInitialGlobal, colorDistortionProportion * treeMistBlendingProportion);
+            let colorFinal = blendRgbaColorsInProportions(mistColor, colorTreeFinalGlobal, colorDistortionProportion * treeMistBlendingProportion);
+            // NOW BLEND AGAIN WITH SHADOW
+            colorInitial = blendRgbaColorsInProportions(shadowColorGlobal, colorInitial, colorDistortionProportion * treeShapeShadow);
+            colorFinal = blendRgbaColorsInProportions(shadowColorGlobal, colorFinal, colorDistortionProportion * treeShapeShadow);
+            // a color of the ground at the trunk bottom blended with shadow color
+            let shadowColorTree = blendRgbaColorsInProportions(mistColor, groundColor, colorDistortionProportion * treeShadowBlendingProportion);
+            shadowColorTree = blendRgbaColorsInProportions(shadowColorTree, shadowColorGlobal, colorDistortionProportion * treeShadowBlendingProportion);
+            const vals = rgbaStrToObj(shadowColorTree);
+            shadowColorTree = 'rgba(' + vals.r + ',' + vals.g + ',' + vals.b + ',1)'; // alpha =1
+            // _________ INITIALIZE THE TREE _________
+            let treeTrunkScaledLength = trunkLen + trunkLen * scaleByTheGroundPosition * distanceScaling; // normal scale at the half of ground canvas
+            const tree = new Tree(event.x, event.y, treeTrunkScaledLength, shadowAngle, colorInitial, colorFinal, shadowColorTree, colorDistortionProportion);
+            treesList.push(tree);
+            animateTheTree(tree);
+        }
+    });
+    // ____________________________________________________ INITIATIONS ____________________________________________________
     // ____________________________________________________ ANIMATION ____________________________________________________
+    // CONTROL ANIMATION WITH KEYBOARD
+    let animationOn = false;
+    document.addEventListener('keydown', function (event) {
+        // console.log(event.code)
+        if (event.code === "Space") {
+            animationOn = false;
+        }
+        if (event.ctrlKey && event.key === 'z') {
+            removeLastTree();
+        } // ctrl + z
+    });
     function animateTheTree(tree) {
+        animationOn = true;
         document.body.style.cursor = 'wait'; // waiting cursor
         alreadyAnimating = true;
         let lvl = 0;
@@ -1392,7 +1406,7 @@ window.addEventListener('load', function () {
             }
             whileLoopCounterLeaves = 0;
             // ________________ BREAK THE LOOP ________________
-            if (lvl > tree.maxLevel && tree.growingLeavesList.length === 0) {
+            if ((lvl > tree.maxLevel && tree.growingLeavesList.length === 0) || animationOn === false) {
                 console.log('___ Animation in ' + (Date.now() - start) + ' ms ___');
                 // console.log(growingLeavesList)
                 alreadyAnimating = false;
