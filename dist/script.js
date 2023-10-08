@@ -171,18 +171,16 @@ window.addEventListener('load', function () {
             passedFunction();
         });
     }
-    //  SET CANVASES SIZES AND CHANGE THEM AT WINDOW RESIZE?
-    // const memorizedCanvases = []
+    // RESIZE CANVASES AND REDRAW THEM AT WINDOW RESIZE
     window.addEventListener('resize', function () {
         redrawMountains();
         globalCanvasesList.forEach((canvas) => {
-            const memorizedCanvas = canvas.getContext('2d');
-            console.log(memorizedCanvas);
-            // canvas.width = window.innerWidth
-            // canvas.height = window.innerHeight
+            const memorizedCtx = canvas.getContext('2d', { willReadFrequently: true });
+            const imgData = memorizedCtx.getImageData(0, 0, window.innerWidth, window.innerHeight);
+            canvas.width = window.innerWidth; // resizing clears context
+            canvas.height = window.innerHeight;
+            memorizedCtx.putImageData(imgData, 0, 0); // redraw memorized image
         });
-        // window.location.reload() // refresh page
-        // tree.drawTheTree() // tree possibly not ready at resize
     });
     // ____________________________________________________ FUNCTIONS ____________________________________________________
     // ____________________________________________________ SIDEBAR ____________________________________________________
@@ -249,16 +247,16 @@ window.addEventListener('load', function () {
     let shadowHorizontalStretch = Number((1 + (Math.random() * 3)).toFixed(1));
     let shadowSpread = (lightSourcePositionY / horizonHeight) * shadowSpreadMultiplier + 0.15; // + for minimal shadow length
     let shadowSpreadMountain = (lightSourcePositionY) / horizonHeight * shadowSpreadMultiplier + 0.5;
-    let treeShadowBlur = 0;
+    let treeShadowBlur = 10;
     let shadowColorGlobal = randomRgba();
     let distanceScaling = Number((0.1 + Math.random() * 0.8).toFixed(2));
     let mountainsAmount = Math.round(1 + Math.random() * 9);
     let mountainTrimCloser = Number((0.1 + Math.random() * 0.8).toFixed(2)); // 0-1
     let mountainHeightMultiplier = Number((0.25 + Math.random() * 0.25).toFixed(2)); // 0.1 - 1?
     let maxLevelTree = Math.round(4 + Math.random() * 2);
-    let trunkLen = Math.round(120 + Math.random() * 80);
+    let trunkLen = Math.round(50 + Math.random() * 50);
     // let initialsegmentingLen = Number((0.1 + Math.random()*0.8).toFixed(2))
-    let initialsegmentingLen = 0.05;
+    let initialsegmentingLen = 0.25;
     let lenMultiplier = Number((0.6 + Math.random() * 0.3).toFixed(2));
     let trunkWidthAsPartOfLen = Number((0.1 + Math.random() * 0.2).toFixed(2));
     let widthMultiplier = Number((0.5 + Math.random() * 0.2).toFixed(2));
@@ -299,12 +297,11 @@ window.addEventListener('load', function () {
     let leafFolding = Number((Math.random() * 0.25).toFixed(2));
     let randomizeLeafSize = Number((0.2 + Math.random() * 0.3).toFixed(2));
     // ____________________________________________________________ HERE PASSLINE____________________________________________________________
-    // TOODOO LIST
-    // find skrajne puynkty drzewa żeby byl mniejszy canvas i nie trzeba go bylo rozciagac
-    // albo rozciagnac canvas
     updateLightSource();
     paintTheSky();
     paintTheGround();
+    // TOODOO:
+    // ctrl + z for undo and cancelling animation
     // ____________________________________________________ PARAMETERS ____________________________________________________
     // CREATE SLIDER AND PASS LISTERENS FUNCTION TO IT. FUNCTION FIRES ON SLIDER'S TEXT INPUT ALSO.
     // SOME VARIABLES ARE IN MANY EQUATIONS AFTERWARDS (like shadow length depends on lightsource position and that depends on horizon height)
@@ -557,17 +554,17 @@ window.addEventListener('load', function () {
             // THEN CALCULATE BRANCH TIP (FINAL) COORDINATES
             this.xF = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len;
             this.yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len;
-            // CHECK TREE EXTREME POINTS
-            // y0 extreme is always trunk because branches dont grow below its level
-            if (this.xF > this.tree.extremes.xF) {
-                this.tree.extremes.xF = this.xF;
-            }
-            if (this.xF < this.tree.extremes.x0) {
-                this.tree.extremes.x0 = this.xF;
-            }
-            if (this.yF < this.tree.extremes.yF) {
-                this.tree.extremes.yF = this.yF;
-            }
+            // // CHECK TREE EXTREME POINTS
+            // // y0 extreme is always trunk because branches dont grow below its level
+            // if (this.xF > this.tree.extremes.xF) {
+            //     this.tree.extremes.xF = this.xF
+            // }
+            // if (this.xF < this.tree.extremes.x0) {
+            //     this.tree.extremes.x0 = this.xF
+            // }
+            // if (this.yF < this.tree.extremes.yF) {
+            //     this.tree.extremes.yF = this.yF
+            // }
             // ____________ SEGMENTING A BRANCH ____________
             // let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level) )
             let segAmountByLevel = Math.ceil(((this.tree.trunkLen * (Math.pow(lenMultiplier, this.level))) / this.tree.initialsegmentingLen));
@@ -742,9 +739,10 @@ window.addEventListener('load', function () {
         constructor(initX, initY, trunkLen, shadowAngle, colorTreeInitial = colorTreeInitialGlobal, colorTreeFinal = colorTreeFinalGlobal, shadowColorTree = shadowColorGlobal, colorDistortionProportion = 0, trunkWidth = trunkLen * trunkWidthAsPartOfLen, initAngle = 0, branchingProbability = branchingProbabilityBooster, allBranches = [[]], growingLeavesList = [], leavesList = [], 
         // public canvas = document.getElementById('canvasBranches') as HTMLCanvasElement,
         canvas = canvasContainer.appendChild(document.createElement("canvas")), // create canvas
-        ctx = canvas.getContext('2d'), canvasShadows = canvasContainer.appendChild(document.createElement("canvas")), // create canvas for tree shadow
-        ctxShadows = canvasShadows.getContext('2d'), averageLeafSize = trunkLen / 12, minimalDistanceBetweenLeaves = averageLeafSize * leafLenScaling * leafDistanceMultiplier, // doesnt count the distance between leaves of different branches
-        maxLevel = maxLevelTree, initialsegmentingLen = trunkLen * valById('initialsegmentingLen'), extremes = { x0: 0, y0: 0, xF: 0, yF: 0 }, redPerLevel = 0, greenPerLevel = 0, bluePerLevel = 0) {
+        ctx = canvas.getContext('2d', { willReadFrequently: true }), // {willReadFrequently: true} for resizing
+        canvasShadows = canvasContainer.appendChild(document.createElement("canvas")), // create canvas for tree shadow
+        ctxShadows = canvasShadows.getContext('2d', { willReadFrequently: true }), averageLeafSize = trunkLen / 12, minimalDistanceBetweenLeaves = averageLeafSize * leafLenScaling * leafDistanceMultiplier, // doesnt count the distance between leaves of different branches
+        maxLevel = maxLevelTree, initialsegmentingLen = trunkLen * valById('initialsegmentingLen'), redPerLevel = 0, greenPerLevel = 0, bluePerLevel = 0) {
             this.initX = initX;
             this.initY = initY;
             this.trunkLen = trunkLen;
@@ -767,7 +765,6 @@ window.addEventListener('load', function () {
             this.minimalDistanceBetweenLeaves = minimalDistanceBetweenLeaves;
             this.maxLevel = maxLevel;
             this.initialsegmentingLen = initialsegmentingLen;
-            this.extremes = extremes;
             this.redPerLevel = redPerLevel;
             this.greenPerLevel = greenPerLevel;
             this.bluePerLevel = bluePerLevel;

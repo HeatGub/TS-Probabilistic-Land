@@ -40,18 +40,20 @@
 }
 
 .mountainCanvas{
+    left: 0; /*keps mountain left after window resize*/
     /* display: none; */
     position: absolute;
     /* background: rgb(17, 2, 80); */
     /* width: 100%;
     height: 100%; */
-    /* border: 1px solid rgb(5, 253, 237); */
+    /* border: 3px solid rgb(5, 253, 237); */
     /* z-index: 2; */
     image-rendering: smooth;
 
 }
 
 .mountainShadowCanvas{
+    left: 0; /*keps mountain left after window resize*/
     position: absolute;
     /* background: rgb(17, 2, 80); */
     /* width: 100%; */
@@ -108,6 +110,19 @@
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 40;
+    /* display: none; */
+}
+
+.canvasNew {
+    overflow: hidden;
+    /* width: 100%; */
+    /* height: 100%; */
+    position: absolute;
+    border: 4px solid rgba(4, 98, 92, 0.305);
+    /* top: 50%; */
+    /* left: 50%; */
+    /* transform: translate(-50%, -50%); */
+    z-index: 4000;
     /* display: none; */
 
 }
