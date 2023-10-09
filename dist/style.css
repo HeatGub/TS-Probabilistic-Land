@@ -6,10 +6,15 @@
     /*image-rendering: optimizeSpeed;*/ /* keep it or not? */
     --horizonHeight: 50%;
     --lightSourceColor: rgba(126, 230, 204, 0.861);
+
     --textInputWidth: 3rem;
-    --sliderHeight: 100px;
-    --sliderBackgroundColor: gray;
-    --sliderProgressColor: rgb(204, 255, 0);
+    --sliderHeight: 10px;
+    --sliderThumbBorderWidth: 2px;
+
+    --sliderBackgroundColor: rgb(196, 185, 185);
+    --sliderProgressColor: rgb(255, 166, 0);
+    --sliderThumbColor: rgb(255, 251, 0);
+    --sliderThumbBorderColor: rgb(115, 0, 255);
 }
 
 * {
@@ -135,13 +140,13 @@
     width: 250px;
     height: 100%;
     background-color: rgba(0, 51, 255, 0.356);
-    z-index: 100;
     overflow: scroll;
     overflow-x: hidden;
+    z-index: 1000000;
 }
 
 #sidebar > * {
-    margin-top: 10px;
+    margin-top: 10px; /*category sapacing*/
     text-align: center;
 }
 
@@ -149,6 +154,7 @@
     width: 100%;
     /* position: absolute; */
     background-color: rgba(204, 255, 0, 0.867);
+    border-radius: 10px;
     /* padding: 1px; */
 }
 
@@ -158,11 +164,16 @@
     background-color: rgb(64, 255, 0);
 }
 
-input[type="text"]{
-    font-size: 10px;
-    width: var(--textInputWidth);
-    margin: 2px;
+.sidebarSliderElement { /* slider with text input */
+    width: 98%;
+    background-color: rgba(17, 150, 232, 0.96);
 }
+
+span > * {
+    /* display: inline-block; */
+    vertical-align: middle;
+}
+
 
 #closeSidebarButton {
     position: absolute;
@@ -180,12 +191,13 @@ input[type="text"]{
     position: absolute;
     background-color: rgba(251, 0, 255, 0.688);
     left: 95%;
-    z-index: 10000;
+    z-index: 1000000;
 }
 
-/* input[type="range"]{
-    width: calc(95% - var(--textInputWidth));   
-} */
+input[type="text"]{
+    font-size: 10px;
+    width: var(--textInputWidth);
+}
 
 /* ___________________________ CUSTOM SLIDER ___________________________*/
 /* https://blog.logrocket.com/creating-custom-css-range-slider-javascript-upgrades/ */
@@ -194,7 +206,7 @@ input[type="range"] {
     -webkit-appearance: none;
     appearance: none; 
     /* creating a custom design */
-    width: calc(95% - var(--textInputWidth));
+    width: calc(100% - var(--textInputWidth));
     cursor: pointer;
     outline: none;
     /*  slider progress trick  */
@@ -209,9 +221,10 @@ input[type="range"]::-webkit-slider-runnable-track {
     background: var(--sliderBackgroundColor);
     border-radius: calc(var(--sliderHeight) + 1px);
 }
-  
+
 /* Track: Mozilla Firefox */
 input[type="range"]::-moz-range-track {
+    border: none;
     height: var(--sliderHeight);
     background: var(--sliderBackgroundColor);
     border-radius: calc(var(--sliderHeight) + 1px);
@@ -225,30 +238,28 @@ input[type="range"]::-webkit-slider-thumb {
     /* creating a custom design */
     height: var(--sliderHeight);
     width: var(--sliderHeight);
-    background-color: #ffff00;
     border-radius: 50%;
-    border: 2px solid rgb(0, 255, 251);
+    background-color: var(--sliderThumbColor);
+    border: var(--sliderThumbBorderWidth) solid var(--sliderThumbBorderColor);
     /*  slider progress trick  */
-    /* box-shadow: -407px 0 0 400px var(--sliderProgressColor); */
-    /* 4000px below is just a high numer, higher than most of the screen widths*/
-    box-shadow: calc(-4000px - calc(var(--sliderHeight)/2)) 0 0 4000px var(--sliderProgressColor);
+    /*1000px below is just a high numer, higher than potential slider width*/
+    box-shadow: calc(-1000px - calc(var(--sliderHeight)/2)) 0 0 1000px var(--sliderProgressColor);
 }
 
 /* Thumb: Firefox */
 input[type="range"]::-moz-range-thumb {
     height: var(--sliderHeight);
     width: var(--sliderHeight);
-    background-color: #fff;
     border-radius: 50%;
-    border: 1px solid #f50;
+    background-color: var(--sliderThumbColor);
+    border: var(--sliderThumbBorderWidth) solid var(--sliderThumbBorderColor);
     /*  slider progress trick  */
-    box-shadow: -407px 0 0 400px var(--sliderProgressColor);
+    /*1000px below is just a high numer, higher than potential slider width*/
+    box-shadow: calc(-1000px - calc(var(--sliderHeight)/2)) 0 0 1000px var(--sliderProgressColor);
 }
+
 /* ___________________________ CUSTOM SLIDER ___________________________*/
 
 /* ___________________________ SIDEBAR ___________________________*/
 
 
-span  {
- background-color: rgba(0, 255, 225, 0.832);
-}

@@ -143,8 +143,11 @@ window.addEventListener('load', function () {
         const namePar = document.createElement("p");
         namePar.innerText = name;
         sidebarElement.appendChild(namePar);
+        const sidebarSliderElement = document.createElement("div");
+        sidebarSliderElement.classList.add("sidebarSliderElement");
+        sidebarElement.appendChild(sidebarSliderElement);
         const span = document.createElement("span");
-        sidebarElement.appendChild(span);
+        sidebarSliderElement.appendChild(span);
         const slider = document.createElement("input"); // create canvas
         slider.type = 'range';
         // slider.classList.add("sliderClass")
