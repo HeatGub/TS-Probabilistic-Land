@@ -7,20 +7,23 @@
     --horizonHeight: 50%;
     --lightSourceColor: rgba(126, 230, 204, 0.861);
     --textInputWidth: 3rem;
+    --sliderHeight: 100px;
+    --sliderBackgroundColor: gray;
+    --sliderProgressColor: rgb(204, 255, 0);
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    /*overflow: hidden;*/ /* hides elements from the window's outside so the scrollbar is not needed */
+    overflow: hidden; /* hides elements from the window's outside so the scrollbar is not needed */
+    /* outline: none; */
 }
 
 #canvasContainer {
-    /* top: 49.99%; */
     top: 50%;
     left: 50%;
-    overflow: hidden;
+    /* overflow: hidden; */
     width: 100%;
     height: 100%; /* > 100? */
     position: absolute;
@@ -41,33 +44,20 @@
 
 .mountainCanvas{
     left: 0; /*keps mountain left after window resize*/
-    /* display: none; */
     position: absolute;
-    /* background: rgb(17, 2, 80); */
-    /* width: 100%;
-    height: 100%; */
+    /* display: none; */
     /* border: 3px solid rgb(5, 253, 237); */
-    /* z-index: 2; */
+    /* z-index: 1; */ /*in JS*/
     image-rendering: smooth;
-
 }
 
 .mountainShadowCanvas{
     left: 0; /*keps mountain left after window resize*/
     position: absolute;
     /* background: rgb(17, 2, 80); */
-    /* width: 100%; */
     /* border: 2px solid rgb(5, 253, 237); */
-    z-index: 0;
+    /* z-index: 1; */
     image-rendering: smooth;
-}
-
-.mountainMistCanvas{
-    position: absolute;
-    /* background: rgb(17, 2, 80); */
-    /* width: 100%; */
-    /* border: 2px solid rgb(5, 253, 237); */
-    z-index: 2;
 }
 
 #lightSourceCanvas{
@@ -101,7 +91,7 @@
 }
 
 .canvas {
-    overflow: hidden;
+    /* overflow: hidden; */
     width: 100%;
     height: 100%;
     position: absolute;
@@ -113,22 +103,8 @@
     /* display: none; */
 }
 
-.canvasNew {
-    overflow: hidden;
-    /* width: 100%; */
-    /* height: 100%; */
-    position: absolute;
-    border: 4px solid rgba(4, 98, 92, 0.305);
-    /* top: 50%; */
-    /* left: 50%; */
-    /* transform: translate(-50%, -50%); */
-    z-index: 4000;
-    /* display: none; */
-
-}
-
 .canvasShadows {
-    overflow: hidden;
+    /* overflow: hidden; */
     width: 100%;
     height: 100%;
     position: absolute;
@@ -136,10 +112,8 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-
     z-index: 10;
     /* display: none; */
-
 }
 
 .leafCanvas {
@@ -163,6 +137,7 @@
     background-color: rgba(0, 51, 255, 0.356);
     z-index: 100;
     overflow: scroll;
+    overflow-x: hidden;
 }
 
 #sidebar > * {
@@ -181,11 +156,6 @@
     margin: 5px;
     text-align: center;
     background-color: rgb(64, 255, 0);
-}
-
-input[type="range"]{
-    width: calc(95% - var(--textInputWidth));
-    /* margin-bottom: -20px; */
 }
 
 input[type="text"]{
@@ -212,4 +182,73 @@ input[type="text"]{
     left: 95%;
     z-index: 10000;
 }
+
+/* input[type="range"]{
+    width: calc(95% - var(--textInputWidth));   
+} */
+
+/* ___________________________ CUSTOM SLIDER ___________________________*/
+/* https://blog.logrocket.com/creating-custom-css-range-slider-javascript-upgrades/ */
+input[type="range"] {
+    /* removing default appearance */
+    -webkit-appearance: none;
+    appearance: none; 
+    /* creating a custom design */
+    width: calc(95% - var(--textInputWidth));
+    cursor: pointer;
+    outline: none;
+    /*  slider progress trick  */
+    overflow: hidden;
+    border-radius: calc(var(--sliderHeight) + 1px);
+}
+
+/* Track: webkit browsers */
+input[type="range"]::-webkit-slider-runnable-track {
+    /* height: 15px; */
+    height: var(--sliderHeight);
+    background: var(--sliderBackgroundColor);
+    border-radius: calc(var(--sliderHeight) + 1px);
+}
+  
+/* Track: Mozilla Firefox */
+input[type="range"]::-moz-range-track {
+    height: var(--sliderHeight);
+    background: var(--sliderBackgroundColor);
+    border-radius: calc(var(--sliderHeight) + 1px);
+}
+
+/* Thumb: webkit */
+input[type="range"]::-webkit-slider-thumb {
+    /* removing default appearance */
+    -webkit-appearance: none;
+    appearance: none; 
+    /* creating a custom design */
+    height: var(--sliderHeight);
+    width: var(--sliderHeight);
+    background-color: #ffff00;
+    border-radius: 50%;
+    border: 2px solid rgb(0, 255, 251);
+    /*  slider progress trick  */
+    /* box-shadow: -407px 0 0 400px var(--sliderProgressColor); */
+    /* 4000px below is just a high numer, higher than most of the screen widths*/
+    box-shadow: calc(-4000px - calc(var(--sliderHeight)/2)) 0 0 4000px var(--sliderProgressColor);
+}
+
+/* Thumb: Firefox */
+input[type="range"]::-moz-range-thumb {
+    height: var(--sliderHeight);
+    width: var(--sliderHeight);
+    background-color: #fff;
+    border-radius: 50%;
+    border: 1px solid #f50;
+    /*  slider progress trick  */
+    box-shadow: -407px 0 0 400px var(--sliderProgressColor);
+}
+/* ___________________________ CUSTOM SLIDER ___________________________*/
+
 /* ___________________________ SIDEBAR ___________________________*/
+
+
+span  {
+ background-color: rgba(0, 255, 225, 0.832);
+}

@@ -252,11 +252,11 @@ const CTGR_LEAF = document.getElementById('CTGR_LEAF') as HTMLElement
 const CTGR_MOUNTAINS = document.getElementById('CTGR_MOUNTAINS') as HTMLElement
 const CTGR_TREE = document.getElementById('CTGR_TREE') as HTMLElement
 
-CTGR_BRANCH.style.display = 'none'
+// CTGR_BRANCH.style.display = 'none'
 // CTGR_LEAF.style.display = 'none'
-CTGR_MOUNTAINS.style.display = 'none'
-CTGR_SHADOWS.style.display = 'none'
-CTGR_LIGHTSOURCE.style.display = 'none'
+// CTGR_MOUNTAINS.style.display = 'none'
+// CTGR_SHADOWS.style.display = 'none'
+// CTGR_LIGHTSOURCE.style.display = 'none'
 
 const canvasContainer = document.getElementById('canvasContainer') as HTMLBodyElement
 // let horizonHeight = Math.round(canvasContainer.offsetHeight*0.2 + Math.random()*canvasContainer.offsetHeight*0.6)
@@ -280,7 +280,9 @@ let treeShadowBlur = 0
 let shadowColorGlobal = randomRgba()
 
 let distanceScaling = Number((0.1 + Math.random()*0.8).toFixed(2))
-let mountainsAmount = Math.round(1 + Math.random()*9)
+// let mountainsAmount = Math.round(1 + Math.random()*9)
+let mountainsAmount = 1
+
 
 let mountainTrimCloser = Number((0.1 + Math.random()*0.8).toFixed(2)) // 0-1
 let mountainHeightMultiplier = Number((0.25 + Math.random()*0.25).toFixed(2)) // 0.1 - 1?
@@ -365,7 +367,7 @@ addSlider(CTGR_PERSPECTIVE , 'horizonHeight', 'sky (horizon) height' , '', Math.
         lightSourcePositionY = horizonHeight
     }
 })
-addSlider(CTGR_PERSPECTIVE, 'distanceScaling', 'distance scaling' , '',  0 , 1 ,  0.01, distanceScaling, () => {
+addSlider(CTGR_PERSPECTIVE, 'distanceScaling', 'distance scaling' , 'scale object size by its position',  0 , 1 ,  0.01, distanceScaling, () => {
     distanceScaling = valById('distanceScaling')
     redrawMountains()
 })
@@ -1259,7 +1261,7 @@ class Mountain {
         // this.canvas.height = this.highestPoint- this.lowestPoint
         this.canvas.height = this.targetHeight // ADD VAL FOR HIGHER MOUNTAIN
 
-        this.canvasShadow.style.top = this.canvasBottom + 'px'
+        this.canvasShadow.style.top = (this.canvasBottom-1) + 'px' //1px overlap
         this.canvasShadow.classList.add('mountainShadowCanvas')
         this.canvasShadow.height = this.targetHeight*shadowSpreadMountain * 2 // more area for blur
         this.canvasShadow.width = window.innerWidth
@@ -1335,7 +1337,7 @@ class Mountain {
     }
 
     drawMountain () {
-        this.ctx.lineWidth = 1
+        this.ctx.lineWidth = 0
         const gradient = this.ctx.createLinearGradient(this.canvasShadow.width/2, 0, this.canvasShadow.width/2, this.canvas.height)
         gradient.addColorStop(0, this.colorTop)
         gradient.addColorStop(1, this.colorBottom)
@@ -1444,7 +1446,6 @@ function drawMountains () {
         let colorBottom = blendRgbaColorsInProportions(colorTop, shadowColorGlobal, colorProportionBottom)
         colorBottom = rgbaSetAlpha1(colorBottom)
         const mountain = new Mountain(4,10, height + height*scaleByTheGroundPosition, bottom, colorTop, colorBottom)
-        // mountain //silence TS
         mountainsDrawn.push(mountain)
     }
 }
