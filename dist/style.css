@@ -143,6 +143,14 @@
     overflow: scroll;
     overflow-x: hidden;
     z-index: 1000000;
+    /* Hide scrollbar for IE, Edge and Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+#sidebar::-webkit-scrollbar {
+    display: none;
 }
 
 #sidebar > * {
@@ -161,26 +169,28 @@
 .sidebarElement{
     margin: 5px;
     text-align: center;
+    align-items: center;
     background-color: rgb(64, 255, 0);
+}
+
+.sidebarElement > * {
+    margin: auto; /*horizontal centering */
 }
 
 .sidebarSliderElement { /* slider with text input */
     width: 98%;
-    background-color: rgba(17, 150, 232, 0.96);
+    /* background-color: rgba(17, 150, 232, 0.96); */
 }
 
 span > * {
-    /* display: inline-block; */
     vertical-align: middle;
 }
-
 
 #closeSidebarButton {
     position: absolute;
     height: 30px;
     width: 15px;
     top: 50%;
-    /* left: 500px; */
     background-color: rgba(0, 51, 255, 0.419);
     z-index: 1000000;
 }
@@ -199,6 +209,11 @@ input[type="text"]{
     width: var(--textInputWidth);
 }
 
+input[type="color"]{
+    /* width: 100px; */
+    width: 98%; /* as sidebarSliderElement width */ 
+}
+
 /* ___________________________ CUSTOM SLIDER ___________________________*/
 /* https://blog.logrocket.com/creating-custom-css-range-slider-javascript-upgrades/ */
 input[type="range"] {
@@ -212,6 +227,9 @@ input[type="range"] {
     /*  slider progress trick  */
     overflow: hidden;
     border-radius: calc(var(--sliderHeight) + 1px);
+    background-color: none;
+    background: none; /* for firefox*/
+    height: var(--sliderHeight);
 }
 
 /* Track: webkit browsers */

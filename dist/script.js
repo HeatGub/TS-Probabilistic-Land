@@ -188,7 +188,7 @@ window.addEventListener('load', function () {
     // ____________________________________________________ FUNCTIONS ____________________________________________________
     // ____________________________________________________ SIDEBAR ____________________________________________________
     // ___________________ CONSTANT PARAMETERS___________________
-    const SIDEBAR_WIDTH = 250;
+    const SIDEBAR_WIDTH = 300;
     const branchLenRandomizer = 0.15; // keep it const
     const leavesGrowingOrder = 0.25;
     const growLimitingLeavesAmount = 10; // branches drawing will stop when this amount of growing leaves is reached
@@ -224,14 +224,12 @@ window.addEventListener('load', function () {
     // function cancelAnimation () {
     // }
     let mountainsDrawn = [];
-    const CTGR_PERSPECTIVE = document.getElementById('CTGR_PERSPECTIVE');
-    const CTGR_LIGHTSOURCE = document.getElementById('CTGR_LIGHTSOURCE');
+    const CTGR_WORLD = document.getElementById('CTGR_WORLD');
+    // const CTGR_LIGHTSOURCE = document.getElementById('CTGR_LIGHTSOURCE') as HTMLElement
     const CTGR_SHADOWS = document.getElementById('CTGR_SHADOWS');
-    const CTGR_BRANCH = document.getElementById('CTGR_BRANCH');
     const CTGR_LEAF = document.getElementById('CTGR_LEAF');
-    const CTGR_MOUNTAINS = document.getElementById('CTGR_MOUNTAINS');
+    // const CTGR_MOUNTAINS = document.getElementById('CTGR_MOUNTAINS') as HTMLElement
     const CTGR_TREE = document.getElementById('CTGR_TREE');
-    // CTGR_BRANCH.style.display = 'none'
     // CTGR_LEAF.style.display = 'none'
     // CTGR_MOUNTAINS.style.display = 'none'
     // CTGR_SHADOWS.style.display = 'none'
@@ -248,7 +246,7 @@ window.addEventListener('load', function () {
     let lightSourceSize = Math.round(50 + Math.random() * horizonHeight / 2);
     let mountainRangeWidthMultiplier = Number((Math.random() * 0.5).toFixed(2));
     let mountainRangeWidth = (window.innerHeight - horizonHeight) * 0.1 + (window.innerHeight - horizonHeight) * mountainRangeWidthMultiplier;
-    let shadowSpreadMultiplier = Number((1 + (Math.random() * 5)).toFixed(1)); // change that later?
+    let shadowSpreadMultiplier = Number((1 + (Math.random() * 2)).toFixed(1)); // change that later?
     let shadowHorizontalStretch = Number((1 + (Math.random() * 3)).toFixed(1));
     let shadowSpread = (lightSourcePositionY / horizonHeight) * shadowSpreadMultiplier + 0.15; // + for minimal shadow length
     let shadowSpreadMountain = (lightSourcePositionY) / horizonHeight * shadowSpreadMultiplier + 0.5;
@@ -311,8 +309,12 @@ window.addEventListener('load', function () {
     // ____________________________________________________ PARAMETERS ____________________________________________________
     // CREATE SLIDER AND PASS LISTERENS FUNCTION TO IT. FUNCTION FIRES ON SLIDER'S TEXT INPUT ALSO.
     // SOME VARIABLES ARE IN MANY EQUATIONS AFTERWARDS (like shadow length depends on lightsource position and that depends on horizon height)
-    // CTGR_PERSPECTIVE
-    addSlider(CTGR_PERSPECTIVE, 'horizonHeight', 'sky (horizon) height', '', Math.round(window.innerHeight * 0.1), Math.round(window.innerHeight * 0.9), 1, horizonHeight, () => {
+    // CTGR_WORLD
+    addColorInput(CTGR_WORLD, 'skyColor', 'Sky Color', '', rgbaToHex(skyColor), () => {
+        skyColor = hexToRgba(hexColorById('skyColor'), 1);
+        paintTheSky();
+    });
+    addSlider(CTGR_WORLD, 'horizonHeight', 'Sky Height', '', Math.round(window.innerHeight * 0.1), Math.round(window.innerHeight * 0.9), 1, horizonHeight, () => {
         horizonHeight = valById('horizonHeight');
         document.documentElement.style.cssText += "--horizonHeight: " + horizonHeight + "px;";
         // console.log(document.documentElement.style.cssText)
@@ -329,191 +331,182 @@ window.addEventListener('load', function () {
             lightSourcePositionY = horizonHeight;
         }
     });
-    addSlider(CTGR_PERSPECTIVE, 'distanceScaling', 'distance scaling', 'scale object size by its position', 0, 1, 0.01, distanceScaling, () => {
+    addColorInput(CTGR_WORLD, 'groundColor', 'Ground Color', '', rgbaToHex(groundColor), () => {
+        groundColor = hexToRgba(hexColorById('groundColor'), 1);
+        paintTheGround();
+    });
+    addSlider(CTGR_WORLD, 'distanceScaling', 'Distance Scaling', 'Scale object size by its position on the ground.', 0, 1, 0.01, distanceScaling, () => {
         distanceScaling = valById('distanceScaling');
         redrawMountains();
     });
-    // LIGHTSOURCE
-    addSlider(CTGR_LIGHTSOURCE, 'lightSourcePositionX', 'x coordinate', '', 0, window.innerWidth, 1, lightSourcePositionX, () => {
+    addColorInput(CTGR_WORLD, 'mountainColor', 'Mountain Color', '', rgbaToHex(mountainColor), () => {
+        mountainColor = hexToRgba(hexColorById('mountainColor'), 1);
+        recolorMountains();
+    });
+    addSlider(CTGR_WORLD, 'mountainTrimCloser', 'Trim Closer Mountains', '', 0, 1, 0.01, mountainTrimCloser, () => {
+        mountainTrimCloser = valById('mountainTrimCloser');
+        redrawMountains();
+    });
+    addSlider(CTGR_WORLD, 'mountainRangeWidthMultiplier', 'Mountain Range Width', 'Mountain range width as a part of ground height.', 0.01, 1, 0.01, mountainRangeWidthMultiplier, () => {
+        mountainRangeWidthMultiplier = valById('mountainRangeWidthMultiplier');
+        mountainRangeWidth = (window.innerHeight - horizonHeight) * mountainRangeWidthMultiplier;
+        redrawMountains();
+    });
+    addSlider(CTGR_WORLD, 'mountainsAmount', 'Mountains Amount', 'Amount of mountains in the mountain range.', 0, 100, 1, mountainsAmount, () => {
+        mountainsAmount = valById('mountainsAmount');
+        redrawMountains();
+    });
+    addSlider(CTGR_WORLD, 'mountainHeightMultiplier', 'Mountain Height', '', 0, 1, 0.01, mountainHeightMultiplier, () => {
+        mountainHeightMultiplier = valById('mountainHeightMultiplier');
+        redrawMountains();
+    });
+    // LIGHT AND SHADOW
+    addColorInput(CTGR_SHADOWS, 'lightSourceColor', 'Lightsource Color', '', rgbaToHex(lightSourceColor), () => {
+        lightSourceColor = hexToRgba(hexColorById('lightSourceColor'), 1);
+        updateLightSource();
+    });
+    addSlider(CTGR_SHADOWS, 'lightSourcePositionX', 'Lightsource X', '', 0, window.innerWidth, 1, lightSourcePositionX, () => {
         lightSourcePositionX = valById('lightSourcePositionX');
         updateLightSource();
         recolorMountains();
     });
-    addSlider(CTGR_LIGHTSOURCE, 'lightSourcePositionY', 'y coordinate', '', 0, horizonHeight, 1, lightSourcePositionY, () => {
+    addSlider(CTGR_SHADOWS, 'lightSourcePositionY', 'Lightsource Y', '', 0, horizonHeight, 1, lightSourcePositionY, () => {
         lightSourcePositionY = valById('lightSourcePositionY');
         updateLightSource();
         recalculateShadowParameters();
         recolorMountains();
     });
-    addSlider(CTGR_LIGHTSOURCE, 'lightSourceSize', 'size', '', 0, Math.round(window.innerHeight / 2), 1, lightSourceSize, () => {
+    addSlider(CTGR_SHADOWS, 'lightSourceSize', 'Lightsource Size', '', 0, Math.round(window.innerHeight / 2), 1, lightSourceSize, () => {
         lightSourceSize = valById('lightSourceSize');
         updateLightSource();
     });
-    //SHADOW
-    addSlider(CTGR_SHADOWS, 'shadowSpreadMultiplier', 'vertical stretch', '', 0, 10, 0.1, shadowSpreadMultiplier, () => {
+    addColorInput(CTGR_SHADOWS, 'shadowColor', 'Shadow Color', '', rgbaToHex(shadowColorGlobal), () => {
+        shadowColorGlobal = hexToRgba(hexColorById('shadowColor'), 1); // alpha =1
+        recolorMountains();
+    });
+    addSlider(CTGR_SHADOWS, 'shadowSpreadMultiplier', 'Vertical Shadow Stretch', '', 0, 5, 0.1, shadowSpreadMultiplier, () => {
         shadowSpreadMultiplier = valById('shadowSpreadMultiplier');
         recalculateShadowParameters();
         recolorMountains();
     });
-    addSlider(CTGR_SHADOWS, 'shadowHorizontalStretch', 'horizontal stretch', '', 0.1, 5, 0.1, shadowHorizontalStretch, () => {
+    addSlider(CTGR_SHADOWS, 'shadowHorizontalStretch', 'Horizontal Shadow Stretch', '', 0.1, 5, 0.1, shadowHorizontalStretch, () => {
         shadowHorizontalStretch = valById('shadowHorizontalStretch');
         recalculateShadowParameters();
         recolorMountains();
     });
-    addSlider(CTGR_SHADOWS, 'treeShadowBlur', 'tree shadow blur', '', 0, 100, 0.1, treeShadowBlur, () => {
+    addSlider(CTGR_SHADOWS, 'treeShadowBlur', 'Tree Shadow Blur', 'Values higher than 0 will slow down the animation!!', 0, 100, 0.1, treeShadowBlur, () => {
         treeShadowBlur = valById('treeShadowBlur');
     });
-    addColorInput(CTGR_SHADOWS, 'shadowColor', 'shadow color', '', rgbaToHex(shadowColorGlobal), () => {
-        shadowColorGlobal = hexToRgba(hexColorById('shadowColor'), 1); // alpha =1
-        recolorMountains();
+    addSlider(CTGR_SHADOWS, 'treeShadowBlendingProportion', 'Tree Shadow Blending', 'Blend tree shadow color with mist color.', 0, 1, 0.01, treeShadowBlendingProportion, () => {
+        treeShadowBlendingProportion = valById('treeShadowBlendingProportion');
     });
-    // MOUNTAINS
-    addSlider(CTGR_MOUNTAINS, 'mountainRangeWidthMultiplier', 'width', 'as a part of ground height', 0.01, 1, 0.01, mountainRangeWidthMultiplier, () => {
-        mountainRangeWidthMultiplier = valById('mountainRangeWidthMultiplier');
-        mountainRangeWidth = (window.innerHeight - horizonHeight) * mountainRangeWidthMultiplier;
-        redrawMountains();
-    });
-    addSlider(CTGR_MOUNTAINS, 'mountainsAmount', 'amount', '', 0, 100, 1, mountainsAmount, () => {
-        mountainsAmount = valById('mountainsAmount');
-        redrawMountains();
-    });
-    addSlider(CTGR_MOUNTAINS, 'mountainTrimCloser', 'trim closer', '', 0, 1, 0.01, mountainTrimCloser, () => {
-        mountainTrimCloser = valById('mountainTrimCloser');
-        redrawMountains();
-    });
-    addSlider(CTGR_MOUNTAINS, 'mountainHeightMultiplier', 'height', '', 0, 1, 0.01, mountainHeightMultiplier, () => {
-        mountainHeightMultiplier = valById('mountainHeightMultiplier');
-        redrawMountains();
-    });
-    // BRANCH
-    addSlider(CTGR_BRANCH, 'trunkLen', 'trunk length', '', 1, 200, 1, trunkLen, () => {
-        trunkLen = valById('trunkLen');
-    });
-    addSlider(CTGR_BRANCH, 'trunkWidthAsPartOfLen', 'trunk width', 'as part of its length', 0.01, 1, 0.01, trunkWidthAsPartOfLen, () => {
-        trunkWidthAsPartOfLen = valById('trunkWidthAsPartOfLen');
-    });
-    addSlider(CTGR_BRANCH, 'initialsegmentingLen', 'segment length', 'as a part of trunk length', 0.01, 1, 0.01, initialsegmentingLen, () => {
-        initialsegmentingLen = valById('trunkLen');
-    });
-    addSlider(CTGR_BRANCH, 'lenMultiplier', 'child length', 'part of parent branch length', 0.1, 1, 0.01, lenMultiplier, () => {
-        lenMultiplier = valById('lenMultiplier');
-    });
-    addSlider(CTGR_BRANCH, 'widthMultiplier', 'child width', 'part of parent branch width', 0.1, 1, 0.01, widthMultiplier, () => {
-        widthMultiplier = valById('widthMultiplier');
-    });
-    addSlider(CTGR_BRANCH, 'rebranchingAngle', 'rebranching angle', 'angle between parent and child branch (it\'s randomized arterwards) ', 1, 45, 0.1, rebranchingAngle, () => {
-        rebranchingAngle = valById('rebranchingAngle');
-    });
-    addSlider(CTGR_BRANCH, 'branchingProbabilityBooster', 'branching booster', '', 0, 1, 0.01, branchingProbabilityBooster, () => {
-        branchingProbabilityBooster = valById('branchingProbabilityBooster');
-    });
-    addSlider(CTGR_BRANCH, 'occasionalBranchesLimit', 'occasional branches limit', '', 0, 4, 1, occasionalBranchesLimit, () => {
-        occasionalBranchesLimit = valById('occasionalBranchesLimit');
-    });
-    addSlider(CTGR_BRANCH, 'levelShiftRangeAddition', 'level shift addition', 'level shifts happen with occasional branching - when level of branch is not parent level +1', 0, 4, 1, levelShiftRangeAddition, () => {
-        levelShiftRangeAddition = valById('levelShiftRangeAddition');
-    });
-    // TREE
-    addSlider(CTGR_TREE, 'maxLevelTree', 'max level', 'title', 1, 16, 1, maxLevelTree, () => {
-        maxLevelTree = valById('maxLevelTree');
-    }); // min > 0!
-    addColorInput(CTGR_TREE, 'colorTreeInitialGlobal', 'trunk color', '', rgbaToHex(colorTreeInitialGlobal), () => {
-        colorTreeInitialGlobal = hexToRgba(hexColorById('colorTreeInitialGlobal'), 1);
-    });
-    addColorInput(CTGR_TREE, 'colorTreeFinalGlobal', 'top color', '', rgbaToHex(colorTreeFinalGlobal), () => {
-        colorTreeFinalGlobal = hexToRgba(hexColorById('colorTreeFinalGlobal'), 1);
-    });
-    // LEAF
-    addSlider(CTGR_LEAF, 'axis1WidthRatio', 'axis 1 width', 'closer to petiole', 0, 2, 0.01, axis1WidthRatio, () => {
-        axis1WidthRatio = valById('axis1WidthRatio');
-    });
-    addSlider(CTGR_LEAF, 'axis2WidthRatio', 'axis 2 width', 'further to petiole', 0, 2, 0.01, axis2WidthRatio, () => {
-        axis2WidthRatio = valById('axis2WidthRatio');
-    });
-    addSlider(CTGR_LEAF, 'axis1PositionAsLenRatio', 'axis 1 position', 'as a part of leaf length. Negative values to make leaf blade growing back', -0.5, 1, 0.01, axis1PositionAsLenRatio, () => {
-        axis1PositionAsLenRatio = valById('axis1PositionAsLenRatio');
-    });
-    addSlider(CTGR_LEAF, 'axis2PositionAsLenRatio', 'axis 2 position', 'as a part of leaf length', 0.5, 1.5, 0.01, axis2PositionAsLenRatio, () => {
-        axis2PositionAsLenRatio = valById('axis2PositionAsLenRatio');
-    });
-    addSlider(CTGR_LEAF, 'petioleLenRatio', 'petiole lenght', 'as a part of leaf length', 0, 1, 0.01, petioleLenRatio, () => {
-        petioleLenRatio = valById('petioleLenRatio');
-    });
-    addSlider(CTGR_LEAF, 'globalLeafProbability', 'leaf probability', 'at each leaf node 3 leaves have the same chance to appear. It is this value.', 0, 1, 0.01, globalLeafProbability, () => {
-        globalLeafProbability = valById('globalLeafProbability');
-    });
-    addSlider(CTGR_LEAF, 'leafyLevels', 'leafy levels', '', 0, 10, 1, leafyLevels, () => {
-        leafyLevels = valById('leafyLevels');
-    });
-    addSlider(CTGR_LEAF, 'leafLenScaling', 'length scaling', '', 0.01, 3, 0.01, leafLenScaling, () => {
-        leafLenScaling = valById('leafLenScaling');
-    });
-    addSlider(CTGR_LEAF, 'leafDistanceMultiplier', 'distancing', 'leaves spawn at segments, so this parameter works only if there is a segment to spawn a leaf on', 0.1, 2, 0.1, leafDistanceMultiplier, () => {
-        leafDistanceMultiplier = valById('leafDistanceMultiplier');
-    });
-    addSlider(CTGR_LEAF, 'leafLineWidth', 'leaf line width', 'as a part of leaf length', 0.001, 0.1, 0.001, leafLineWidth, () => {
-        leafLineWidth = valById('leafLineWidth');
-    });
-    addSlider(CTGR_LEAF, 'leafMaxStageGlobal', 'amount of growth stages', '', 2, 200, 1, leafMaxStageGlobal, () => {
-        leafMaxStageGlobal = valById('leafMaxStageGlobal');
-    });
-    addSlider(CTGR_LEAF, 'whileLoopRetriesEachFrameLeaves', 'drawing pack', 'drawing attepmts in each frame', 1, 1000, 1, whileLoopRetriesEachFrameLeaves, () => {
-        whileLoopRetriesEachFrameLeaves = valById('whileLoopRetriesEachFrameLeaves');
-    });
-    addColorInput(CTGR_LEAF, 'colorLeaf', 'leaf color', 'base color', rgbaToHex(colorLeaf), () => {
-        colorLeaf = hexToRgba(hexColorById('colorLeaf'), 1);
-    });
-    addSlider(CTGR_LEAF, 'leafLineDarkness', 'leaf line darkness', 'negative values add brightness', -1, 1, 0.01, leafLineDarkness, () => {
-        leafLineDarkness = valById('leafLineDarkness');
-    });
-    addSlider(CTGR_LEAF, 'leafBrightnessRandomizer', 'color brightness randomizer', 'in rgb scale', 0, 255, 1, leafBrightnessRandomizer, () => {
-        leafBrightnessRandomizer = valById('leafBrightnessRandomizer');
-    });
-    addSlider(CTGR_LEAF, 'leafColorRandomizerR', 'red randomizer', 'randomizes r component of rgb color (if its value < 255)', 0, 255, 1, leafColorRandomizerR, () => {
-        leafColorRandomizerR = valById('leafColorRandomizerR');
-    });
-    addSlider(CTGR_LEAF, 'leafColorRandomizerG', 'green randomizer', 'randomizes g component of rgb color (if its value < 255)', 0, 255, 1, leafColorRandomizerG, () => {
-        leafColorRandomizerG = valById('leafColorRandomizerG');
-    });
-    addSlider(CTGR_LEAF, 'leafColorRandomizerB', 'blue randomizer', 'randomizes b component of rgb color (if its value < 255)', 0, 255, 1, leafColorRandomizerB, () => {
-        leafColorRandomizerB = valById('leafColorRandomizerB');
-    });
-    addSlider(CTGR_LEAF, 'leafFolding', 'leaf folding', 'folding leaf by its angle and random number', 0, 0.25, 0.01, leafFolding, () => {
-        leafFolding = valById('leafFolding');
-    });
-    addSlider(CTGR_LEAF, 'randomizeLeafSize', 'size randomization', 'randomize leaf size', 0, 1, 0.01, randomizeLeafSize, () => {
-        randomizeLeafSize = valById('randomizeLeafSize');
-    });
-    // COLORS?
-    addColorInput(CTGR_PERSPECTIVE, 'skyColor', 'sky color', '', rgbaToHex(skyColor), () => {
-        skyColor = hexToRgba(hexColorById('skyColor'), 1);
-        paintTheSky();
-    });
-    addColorInput(CTGR_PERSPECTIVE, 'mistColor', 'mist color', '', rgbaToHex(mistColor), () => {
+    addColorInput(CTGR_SHADOWS, 'mistColor', 'Mist Color', '', rgbaToHex(mistColor), () => {
         mistColor = hexToRgba(hexColorById('mistColor'), 1);
         paintTheSky();
         paintTheGround();
         recolorMountains();
     });
-    addColorInput(CTGR_PERSPECTIVE, 'mountainColor', 'mountain color', '', rgbaToHex(mountainColor), () => {
-        mountainColor = hexToRgba(hexColorById('mountainColor'), 1);
-        recolorMountains();
-    });
-    addColorInput(CTGR_PERSPECTIVE, 'groundColor', 'ground color', '', rgbaToHex(groundColor), () => {
-        groundColor = hexToRgba(hexColorById('groundColor'), 1);
-        paintTheGround();
-    });
-    addColorInput(CTGR_PERSPECTIVE, 'lightSourceColor', 'lightsource color', '', rgbaToHex(lightSourceColor), () => {
-        lightSourceColor = hexToRgba(hexColorById('lightSourceColor'), 1);
-        updateLightSource();
-    });
-    addSlider(CTGR_PERSPECTIVE, 'treeMistBlendingProportion', 'tree mist blending', 'blend tree color with mist color', 0, 1, 0.01, treeMistBlendingProportion, () => {
+    addSlider(CTGR_SHADOWS, 'treeMistBlendingProportion', 'Tree Mist Blending', 'Blend tree color with mist color.', 0, 1, 0.01, treeMistBlendingProportion, () => {
         treeMistBlendingProportion = valById('treeMistBlendingProportion');
     });
-    addSlider(CTGR_PERSPECTIVE, 'treeShadowBlendingProportion', 'tree shadow blending', 'blend tree shadow color with mist color', 0, 1, 0.01, treeShadowBlendingProportion, () => {
-        treeShadowBlendingProportion = valById('treeShadowBlendingProportion');
+    // TREE
+    addColorInput(CTGR_TREE, 'colorTreeFinalGlobal', 'Twigs Color', '', rgbaToHex(colorTreeFinalGlobal), () => {
+        colorTreeFinalGlobal = hexToRgba(hexColorById('colorTreeFinalGlobal'), 1);
     });
-    // let groundColor = randomRgba()
+    addColorInput(CTGR_TREE, 'colorTreeInitialGlobal', 'Trunk Color', '', rgbaToHex(colorTreeInitialGlobal), () => {
+        colorTreeInitialGlobal = hexToRgba(hexColorById('colorTreeInitialGlobal'), 1);
+    });
+    addSlider(CTGR_TREE, 'maxLevelTree', 'Branch Max Level', 'At normal rebranching child branch gains 1 level. Level 0 is trunk.', 1, 16, 1, maxLevelTree, () => {
+        maxLevelTree = valById('maxLevelTree');
+    }); // min > 0!
+    addSlider(CTGR_TREE, 'trunkLen', 'Trunk Length', '', 1, 200, 1, trunkLen, () => {
+        trunkLen = valById('trunkLen');
+    });
+    addSlider(CTGR_TREE, 'trunkWidthAsPartOfLen', 'Trunk Width', 'As a part of its length.', 0.01, 1, 0.01, trunkWidthAsPartOfLen, () => {
+        trunkWidthAsPartOfLen = valById('trunkWidthAsPartOfLen');
+    });
+    addSlider(CTGR_TREE, 'initialsegmentingLen', 'Branch Segmenting Length', 'As a part of trunk length. Every branch consists of segments, and every segment will check if a minimal distance for leaf spawning was reached.', 0.01, 1, 0.01, initialsegmentingLen, () => {
+        initialsegmentingLen = valById('trunkLen');
+    });
+    addSlider(CTGR_TREE, 'lenMultiplier', 'Child Branch Length', 'As a part of parent branch length.', 0.1, 1, 0.01, lenMultiplier, () => {
+        lenMultiplier = valById('lenMultiplier');
+    });
+    addSlider(CTGR_TREE, 'widthMultiplier', 'Child Branch Width', 'As a part of parent branch width.', 0.1, 1, 0.01, widthMultiplier, () => {
+        widthMultiplier = valById('widthMultiplier');
+    });
+    addSlider(CTGR_TREE, 'rebranchingAngle', 'Rebranching Angle', 'Angle between parent and child branch (it\'s randomized arterwards). ', 1, 45, 0.1, rebranchingAngle, () => {
+        rebranchingAngle = valById('rebranchingAngle');
+    });
+    addSlider(CTGR_TREE, 'branchingProbabilityBooster', 'Branching Booster', 'Increases Rebranching Probability.', 0, 1, 0.01, branchingProbabilityBooster, () => {
+        branchingProbabilityBooster = valById('branchingProbabilityBooster');
+    });
+    addSlider(CTGR_TREE, 'occasionalBranchesLimit', 'Occasional Branches Limit', 'Occasional branches appear at the middle segments of parent branch and have lower rebranching angle.', 0, 4, 1, occasionalBranchesLimit, () => {
+        occasionalBranchesLimit = valById('occasionalBranchesLimit');
+    });
+    addSlider(CTGR_TREE, 'levelShiftRangeAddition', 'Level Shift Addition', 'Level shifts happen with occasional branching - when level of branch is not parent level +1, but its level is in range from parent level +1 to parent level + 1 + this value.', 0, 4, 1, levelShiftRangeAddition, () => {
+        levelShiftRangeAddition = valById('levelShiftRangeAddition');
+    });
+    addColorInput(CTGR_TREE, 'colorLeaf', 'Leaf Color', 'Base color.', rgbaToHex(colorLeaf), () => {
+        colorLeaf = hexToRgba(hexColorById('colorLeaf'), 1);
+    });
+    addSlider(CTGR_TREE, 'leafyLevels', 'Leafy Levels', 'Every leafy level will have its probability for leaf spawning. This probability is lowest for the lowest leafy level and highest for the highest leafy level. It changes linearly.', 0, 10, 1, leafyLevels, () => {
+        leafyLevels = valById('leafyLevels');
+    });
+    addSlider(CTGR_TREE, 'leafDistanceMultiplier', 'Distancing', 'Distance between leaves. Leaves spawn at segments, so this parameter works only if there is a segment to spawn a leaf on.', 0.1, 2, 0.1, leafDistanceMultiplier, () => {
+        leafDistanceMultiplier = valById('leafDistanceMultiplier');
+    });
+    addSlider(CTGR_TREE, 'globalLeafProbability', 'Leaf Probability', 'At each leaf node 3 leaves have the same chance to appear. It is this value.', 0, 1, 0.01, globalLeafProbability, () => {
+        globalLeafProbability = valById('globalLeafProbability');
+    });
+    addSlider(CTGR_TREE, 'whileLoopRetriesEachFrameLeaves', 'Leaves Animation Pack', 'Leaf draw attepmts in each frame. Lower value gives more stable but slower animation.', 1, 1000, 1, whileLoopRetriesEachFrameLeaves, () => {
+        whileLoopRetriesEachFrameLeaves = valById('whileLoopRetriesEachFrameLeaves');
+    });
+    // LEAF
+    addSlider(CTGR_LEAF, 'leafLenScaling', 'Length Scaling', 'Scales leaf size.', 0.01, 3, 0.01, leafLenScaling, () => {
+        leafLenScaling = valById('leafLenScaling');
+    });
+    addSlider(CTGR_LEAF, 'leafLineWidth', 'Leaf Line Width', 'As a part of leaf length.', 0.001, 0.1, 0.001, leafLineWidth, () => {
+        leafLineWidth = valById('leafLineWidth');
+    });
+    addSlider(CTGR_LEAF, 'petioleLenRatio', 'Petiole Lenght', 'As a part of leaf length.', 0, 1, 0.01, petioleLenRatio, () => {
+        petioleLenRatio = valById('petioleLenRatio');
+    });
+    addSlider(CTGR_LEAF, 'leafMaxStageGlobal', 'Growth Stages', 'Amount of leaf growth stages.', 2, 200, 1, leafMaxStageGlobal, () => {
+        leafMaxStageGlobal = valById('leafMaxStageGlobal');
+    });
+    addSlider(CTGR_LEAF, 'leafFolding', 'Leaf Folding', 'Folding leaf by its angle and random number.', 0, 0.25, 0.01, leafFolding, () => {
+        leafFolding = valById('leafFolding');
+    });
+    addSlider(CTGR_LEAF, 'randomizeLeafSize', 'Size randomization', 'Randomize leaf size.', 0, 1, 0.01, randomizeLeafSize, () => {
+        randomizeLeafSize = valById('randomizeLeafSize');
+    });
+    addSlider(CTGR_LEAF, 'axis1WidthRatio', 'Axis 1 Width', 'Axis closer to petiole.', 0, 2, 0.01, axis1WidthRatio, () => {
+        axis1WidthRatio = valById('axis1WidthRatio');
+    });
+    addSlider(CTGR_LEAF, 'axis2WidthRatio', 'Axis 2 Width', 'Axis further to petiole.', 0, 2, 0.01, axis2WidthRatio, () => {
+        axis2WidthRatio = valById('axis2WidthRatio');
+    });
+    addSlider(CTGR_LEAF, 'axis1PositionAsLenRatio', 'Axis 1 Position', 'As a part of leaf length. Negative values to make leaf blade growing back', -0.5, 1, 0.01, axis1PositionAsLenRatio, () => {
+        axis1PositionAsLenRatio = valById('axis1PositionAsLenRatio');
+    });
+    addSlider(CTGR_LEAF, 'axis2PositionAsLenRatio', 'Axis 2 Position', 'As a part of leaf length.', 0.5, 1.5, 0.01, axis2PositionAsLenRatio, () => {
+        axis2PositionAsLenRatio = valById('axis2PositionAsLenRatio');
+    });
+    addSlider(CTGR_LEAF, 'leafLineDarkness', 'Leaf Line Darkness', 'Negative values add brightness.', -1, 1, 0.01, leafLineDarkness, () => {
+        leafLineDarkness = valById('leafLineDarkness');
+    });
+    addSlider(CTGR_LEAF, 'leafBrightnessRandomizer', 'Color Brightness Randomizer', 'In rgb scale.', 0, 255, 1, leafBrightnessRandomizer, () => {
+        leafBrightnessRandomizer = valById('leafBrightnessRandomizer');
+    });
+    addSlider(CTGR_LEAF, 'leafColorRandomizerR', 'Red Randomizer', 'Randomizes r component of rgb color (if its value < 255).', 0, 255, 1, leafColorRandomizerR, () => {
+        leafColorRandomizerR = valById('leafColorRandomizerR');
+    });
+    addSlider(CTGR_LEAF, 'leafColorRandomizerG', 'Green Randomizer', 'Randomizes g component of rgb color (if its value < 255).', 0, 255, 1, leafColorRandomizerG, () => {
+        leafColorRandomizerG = valById('leafColorRandomizerG');
+    });
+    addSlider(CTGR_LEAF, 'leafColorRandomizerB', 'Blue Randomizer', 'Randomizes b component of rgb color (if its value < 255).', 0, 255, 1, leafColorRandomizerB, () => {
+        leafColorRandomizerB = valById('leafColorRandomizerB');
+    });
     // ____________________________________________________ PARAMETERS ____________________________________________________
     // ____________________________________________________ SIDEBAR ____________________________________________________
     // ____________________________________________________ BRANCH ____________________________________________________
@@ -748,7 +741,7 @@ window.addEventListener('load', function () {
         ctx = canvas.getContext('2d', { willReadFrequently: true }), // {willReadFrequently: true} for resizing
         canvasShadows = canvasContainer.appendChild(document.createElement("canvas")), // create canvas for tree shadow
         ctxShadows = canvasShadows.getContext('2d', { willReadFrequently: true }), averageLeafSize = trunkLen / 12, minimalDistanceBetweenLeaves = averageLeafSize * leafLenScaling * leafDistanceMultiplier, // doesnt count the distance between leaves of different branches
-        maxLevel = maxLevelTree, initialsegmentingLen = trunkLen * valById('initialsegmentingLen'), redPerLevel = 0, greenPerLevel = 0, bluePerLevel = 0) {
+        maxLevel = maxLevelTree, initialsegmentingLen = trunkLen * valById('initialsegmentingLen'), redPerLevel = 0, greenPerLevel = 0, bluePerLevel = 0, branchesAmount = 0) {
             this.initX = initX;
             this.initY = initY;
             this.trunkLen = trunkLen;
@@ -774,6 +767,7 @@ window.addEventListener('load', function () {
             this.redPerLevel = redPerLevel;
             this.greenPerLevel = greenPerLevel;
             this.bluePerLevel = bluePerLevel;
+            this.branchesAmount = branchesAmount;
             this.redPerLevel = (rgbaStrToObj(this.colorTreeFinal).r - rgbaStrToObj(this.colorTreeInitial).r) / maxLevel,
                 this.greenPerLevel = (rgbaStrToObj(this.colorTreeFinal).g - rgbaStrToObj(this.colorTreeInitial).g) / maxLevel,
                 this.bluePerLevel = (rgbaStrToObj(this.colorTreeFinal).b - rgbaStrToObj(this.colorTreeInitial).b) / maxLevel,
@@ -792,6 +786,7 @@ window.addEventListener('load', function () {
             const root = new Root(this);
             const startTime = Date.now();
             this.allBranches[0] = [new Branch(root, this.initX, this.initY, this.trunkLen, this.initAngle, this.trunkWidth)]; //save trunk as 0lvl branch
+            this.branchesAmount++;
             // append array for every level ahead. Needed for levelShifted branches
             for (let i = 0; i < this.maxLevel; i++) {
                 this.allBranches.push([]); //
@@ -807,13 +802,15 @@ window.addEventListener('load', function () {
                 // this.allBranches.push([]) // push empty array to fill it by the forEach loop
                 this.allBranches[currLvl].forEach(element => {
                     // MAKE BRANCHES IF
-                    if (element.yF < (this.initY - this.trunkLen / 10)) { // IF PARENT'S END IS NOT ON THE GROUND LEVEL
+                    if (element.yF < (this.initY - this.trunkLen / 15)) { // IF PARENT'S END IS NOT ON THE GROUND LEVEL
                         // branchingProbabilityByLevel check
                         if (Math.random() < branchingProbabilityByLevel) {
                             this.allBranches[currLvl + 1].push(element.makeChildBranch(rebranchingAngle + Math.random() * rebranchingAngle, 0));
+                            this.branchesAmount++;
                         }
                         if (Math.random() < branchingProbabilityByLevel) {
                             this.allBranches[currLvl + 1].push(element.makeChildBranch(-rebranchingAngle - Math.random() * rebranchingAngle, 0));
+                            this.branchesAmount++;
                         }
                         // OCCASIONAL BRANCHING WITH LEVEL SHIFT (children level is not parent level + 1)
                         // compare occasionalBranches to occasionalBranchesLimit  
@@ -824,13 +821,14 @@ window.addEventListener('load', function () {
                             if (element.level + 1 + levelShift < this.maxLevel) {
                                 const occasionalBranch = element.makeGrandChildBranch(-rebranchingAngle + Math.random() * 2 * rebranchingAngle, levelShift);
                                 this.allBranches[currLvl + 1 + levelShift].push(occasionalBranch);
+                                this.branchesAmount++;
                                 // console.log('occasional, lvl =' + (currLvl+levelShift))
                             }
                         }
                     }
                 });
             }
-            console.log('Tree constructed in ' + (Date.now() - startTime) + ' ms');
+            console.log('Tree constructed in ' + (Date.now() - startTime) + ' ms, ' + this.branchesAmount + ' branches');
         } // constructor end
         removeTreeCanvases() {
             this.canvas.remove();
@@ -1057,33 +1055,53 @@ window.addEventListener('load', function () {
             this.drawLeafShadow();
         }
         drawLeafShadow() {
-            // clear whole previous frame
-            this.ctxShadow.clearRect(0, 0, this.canvasShadow.width, this.canvasShadow.height);
-            let blur = (this.tree.initY - this.y0) / this.tree.canvas.height * treeShadowBlur;
-            this.ctxShadow.filter = 'blur(' + blur + 'px)';
-            // petiole's shadow width
-            this.ctxShadow.lineWidth = this.lineWidth + (this.tree.initY - this.y0LeafShadow) * -shadowSpread / 1000 + Math.abs((this.tree.initX - this.x0LeafShadow) * shadowSpread / 1000);
-            this.ctxShadow.beginPath();
-            this.ctxShadow.strokeStyle = this.tree.shadowColorTree;
-            //MAIN NERVE
-            this.ctxShadow.moveTo(this.x0relShadow, this.y0relShadow);
-            this.ctxShadow.lineTo(this.shadowStages[this.currentStage].xF, this.shadowStages[this.currentStage].yF);
-            this.ctxShadow.stroke();
-            this.ctxShadow.closePath();
-            this.ctxShadow.lineWidth = this.lineWidth; // thinner line
-            // BEZIER CURVES FOR BOTH SIDES OF A LEAF
-            this.ctxShadow.beginPath();
-            this.ctxShadow.moveTo(this.shadowStages[this.currentStage].xFPetiole, this.shadowStages[this.currentStage].yFPetiole);
-            // right side of a leaf
-            this.ctxShadow.bezierCurveTo(this.shadowStages[this.currentStage].xR1, this.shadowStages[this.currentStage].yR1, this.shadowStages[this.currentStage].xR2, this.shadowStages[this.currentStage].yR2, this.shadowStages[this.currentStage].xF, this.shadowStages[this.currentStage].yF);
-            this.ctxShadow.moveTo(this.shadowStages[this.currentStage].xFPetiole, this.shadowStages[this.currentStage].yFPetiole);
-            // left side of a leaf
-            this.ctxShadow.bezierCurveTo(this.shadowStages[this.currentStage].xL1, this.shadowStages[this.currentStage].yL1, this.shadowStages[this.currentStage].xL2, this.shadowStages[this.currentStage].yL2, this.shadowStages[this.currentStage].xF, this.shadowStages[this.currentStage].yF);
-            this.ctxShadow.closePath();
-            // this.ctxShadow.fillStyle = shadowColor
-            this.ctxShadow.fillStyle = this.tree.shadowColorTree;
-            this.ctxShadow.fill();
-            this.ctxShadow.stroke();
+            if (this.checkIfShadowOutsideDrawingWindow() === false) {
+                // clear whole previous frame
+                this.ctxShadow.clearRect(0, 0, this.canvasShadow.width, this.canvasShadow.height);
+                let blur = (this.tree.initY - this.y0) / this.tree.canvas.height * treeShadowBlur;
+                this.ctxShadow.filter = 'blur(' + blur + 'px)';
+                // petiole's shadow width
+                this.ctxShadow.lineWidth = this.lineWidth + (this.tree.initY - this.y0LeafShadow) * -shadowSpread / 1000 + Math.abs((this.tree.initX - this.x0LeafShadow) * shadowSpread / 1000);
+                this.ctxShadow.beginPath();
+                this.ctxShadow.strokeStyle = this.tree.shadowColorTree;
+                //MAIN NERVE
+                this.ctxShadow.moveTo(this.x0relShadow, this.y0relShadow);
+                this.ctxShadow.lineTo(this.shadowStages[this.currentStage].xF, this.shadowStages[this.currentStage].yF);
+                this.ctxShadow.stroke();
+                this.ctxShadow.closePath();
+                this.ctxShadow.lineWidth = this.lineWidth; // thinner line
+                // BEZIER CURVES FOR BOTH SIDES OF A LEAF
+                this.ctxShadow.beginPath();
+                this.ctxShadow.moveTo(this.shadowStages[this.currentStage].xFPetiole, this.shadowStages[this.currentStage].yFPetiole);
+                // right side of a leaf
+                this.ctxShadow.bezierCurveTo(this.shadowStages[this.currentStage].xR1, this.shadowStages[this.currentStage].yR1, this.shadowStages[this.currentStage].xR2, this.shadowStages[this.currentStage].yR2, this.shadowStages[this.currentStage].xF, this.shadowStages[this.currentStage].yF);
+                this.ctxShadow.moveTo(this.shadowStages[this.currentStage].xFPetiole, this.shadowStages[this.currentStage].yFPetiole);
+                // left side of a leaf
+                this.ctxShadow.bezierCurveTo(this.shadowStages[this.currentStage].xL1, this.shadowStages[this.currentStage].yL1, this.shadowStages[this.currentStage].xL2, this.shadowStages[this.currentStage].yL2, this.shadowStages[this.currentStage].xF, this.shadowStages[this.currentStage].yF);
+                this.ctxShadow.closePath();
+                // this.ctxShadow.fillStyle = shadowColor
+                this.ctxShadow.fillStyle = this.tree.shadowColorTree;
+                this.ctxShadow.fill();
+                this.ctxShadow.stroke();
+            }
+        }
+        checkIfShadowOutsideDrawingWindow() {
+            if ((this.shadowCanvasCoords.x + this.x0rel <= 0 ||
+                this.shadowCanvasCoords.x + this.x0rel >= this.tree.canvas.width)
+                &&
+                    (this.shadowCanvasCoords.x + this.shadowStages[this.currentStage].xF <= 0 ||
+                        this.shadowCanvasCoords.x + this.shadowStages[this.currentStage].xF >= this.tree.canvas.width)) {
+                return true;
+            }
+            if ((this.shadowCanvasCoords.y + this.y0rel <= 0 ||
+                this.shadowCanvasCoords.y + this.y0rel >= this.tree.canvas.height)
+                &&
+                    (this.shadowCanvasCoords.y + this.shadowStages[this.currentStage].yF <= 0 ||
+                        this.shadowCanvasCoords.y + this.shadowStages[this.currentStage].yF >= this.tree.canvas.height)) {
+                return true;
+            }
+            // console.log('inside')
+            return false;
         }
     }
     // ____________________________________________________ LEAF ____________________________________________________
