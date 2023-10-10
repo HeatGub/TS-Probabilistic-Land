@@ -174,6 +174,12 @@ window.addEventListener('load', function () {
             passedFunction();
         });
     }
+    function removeLastTree() {
+        if (treesList.length > 0) {
+            treesList[treesList.length - 1].removeTreeCanvases();
+            treesList.splice(-1);
+        }
+    }
     // RESIZE CANVASES AND REDRAW THEM AT WINDOW RESIZE
     window.addEventListener('resize', function () {
         redrawMountains();
@@ -212,23 +218,13 @@ window.addEventListener('load', function () {
             SIDEBAR.style.display = 'none';
         }
     });
-    const undoButton = this.document.getElementById('undoButton');
     let treesList = [];
-    undoButton.addEventListener('click', removeLastTree);
-    function removeLastTree() {
-        if (treesList.length > 0) {
-            treesList[treesList.length - 1].removeTreeCanvases();
-            treesList.splice(-1);
-        }
-    }
-    // function cancelAnimation () {
-    // }
+    // const undoButton = this.document.getElementById('undoButton') as HTMLBodyElement
+    // undoButton.addEventListener('click', removeLastTree )
     let mountainsDrawn = [];
     const CTGR_WORLD = document.getElementById('CTGR_WORLD');
-    // const CTGR_LIGHTSOURCE = document.getElementById('CTGR_LIGHTSOURCE') as HTMLElement
     const CTGR_SHADOWS = document.getElementById('CTGR_SHADOWS');
     const CTGR_LEAF = document.getElementById('CTGR_LEAF');
-    // const CTGR_MOUNTAINS = document.getElementById('CTGR_MOUNTAINS') as HTMLElement
     const CTGR_TREE = document.getElementById('CTGR_TREE');
     // CTGR_LEAF.style.display = 'none'
     // CTGR_MOUNTAINS.style.display = 'none'
@@ -1364,20 +1360,27 @@ window.addEventListener('load', function () {
     // ____________________________________________________ INITIATIONS ____________________________________________________
     // ____________________________________________________ ANIMATION ____________________________________________________
     // CONTROL ANIMATION WITH KEYBOARD
-    let animationOn = false;
+    let animationCancelled = false;
     document.addEventListener('keydown', function (event) {
-        // console.log(event.code)
-        if (event.code === "Space") {
-            animationOn = false;
+        // if already animating, ctrl+z acts the same as space - it stops animation
+        if (animationCancelled === false) {
+            if (event.code === "Space") {
+                animationCancelled = true;
+            }
+            if (event.ctrlKey && event.key === 'z') {
+                animationCancelled = true;
+            } // ctrl + z
         }
-        if (event.ctrlKey && event.key === 'z') {
-            removeLastTree();
-        } // ctrl + z
+        else if (animationCancelled === true) {
+            if (event.ctrlKey && event.key === 'z') {
+                removeLastTree();
+            } // ctrl + z
+        }
     });
     function animateTheTree(tree) {
-        animationOn = true;
-        document.body.style.cursor = 'wait'; // waiting cursor
+        animationCancelled = false;
         alreadyAnimating = true;
+        document.body.style.cursor = 'wait'; // waiting cursor
         let lvl = 0;
         const start = Date.now();
         let lastTime = 0;
@@ -1427,7 +1430,7 @@ window.addEventListener('load', function () {
             }
             whileLoopCounterLeaves = 0;
             // ________________ BREAK THE LOOP ________________
-            if ((lvl > tree.maxLevel && tree.growingLeavesList.length === 0) || animationOn === false) {
+            if ((lvl > tree.maxLevel && tree.growingLeavesList.length === 0) || animationCancelled === true) {
                 console.log('___ Animation in ' + (Date.now() - start) + ' ms ___');
                 // console.log(growingLeavesList)
                 alreadyAnimating = false;

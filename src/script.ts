@@ -192,6 +192,13 @@ function addSlider (category: HTMLElement, id: string, name: string, title: stri
     })
 }
 
+function removeLastTree () {
+    if (treesList.length > 0) {
+        treesList[treesList.length-1].removeTreeCanvases()
+        treesList.splice(-1)
+    }
+}
+
 // RESIZE CANVASES AND REDRAW THEM AT WINDOW RESIZE
 window.addEventListener('resize', function() {
     redrawMountains()
@@ -203,7 +210,6 @@ window.addEventListener('resize', function() {
         memorizedCtx.putImageData(imgData,0 , 0 ) // redraw memorized image
     })
 })
-
 // ____________________________________________________ FUNCTIONS ____________________________________________________
 
 // ____________________________________________________ SIDEBAR ____________________________________________________
@@ -234,25 +240,14 @@ closeSidebarButton.addEventListener("click", () => {
         SIDEBAR.style.display = 'none'
     }
 })
-const undoButton = this.document.getElementById('undoButton') as HTMLBodyElement
 let treesList: Tree [] = []
-undoButton.addEventListener('click', removeLastTree )
-function removeLastTree () {
-    if (treesList.length > 0) {
-        treesList[treesList.length-1].removeTreeCanvases()
-        treesList.splice(-1)
-    }
-}
-// function cancelAnimation () {
-
-// }
+// const undoButton = this.document.getElementById('undoButton') as HTMLBodyElement
+// undoButton.addEventListener('click', removeLastTree )
 
 let mountainsDrawn: Mountain[] = []
 const CTGR_WORLD = document.getElementById('CTGR_WORLD') as HTMLElement
-// const CTGR_LIGHTSOURCE = document.getElementById('CTGR_LIGHTSOURCE') as HTMLElement
 const CTGR_SHADOWS = document.getElementById('CTGR_SHADOWS') as HTMLElement
 const CTGR_LEAF = document.getElementById('CTGR_LEAF') as HTMLElement
-// const CTGR_MOUNTAINS = document.getElementById('CTGR_MOUNTAINS') as HTMLElement
 const CTGR_TREE = document.getElementById('CTGR_TREE') as HTMLElement
 
 // CTGR_LEAF.style.display = 'none'
@@ -1530,17 +1525,22 @@ canvasContainer.addEventListener("click", (event) => {
 
 // ____________________________________________________ ANIMATION ____________________________________________________
 // CONTROL ANIMATION WITH KEYBOARD
-let animationOn = false 
+let animationCancelled = false 
 document.addEventListener('keydown', function(event) {
-    // console.log(event.code)
-    if (event.code === "Space") {animationOn = false}
-    if (event.ctrlKey && event.key === 'z') {removeLastTree()} // ctrl + z
+    // if already animating, ctrl+z acts the same as space - it stops animation
+    if (animationCancelled === false) {
+        if (event.code === "Space") {animationCancelled = true}
+        if (event.ctrlKey && event.key === 'z') {animationCancelled = true} // ctrl + z
+    }
+    else if (animationCancelled === true) {
+        if (event.ctrlKey && event.key === 'z') {removeLastTree();} // ctrl + z
+    }
 })
 
 function animateTheTree (tree: Tree) {
-    animationOn = true
-    document.body.style.cursor = 'wait' // waiting cursor
+    animationCancelled = false
     alreadyAnimating = true
+    document.body.style.cursor = 'wait' // waiting cursor
     let lvl = 0
     const start = Date.now()
     let lastTime = 0
@@ -1592,7 +1592,7 @@ function animateTheTree (tree: Tree) {
         whileLoopCounterLeaves = 0
 
         // ________________ BREAK THE LOOP ________________
-        if ((lvl > tree.maxLevel && tree.growingLeavesList.length === 0) || animationOn === false) {
+        if ((lvl > tree.maxLevel && tree.growingLeavesList.length === 0) || animationCancelled === true) {
             console.log('___ Animation in ' + (Date.now() - start) + ' ms ___')
             // console.log(growingLeavesList)
             alreadyAnimating = false

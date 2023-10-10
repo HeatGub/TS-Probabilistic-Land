@@ -1,20 +1,23 @@
 :root {
-    /* background: rgb(64, 64, 64); */
-    /* background: rgb(255,241,0); */
-    /* background: linear-gradient(90deg, rgba(255,241,0,1) 9%, rgba(255,233,0,1) 12%, rgba(0,212,255,1) 21%); */
-    /* --skyColor: rgb(5, 70, 119); */
-    /*image-rendering: optimizeSpeed;*/ /* keep it or not? */
+    /* image-rendering: optimizeSpeed; */
+    font-size: 62.5%; /*-> rem = 10px*/
+    font-family: 'Cherry Swash';
+    /* text-transform: capitalize; */
+
     --horizonHeight: 50%;
     --lightSourceColor: rgba(126, 230, 204, 0.861);
 
     --textInputWidth: 3rem;
-    --sliderHeight: 10px;
-    --sliderThumbBorderWidth: 2px;
+    --textInputSpaceLeft: 0.2rem;
+    --sliderHeight: 1.5rem;
+    --sliderThumbBorderWidth: 0.3rem;
 
     --sliderBackgroundColor: rgb(196, 185, 185);
     --sliderProgressColor: rgb(255, 166, 0);
     --sliderThumbColor: rgb(255, 251, 0);
     --sliderThumbBorderColor: rgb(115, 0, 255);
+
+    --sidebarBackgroundColor: rgba(17, 145, 150, 0.384);
 }
 
 * {
@@ -137,9 +140,8 @@
 /* ___________________________ SIDEBAR ___________________________*/
 #sidebar{
     position: absolute;
-    width: 250px;
     height: 100%;
-    background-color: rgba(0, 51, 255, 0.356);
+    background-color: var(--sidebarBackgroundColor);
     overflow: scroll;
     overflow-x: hidden;
     z-index: 1000000;
@@ -154,7 +156,8 @@
 }
 
 #sidebar > * {
-    margin-top: 10px; /*category sapacing*/
+    font-size: 2rem;
+    margin-top: 2rem; /*category sapacing*/
     text-align: center;
 }
 
@@ -162,15 +165,17 @@
     width: 100%;
     /* position: absolute; */
     background-color: rgba(204, 255, 0, 0.867);
-    border-radius: 10px;
+    border-radius: 1rem;
     /* padding: 1px; */
 }
 
 .sidebarElement{
-    margin: 5px;
+    font-size: 1.5rem;
+    margin: 0.5rem;
     text-align: center;
     align-items: center;
     background-color: rgb(64, 255, 0);
+    border-radius: 1rem;
 }
 
 .sidebarElement > * {
@@ -178,7 +183,9 @@
 }
 
 .sidebarSliderElement { /* slider with text input */
-    width: 98%;
+    width: 97%;
+    /* margin-top: -0.5rem; */
+    margin-bottom: 0.3rem;
     /* background-color: rgba(17, 150, 232, 0.96); */
 }
 
@@ -188,30 +195,42 @@ span > * {
 
 #closeSidebarButton {
     position: absolute;
-    height: 30px;
-    width: 15px;
-    top: 50%;
-    background-color: rgba(0, 51, 255, 0.419);
+    height: 10rem;
+    width: 2rem;
+    top: calc(50% - 5rem);
+    background-color: var(--sidebarBackgroundColor);
     z-index: 1000000;
 }
 
-#undoButton {
+/* #undoButton {
     height: 30px;
     width: 30px;
     position: absolute;
     background-color: rgba(251, 0, 255, 0.688);
     left: 95%;
     z-index: 1000000;
-}
+} */
 
 input[type="text"]{
+    height: var(--sliderHeight);
+    background: var(--sliderBackgroundColor);
     font-size: 10px;
-    width: var(--textInputWidth);
+    margin-left: var(--textInputSpaceLeft);
+    width: calc(var(--textInputWidth) - var(--textInputSpaceLeft));
+    border-radius: 25%;
+}
+
+input[type="text"]:focus{
+    outline: none;
 }
 
 input[type="color"]{
     /* width: 100px; */
-    width: 98%; /* as sidebarSliderElement width */ 
+    width: 67%; /* as sidebarSliderElement width */ 
+    border: none;
+    background: none;
+    /* border-radius: 2rem; */
+    cursor: pointer;
 }
 
 /* ___________________________ CUSTOM SLIDER ___________________________*/
