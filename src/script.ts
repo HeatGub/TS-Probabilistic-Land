@@ -199,9 +199,21 @@ function removeLastTree () {
     }
 }
 
+function resizeSidebar() {
+    sidebarWidth = Math.round(window.innerWidth/4)
+    SIDEBAR.style.width = sidebarWidth + 'px'
+    if (SIDEBAR.style.display != 'none') {
+        closeSidebarButton.style.left = String(sidebarWidth) + 'px'
+    }
+    else if (SIDEBAR.style.display === 'none') {
+        closeSidebarButton.style.left = String(0)
+    }
+}
+
 // RESIZE CANVASES AND REDRAW THEM AT WINDOW RESIZE
 window.addEventListener('resize', function() {
     redrawMountains()
+    resizeSidebar()
     globalCanvasesList.forEach( (canvas) => {
         const memorizedCtx = canvas.getContext('2d', {willReadFrequently: true}) as CanvasRenderingContext2D
         const imgData = memorizedCtx.getImageData(0,0, window.innerWidth, window.innerHeight)
@@ -214,25 +226,24 @@ window.addEventListener('resize', function() {
 
 // ____________________________________________________ SIDEBAR ____________________________________________________
 // ___________________ CONSTANT PARAMETERS___________________
-const SIDEBAR_WIDTH = 300
 const branchLenRandomizer = 0.15 // keep it const
 const leavesGrowingOrder = 0.25
 const growLimitingLeavesAmount = 10 // branches drawing will stop when this amount of growing leaves is reached
 const treeShapeShadow = 0.2 // not much, not needed as a parameter
 // ___________________ CONSTANT PARAMETERS___________________
+let treesList: Tree [] = []
+let mountainsDrawn: Mountain[] = []
 
-
+const SIDEBAR = document.getElementById('sidebar') as HTMLBodyElement
+const closeSidebarButton = document.getElementById('closeSidebarButton') as HTMLBodyElement
+let sidebarWidth = Math.round(window.innerWidth/4)
 let sidebarCategories = document.querySelectorAll(".sidebarCategory")
 sidebarCategories.forEach(function(category) {category.addEventListener("click", hideShowCategoryElements)})
+
 // SIDEBAR OPENING AND CLOSING
-const closeSidebarButton = document.getElementById('closeSidebarButton') as HTMLBodyElement
-const SIDEBAR = document.getElementById('sidebar') as HTMLBodyElement
-// sidebar.style.display = 'none'
-SIDEBAR.style.width = SIDEBAR_WIDTH + 'px'
-closeSidebarButton.style.left = SIDEBAR_WIDTH + 'px'
 closeSidebarButton.addEventListener("click", () => {
     if (SIDEBAR.style.display == 'none') {
-        closeSidebarButton.style.left = String(SIDEBAR_WIDTH) + 'px'
+        closeSidebarButton.style.left = String(sidebarWidth) + 'px'
         SIDEBAR.style.display = 'block'
     }
     else if (SIDEBAR.style.display != 'none') {
@@ -240,11 +251,6 @@ closeSidebarButton.addEventListener("click", () => {
         SIDEBAR.style.display = 'none'
     }
 })
-let treesList: Tree [] = []
-// const undoButton = this.document.getElementById('undoButton') as HTMLBodyElement
-// undoButton.addEventListener('click', removeLastTree )
-
-let mountainsDrawn: Mountain[] = []
 const CTGR_WORLD = document.getElementById('CTGR_WORLD') as HTMLElement
 const CTGR_SHADOWS = document.getElementById('CTGR_SHADOWS') as HTMLElement
 const CTGR_LEAF = document.getElementById('CTGR_LEAF') as HTMLElement
@@ -262,15 +268,15 @@ document.documentElement.style.cssText += "--horizonHeight:" + horizonHeight + "
 // LIGHTSOURCE
 const lightSourceCanvas = document.getElementById('lightSourceCanvas') as HTMLBodyElement
 const lightSourceGlowCanvas = document.getElementById('lightSourceGlowCanvas') as HTMLBodyElement
-let lightSourcePositionX = Math.round(Math.random() * this.window.innerWidth)
+let lightSourcePositionX = Math.round(sidebarWidth + Math.random() * (this.window.innerWidth-sidebarWidth))
 let lightSourcePositionY = Math.round(Math.random() * horizonHeight*0.8)
 let lightSourceSize = Math.round(50 + Math.random()*horizonHeight/2)
 
 let mountainRangeWidthMultiplier = Number((Math.random()*0.5).toFixed(2))
 let mountainRangeWidth = (window.innerHeight - horizonHeight)*0.1 + (window.innerHeight - horizonHeight)*mountainRangeWidthMultiplier
 
-let shadowSpreadMultiplier = Number((1 + (Math.random()*2)).toFixed(1)) // change that later?
-let shadowHorizontalStretch =  Number((1 + (Math.random()*3)).toFixed(1))
+let shadowSpreadMultiplier = Number((1 + (Math.random())).toFixed(1)) // change that later?
+let shadowHorizontalStretch =  Number((1 + (Math.random())).toFixed(1))
 let shadowSpread = (lightSourcePositionY/horizonHeight) *shadowSpreadMultiplier + 0.15 // + for minimal shadow length
 let shadowSpreadMountain = (lightSourcePositionY)/horizonHeight * shadowSpreadMultiplier + 0.5
 let treeShadowBlur = 0
@@ -290,7 +296,7 @@ let trunkLen = Math.round(50 + Math.random() * 50)
 // let initialsegmentingLen = Number((0.1 + Math.random()*0.8).toFixed(2))
 let initialsegmentingLen = 0.25
 
-let lenMultiplier = Number((0.6 + Math.random()*0.3).toFixed(2))
+let lenMultiplier = Number((0.65 + Math.random()*0.2).toFixed(2))
 let trunkWidthAsPartOfLen = Number((0.1 + Math.random()*0.2).toFixed(2))
 let widthMultiplier = Number((0.5 + Math.random()*0.2).toFixed(2))
 let rebranchingAngle = Number((5 + Math.random() * 15).toFixed(1))
@@ -336,6 +342,7 @@ let randomizeLeafSize = Number((0.2 +  Math.random()*0.3).toFixed(2))
 updateLightSource()
 paintTheSky()
 paintTheGround()
+resizeSidebar()
 
 
 // TOODOO:
@@ -376,7 +383,7 @@ addSlider(CTGR_WORLD, 'distanceScaling', 'Distance Scaling' , 'Scale object size
     distanceScaling = valById('distanceScaling')
     redrawMountains()
 })
-addColorInput(CTGR_WORLD, 'mountainColor', 'Mountain Color', '', rgbaToHex(mountainColor), () => {
+addColorInput(CTGR_WORLD, 'mountainColor', 'Mountain Color', 'This color is applied for closer mountains. Further have more of a mist color.', rgbaToHex(mountainColor), () => {
     mountainColor = hexToRgba(hexColorById('mountainColor'), 1)
     recolorMountains()
 })
@@ -423,12 +430,12 @@ addColorInput(CTGR_SHADOWS, 'shadowColor', 'Shadow Color', '', rgbaToHex(shadowC
     shadowColorGlobal = hexToRgba(hexColorById('shadowColor'), 1) // alpha =1
     recolorMountains()
 })
-addSlider(CTGR_SHADOWS, 'shadowSpreadMultiplier', 'Vertical Shadow Stretch' , '',  0 , 5,  0.1, shadowSpreadMultiplier, () => {
+addSlider(CTGR_SHADOWS, 'shadowSpreadMultiplier', 'Vertical Shadow Stretch' , '',  0 , 3,  0.1, shadowSpreadMultiplier, () => {
     shadowSpreadMultiplier = valById('shadowSpreadMultiplier')
     recalculateShadowParameters()
     recolorMountains()
 })
-addSlider(CTGR_SHADOWS, 'shadowHorizontalStretch', 'Horizontal Shadow Stretch' , '',  0.1 , 5 ,  0.1, shadowHorizontalStretch, () => {
+addSlider(CTGR_SHADOWS, 'shadowHorizontalStretch', 'Horizontal Shadow Stretch' , '',  0.1 , 3 ,  0.1, shadowHorizontalStretch, () => {
     shadowHorizontalStretch = valById('shadowHorizontalStretch')
     recalculateShadowParameters()
     recolorMountains()
@@ -1483,19 +1490,15 @@ function recolorMountains() {
         mountain.redrawShadow()
     })
 }
-
-
 // _____________________ DRAWING MOUNTAINS _____________________
+
 // ____________________________________________________ MOUNTAIN ____________________________________________________
 
-// ____________________________________________________ INITIATIONS ____________________________________________________
+// ____________________________________________________ TREE INITIATION ____________________________________________________
 let alreadyAnimating = false
 // PLANT (SPAWN) TREE AT CLICK COORDS
 canvasContainer.addEventListener("click", (event) => {
     if (alreadyAnimating === false && event.y > horizonHeight) {
-        // console.log(event.y)
-        // let verticalAngleInfluence = 1+ ( (this.window.innerHeight - event.y) / this.window.innerHeight ) ** 0.9
-        // let shadowAngle = - (lightSourcePositionX - event.x) / window.innerWidth * shadowHorizontalStretch * verticalAngleInfluence
         let shadowAngle = - (lightSourcePositionX - event.x) / window.innerWidth * shadowHorizontalStretch
         let groundHeight = window.innerHeight - horizonHeight
         let groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight)/2
@@ -1521,9 +1524,10 @@ canvasContainer.addEventListener("click", (event) => {
         animateTheTree(tree)
     }
 })
-// ____________________________________________________ INITIATIONS ____________________________________________________
+// ____________________________________________________ TREE INITIATION ____________________________________________________
 
 // ____________________________________________________ ANIMATION ____________________________________________________
+
 // CONTROL ANIMATION WITH KEYBOARD
 let animationCancelled = false 
 document.addEventListener('keydown', function(event) {
@@ -1536,6 +1540,8 @@ document.addEventListener('keydown', function(event) {
         if (event.ctrlKey && event.key === 'z') {removeLastTree();} // ctrl + z
     }
 })
+// CONTROL ANIMATION WITH KEYBOARD
+
 
 function animateTheTree (tree: Tree) {
     animationCancelled = false
@@ -1593,9 +1599,10 @@ function animateTheTree (tree: Tree) {
 
         // ________________ BREAK THE LOOP ________________
         if ((lvl > tree.maxLevel && tree.growingLeavesList.length === 0) || animationCancelled === true) {
-            console.log('___ Animation in ' + (Date.now() - start) + ' ms ___')
+            console.log('Animated for ' + (Date.now() - start) + ' ms')
             // console.log(growingLeavesList)
             alreadyAnimating = false
+            animationCancelled = true
             // accumulatedTime = 0
             document.body.style.cursor = 'auto' // remove waiting cursor
             return
@@ -1642,10 +1649,5 @@ function animateTheTree (tree: Tree) {
     animate(0)
 }
 // ____________________________________________________ ANIMATION ____________________________________________________
-
-
-
-
-
 
 }) //window.addEventListener('load', function(){ }) ENDS HERE

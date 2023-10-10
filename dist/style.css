@@ -7,17 +7,26 @@
     --horizonHeight: 50%;
     --lightSourceColor: rgba(126, 230, 204, 0.861);
 
-    --textInputWidth: 3rem;
+    --textInputWidth: 3.3rem;
     --textInputSpaceLeft: 0.2rem;
     --sliderHeight: 1.5rem;
-    --sliderThumbBorderWidth: 0.3rem;
+    --sliderThumbBorderWidth: 0.2rem;
 
-    --sliderBackgroundColor: rgb(196, 185, 185);
-    --sliderProgressColor: rgb(255, 166, 0);
+    --sliderBackgroundColor: rgba(131, 131, 131, 0.3);
+    --sliderProgressColor: rgba(0, 255, 149, 0.795);
     --sliderThumbColor: rgb(255, 251, 0);
-    --sliderThumbBorderColor: rgb(115, 0, 255);
+    --sliderThumbBorderColor: rgb(0, 255, 234);
+    --sliderThumbGradient: linear-gradient(rgba(19, 200, 212, 0.99) 0%, rgba(0, 97, 15, 0.99) 100%);
 
-    --sidebarBackgroundColor: rgba(17, 145, 150, 0.384);
+    --sidebarBackgroundColor: rgba(10, 122, 126, 0.5);
+    --categoryBackgroundColor: rgba(77, 77, 77, 0.418);
+    /* --oddElementColor: rgba(106, 161, 17, 0.4); */
+    /* --evenElementColor: rgba(9, 77, 37, 0.4); */
+    --oddElementColor: rgba(255, 255, 255, 0.3);
+    --evenElementColor: rgba(136, 136, 136, 0.4);
+
+    --categoryOutlineColor: rgb(9, 240, 190);
+    --hoverElementColor: rgb(0, 202, 101);
 }
 
 * {
@@ -148,6 +157,11 @@
     /* Hide scrollbar for IE, Edge and Firefox */
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
+    text-align: center;
+    /* DISABLE TEXT SELECTING */
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -156,17 +170,27 @@
 }
 
 #sidebar > * {
-    font-size: 2rem;
-    margin-top: 2rem; /*category sapacing*/
-    text-align: center;
+    font-size: 2.2rem;
+    margin-left: auto; /* centers categories*/
+    margin-right: auto; /* centers categories*/
+    margin-top: 1rem; /* categories spacing*/
+    margin-bottom: 1rem;
 }
 
 .sidebarCategory {
-    width: 100%;
+    cursor: pointer;
+    width: 97%;
     /* position: absolute; */
-    background-color: rgba(204, 255, 0, 0.867);
+    background-color: var(--categoryBackgroundColor);
     border-radius: 1rem;
     /* padding: 1px; */
+    outline: solid 0.1rem var(--categoryOutlineColor);
+    text-shadow: 0 0 1rem var(--categoryOutlineColor);
+
+}
+.sidebarCategory:hover {
+    box-shadow: 0 0 0.5rem var(--categoryOutlineColor);
+    outline: solid 0.2rem var(--categoryOutlineColor);
 }
 
 .sidebarElement{
@@ -176,6 +200,22 @@
     align-items: center;
     background-color: rgb(64, 255, 0);
     border-radius: 1rem;
+    cursor: default;
+    text-shadow: 0 0 1rem var(--hoverElementColor);
+}
+.sidebarElement:hover {
+    box-shadow: 0 0 0.5rem var(--hoverElementColor);
+    outline: solid 0.1rem var(--hoverElementColor);
+    text-shadow: 0 0 0.5rem var(--hoverElementColor);
+}
+.sidebarElement:nth-child(odd) {
+    background: var(--oddElementColor);
+    border: 0.1rem solid var(--evenElementColor);
+}
+.sidebarElement:nth-child(even) {
+    background: var(--evenElementColor);
+    border: 0.1rem solid var(--oddElementColor);
+
 }
 
 .sidebarElement > * {
@@ -184,7 +224,7 @@
 
 .sidebarSliderElement { /* slider with text input */
     width: 97%;
-    /* margin-top: -0.5rem; */
+    margin-top: -0.3rem;
     margin-bottom: 0.3rem;
     /* background-color: rgba(17, 150, 232, 0.96); */
 }
@@ -200,21 +240,13 @@ span > * {
     top: calc(50% - 5rem);
     background-color: var(--sidebarBackgroundColor);
     z-index: 1000000;
+    border-radius: 0 1rem 1rem 0;
 }
-
-/* #undoButton {
-    height: 30px;
-    width: 30px;
-    position: absolute;
-    background-color: rgba(251, 0, 255, 0.688);
-    left: 95%;
-    z-index: 1000000;
-} */
 
 input[type="text"]{
     height: var(--sliderHeight);
     background: var(--sliderBackgroundColor);
-    font-size: 10px;
+    font-size: 1.1rem;
     margin-left: var(--textInputSpaceLeft);
     width: calc(var(--textInputWidth) - var(--textInputSpaceLeft));
     border-radius: 25%;
@@ -225,12 +257,13 @@ input[type="text"]:focus{
 }
 
 input[type="color"]{
-    /* width: 100px; */
     width: 67%; /* as sidebarSliderElement width */ 
     border: none;
     background: none;
     /* border-radius: 2rem; */
     cursor: pointer;
+    margin-top: -0.4rem;
+    margin-bottom: -0.4rem;
 }
 
 /* ___________________________ CUSTOM SLIDER ___________________________*/
@@ -253,7 +286,6 @@ input[type="range"] {
 
 /* Track: webkit browsers */
 input[type="range"]::-webkit-slider-runnable-track {
-    /* height: 15px; */
     height: var(--sliderHeight);
     background: var(--sliderBackgroundColor);
     border-radius: calc(var(--sliderHeight) + 1px);
@@ -276,11 +308,14 @@ input[type="range"]::-webkit-slider-thumb {
     height: var(--sliderHeight);
     width: var(--sliderHeight);
     border-radius: 50%;
-    background-color: var(--sliderThumbColor);
+    background: var(--sliderThumbGradient);
     border: var(--sliderThumbBorderWidth) solid var(--sliderThumbBorderColor);
     /*  slider progress trick  */
     /*1000px below is just a high numer, higher than potential slider width*/
+    /* box-shadow: calc(-1000px - calc(var(--sliderHeight)/2)) 0 0 1000px var(--sliderProgressColor); */
+
     box-shadow: calc(-1000px - calc(var(--sliderHeight)/2)) 0 0 1000px var(--sliderProgressColor);
+
 }
 
 /* Thumb: Firefox */
@@ -288,7 +323,8 @@ input[type="range"]::-moz-range-thumb {
     height: var(--sliderHeight);
     width: var(--sliderHeight);
     border-radius: 50%;
-    background-color: var(--sliderThumbColor);
+    /* background: var(--sliderThumbColor); */
+    background: var(--sliderThumbGradient);
     border: var(--sliderThumbBorderWidth) solid var(--sliderThumbBorderColor);
     /*  slider progress trick  */
     /*1000px below is just a high numer, higher than potential slider width*/
