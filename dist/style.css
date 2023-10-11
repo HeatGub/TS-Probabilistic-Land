@@ -1,32 +1,48 @@
 :root {
     /* image-rendering: optimizeSpeed; */
     font-size: 62.5%; /*-> rem = 10px*/
-    font-family: 'Cherry Swash';
+
+    /* font-family: 'Cherry Swash'; */
+    /* font-family: 'Tangerine'; */
+    /* font-family: 'Aclonica'; */
+    /* font-family: 'Butcherman'; */
+    /* font-family: 'Fugaz One'; */
+    font-family: 'Galada';
+
+    /* font-weight: 600; */
     /* text-transform: capitalize; */
 
     --horizonHeight: 50%;
     --lightSourceColor: rgba(126, 230, 204, 0.861);
 
-    --textInputWidth: 3.3rem;
-    --textInputSpaceLeft: 0.2rem;
+    --textInputWidth: 4.2rem;
+    --textInputSpaceLeft: 0.5rem;
     --sliderHeight: 1.5rem;
     --sliderThumbBorderWidth: 0.2rem;
 
-    --sliderBackgroundColor: rgba(131, 131, 131, 0.3);
-    --sliderProgressColor: rgba(0, 255, 149, 0.795);
-    --sliderThumbColor: rgb(255, 251, 0);
-    --sliderThumbBorderColor: rgb(0, 255, 234);
-    --sliderThumbGradient: linear-gradient(rgba(19, 200, 212, 0.99) 0%, rgba(0, 97, 15, 0.99) 100%);
+    --sliderBackgroundColor: rgba(0, 0, 0, 0.42);
+    --sliderThumbBorderColor: rgba(255, 255, 255, 0.9);
 
-    --sidebarBackgroundColor: rgba(10, 122, 126, 0.5);
-    --categoryBackgroundColor: rgba(77, 77, 77, 0.418);
-    /* --oddElementColor: rgba(106, 161, 17, 0.4); */
-    /* --evenElementColor: rgba(9, 77, 37, 0.4); */
-    --oddElementColor: rgba(255, 255, 255, 0.3);
-    --evenElementColor: rgba(136, 136, 136, 0.4);
+    --sliderProgressColor: rgba(255, 255, 255, 0.7);
+    --sliderProgressColor2: rgba(255, 255, 255, 1);
+    --Gradient1: linear-gradient(rgba(197, 197, 197, 0.4) 0%, rgba(29, 29, 29, 0.4) 100%);
+    --Gradient2: linear-gradient(rgba(197, 197, 197, 0.7) 0%, rgba(29, 29, 29, 0.7) 100%);
+    --Gradient3: linear-gradient(rgba(116, 116, 116, 0.8) 0%, rgba(255, 255, 255, 0.8) 100%);
+    --Gradient4: linear-gradient(rgba(36, 36, 36, 0.8) 0%, rgba(102, 102, 102, 0.8) 100%);
+    --GradientCategory: linear-gradient(rgba(36, 36, 36, 0.3) 0%, rgba(102, 102, 102, 0.3) 100%);
+    --GradientCategoryInverse: linear-gradient(rgba(102, 102, 102, 0.3) 0%, rgba(36, 36, 36, 0.3) 100%);
 
-    --categoryOutlineColor: rgb(9, 240, 190);
-    --hoverElementColor: rgb(0, 202, 101);
+    --sidebarBackgroundColor:linear-gradient(270deg, rgba(255, 255, 255, 0.3) 0%, rgba(36, 36, 36, 0.3) 100%);
+    --categoryBackgroundColor: rgba(109, 109, 109, 0.4);
+    --oddElementColor: rgba(255, 255, 255, 0.2);
+    --evenElementColor: rgba(136, 136, 136, 0.3);
+    /* --oddElementColor: linear-gradient(rgba(204, 204, 204, 0.6) 0%, rgba(70, 70, 70, 0.4) 100%);
+    --evenElementColor: linear-gradient(rgba(161, 161, 161, 0.6) 0%, rgba(44, 44, 44, 0.4) 100%); */
+
+    /* --categoryOutlineColor: rgb(240, 9, 9); */
+    --hoverElementColor: rgb(255, 255, 255);
+
+    --lightsourceSharpness: 60%; /*69% max*/
 }
 
 * {
@@ -78,28 +94,18 @@
 }
 
 #lightSourceCanvas{
-    height: calc(var(--horizonHeight)*0.25);
-    width: calc(var(--horizonHeight)*0.25);
+    /* height: calc(var(--horizonHeight)*0.25);
+    width: calc(var(--horizonHeight)*0.25); */
     position: absolute;
     /* background: radial-gradient(circle, rgba(255, 255, 255, 0.848) 45%, rgb(17, 2, 80) 100%); */
-    background: radial-gradient(circle, var(--lightSourceColor) 69%, rgba(0,0,0,0) 69%);
+    background: radial-gradient(circle, var(--lightSourceColor) var(--lightsourceSharpness), rgba(0,0,0,0) 69%);
     z-index: 0;
     /* border: 1px solid rgba(238, 138, 6, 0.305); */
-}
-
-#lightSourceGlowCanvas{
-    height: calc(var(--horizonHeight)*0.5);
-    width: calc(var(--horizonHeight)*0.5); 
-    position: absolute;
-    background: radial-gradient(circle, var(--lightSourceColor) 35%, rgba(0,0,0,0) 60%);
-    z-index: 0;
 }
 
 #groundCanvas{
     /* display: none; */
     position: absolute;
-    /* background: radial-gradient(circle, rgba(255,241,0,1) 9%, rgba(255,241,0,1) 15%, rgba(0,212,255,1) 21%); */
-    /* background: linear-gradient(rgba(38, 111, 107, 0.99) 18%, rgba(9, 25, 62, 0.99) 93%); */
     width: 100%;
     top: var(--horizonHeight);
     height: 75%;
@@ -150,7 +156,7 @@
 #sidebar{
     position: absolute;
     height: 100%;
-    background-color: var(--sidebarBackgroundColor);
+    background: var(--sidebarBackgroundColor);
     overflow: scroll;
     overflow-x: hidden;
     z-index: 1000000;
@@ -170,44 +176,57 @@
 }
 
 #sidebar > * {
-    font-size: 2.2rem;
     margin-left: auto; /* centers categories*/
     margin-right: auto; /* centers categories*/
     margin-top: 1rem; /* categories spacing*/
-    margin-bottom: 1rem;
+    margin-bottom: 1rem; /* categories spacing*/
 }
 
 .sidebarCategory {
     cursor: pointer;
     width: 97%;
     /* position: absolute; */
-    background-color: var(--categoryBackgroundColor);
+    /* background-color: var(--categoryBackgroundColor); */
+    background: var(--GradientCategory);
     border-radius: 1rem;
     /* padding: 1px; */
-    outline: solid 0.1rem var(--categoryOutlineColor);
-    text-shadow: 0 0 1rem var(--categoryOutlineColor);
-
+    outline: solid 0.1rem var(--hoverElementColor);
+    text-shadow: 0 0 1rem var(--hoverElementColor);
 }
+
+.categoryName {
+    font-size: 4.2rem; /* category name */
+    /* line-height: 6rem; */
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
 .sidebarCategory:hover {
-    box-shadow: 0 0 0.5rem var(--categoryOutlineColor);
-    outline: solid 0.2rem var(--categoryOutlineColor);
+    box-shadow: 0 0 0.5rem var(--hoverElementColor);
+    outline: solid 0.2rem var(--hoverElementColor);
+    /* text-shadow: 0 0 1.5rem var(--hoverElementColor); */
+    background: var(--GradientCategoryInverse);
 }
-
-.sidebarElement{
-    font-size: 1.5rem;
+.sidebarElement, .infoElement {
+    /* font-family: 'Tangerine'; */
+    /* font-family: 'Condiment'; */
+    font-size: 3rem;
     margin: 0.5rem;
     text-align: center;
     align-items: center;
-    background-color: rgb(64, 255, 0);
     border-radius: 1rem;
     cursor: default;
-    text-shadow: 0 0 1rem var(--hoverElementColor);
+    text-shadow: none;
+    border: 0.1rem solid var(--oddElementColor);
+    background: var(--evenElementColor);
 }
 .sidebarElement:hover {
     box-shadow: 0 0 0.5rem var(--hoverElementColor);
     outline: solid 0.1rem var(--hoverElementColor);
     text-shadow: 0 0 0.5rem var(--hoverElementColor);
+    transition: 0.2s ease;
 }
+
 .sidebarElement:nth-child(odd) {
     background: var(--oddElementColor);
     border: 0.1rem solid var(--evenElementColor);
@@ -215,18 +234,18 @@
 .sidebarElement:nth-child(even) {
     background: var(--evenElementColor);
     border: 0.1rem solid var(--oddElementColor);
-
 }
-
 .sidebarElement > * {
     margin: auto; /*horizontal centering */
+}
+.sidebarElement > p { /*parameter name*/
+    margin-top: 1rem;
+    margin-bottom: -1rem;
+    line-height: 4rem;
 }
 
 .sidebarSliderElement { /* slider with text input */
     width: 97%;
-    margin-top: -0.3rem;
-    margin-bottom: 0.3rem;
-    /* background-color: rgba(17, 150, 232, 0.96); */
 }
 
 span > * {
@@ -234,26 +253,47 @@ span > * {
 }
 
 #closeSidebarButton {
+    cursor: pointer;
     position: absolute;
     height: 10rem;
-    width: 2rem;
+    width: 1.5rem;
     top: calc(50% - 5rem);
-    background-color: var(--sidebarBackgroundColor);
+    background: rgba(255, 255, 255, 0.3); /*same as end of sidebar gradient*/
     z-index: 1000000;
     border-radius: 0 1rem 1rem 0;
 }
-
-input[type="text"]{
-    height: var(--sliderHeight);
-    background: var(--sliderBackgroundColor);
-    font-size: 1.1rem;
-    margin-left: var(--textInputSpaceLeft);
-    width: calc(var(--textInputWidth) - var(--textInputSpaceLeft));
-    border-radius: 25%;
+#closeSidebarButton > p {
+    transform: rotate(-90deg);
+    margin-top: 2rem;
+    font-size: 2rem;
+    /* margin: auto; */
 }
 
+
+input[type="text"]{
+    font-family: 'Galada';
+    padding-top: 0.4rem; /* to center the text... not many options to do that in the input*/
+    font-size: 1.5rem;
+    /* line-height: 1.3rem; */
+    height: 1.9rem;
+    /* line-height: calc(var(--sliderHeight)*1.4); */
+    /* background: var(--sliderBackgroundColor); */
+    background: var(--Gradient4);
+
+    margin: auto;
+    margin-left: var(--textInputSpaceLeft);
+    /* width: calc(var(--textInputWidth) - var(--textInputSpaceLeft)); */
+    width: var(--textInputWidth);
+    border-radius: 20%;
+    color: var(--sliderThumbBorderColor);
+    text-align: center;
+    /* outline: none; */
+    border: 1px solid var(--sliderBackgroundColor);
+}
 input[type="text"]:focus{
     outline: none;
+    font-size: 1.7rem;
+    text-shadow: 0 0 1rem var(--sliderThumbBorderColor);
 }
 
 input[type="color"]{
@@ -262,8 +302,8 @@ input[type="color"]{
     background: none;
     /* border-radius: 2rem; */
     cursor: pointer;
-    margin-top: -0.4rem;
-    margin-bottom: -0.4rem;
+    /* margin-top: -0.4rem;
+    margin-bottom: -0.4rem; */
 }
 
 /* ___________________________ CUSTOM SLIDER ___________________________*/
@@ -273,7 +313,7 @@ input[type="range"] {
     -webkit-appearance: none;
     appearance: none; 
     /* creating a custom design */
-    width: calc(100% - var(--textInputWidth));
+    width: calc(100% - var(--textInputWidth) - var(--textInputSpaceLeft));
     cursor: pointer;
     outline: none;
     /*  slider progress trick  */
@@ -283,11 +323,10 @@ input[type="range"] {
     background: none; /* for firefox*/
     height: var(--sliderHeight);
 }
-
 /* Track: webkit browsers */
 input[type="range"]::-webkit-slider-runnable-track {
     height: var(--sliderHeight);
-    background: var(--sliderBackgroundColor);
+    background: var(--Gradient1);
     border-radius: calc(var(--sliderHeight) + 1px);
 }
 
@@ -295,7 +334,7 @@ input[type="range"]::-webkit-slider-runnable-track {
 input[type="range"]::-moz-range-track {
     border: none;
     height: var(--sliderHeight);
-    background: var(--sliderBackgroundColor);
+    background: var(--Gradient1);
     border-radius: calc(var(--sliderHeight) + 1px);
 }
 
@@ -308,14 +347,12 @@ input[type="range"]::-webkit-slider-thumb {
     height: var(--sliderHeight);
     width: var(--sliderHeight);
     border-radius: 50%;
-    background: var(--sliderThumbGradient);
+    background: var(--Gradient1);
     border: var(--sliderThumbBorderWidth) solid var(--sliderThumbBorderColor);
     /*  slider progress trick  */
     /*1000px below is just a high numer, higher than potential slider width*/
     /* box-shadow: calc(-1000px - calc(var(--sliderHeight)/2)) 0 0 1000px var(--sliderProgressColor); */
-
     box-shadow: calc(-1000px - calc(var(--sliderHeight)/2)) 0 0 1000px var(--sliderProgressColor);
-
 }
 
 /* Thumb: Firefox */
@@ -324,11 +361,25 @@ input[type="range"]::-moz-range-thumb {
     width: var(--sliderHeight);
     border-radius: 50%;
     /* background: var(--sliderThumbColor); */
-    background: var(--sliderThumbGradient);
+    background: var(--Gradient1);
     border: var(--sliderThumbBorderWidth) solid var(--sliderThumbBorderColor);
     /*  slider progress trick  */
     /*1000px below is just a high numer, higher than potential slider width*/
     box-shadow: calc(-1000px - calc(var(--sliderHeight)/2)) 0 0 1000px var(--sliderProgressColor);
+}
+
+/* SLIDER HOVERS */
+input[type="range"]::-webkit-slider-runnable-track:hover{
+    background: var(--Gradient2);
+}
+input[type="range"]::-moz-range-track:hover{
+    background: var(--Gradient2);
+}
+input[type="range"]::-webkit-slider-thumb:hover{
+    background: var(--Gradient3);
+}
+input[type="range"]::-moz-range-thumb:hover{
+    background: var(--Gradient3);
 }
 
 /* ___________________________ CUSTOM SLIDER ___________________________*/

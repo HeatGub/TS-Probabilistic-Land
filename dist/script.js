@@ -17,25 +17,44 @@ window.addEventListener('load', function () {
         lightSourceCanvas.style.height = lightSourceSize + 'px';
         lightSourceCanvas.style.left = (lightSourcePositionX - lightSourceSize / 2) + 'px';
         lightSourceCanvas.style.top = (lightSourcePositionY - lightSourceSize / 2) + 'px';
-        lightSourceGlowCanvas.style.width = lightSourceSize * 2 + 'px';
-        lightSourceGlowCanvas.style.height = lightSourceSize * 2 + 'px';
-        lightSourceGlowCanvas.style.left = (lightSourcePositionX - lightSourceSize) + 'px';
-        lightSourceGlowCanvas.style.top = (lightSourcePositionY - lightSourceSize) + 'px';
+        document.documentElement.style.cssText += "--lightsourceSharpness: " + (lightsourceSharpness * 69) + "%;";
+        // lightSourceGlowCanvas.style.width = lightSourceSize*2 + 'px'
+        // lightSourceGlowCanvas.style.height = lightSourceSize*2 + 'px'
+        // lightSourceGlowCanvas.style.left = (lightSourcePositionX - lightSourceSize) + 'px'
+        // lightSourceGlowCanvas.style.top = (lightSourcePositionY - lightSourceSize) + 'px'
         document.documentElement.style.cssText += "--lightSourceColor:" + lightSourceColor; // set css color property
     }
     function hideShowCategoryElements(event) {
         const clickedElemClass = (event.target.className);
-        if (clickedElemClass.includes('sidebarCategory')) { //to disable hiding more inner elements
+        if (clickedElemClass.includes('sidebarCategory')) { // CATEGORY DIV CLICK 
             const targetsChildren = event.target.children;
+            // console.log(thisTarget.tagName)
             for (let i = 0; i < (targetsChildren.length); i++) {
                 const thisTarget = targetsChildren[i];
-                if (thisTarget.style.display != 'none') {
-                    thisTarget.style.display = 'none';
-                }
-                else {
-                    thisTarget.style.display = 'block';
+                if (thisTarget.tagName != 'P') { // don't hide <p> element (category name)
+                    if (thisTarget.style.display != 'none') {
+                        thisTarget.style.display = 'none';
+                    }
+                    else {
+                        thisTarget.style.display = 'block';
+                    }
                 }
             }
+        }
+        else if (clickedElemClass.includes('categoryName')) { // CATEGORY NAME CLICK (p element - need to access parent children)
+            const targetsParentChildren = event.target.parentElement.children; // ! to silence TS. Every element of this class has a parent.
+            for (let i = 0; i < (targetsParentChildren.length); i++) {
+                const thisTarget = targetsParentChildren[i];
+                if (thisTarget.tagName != 'P') { // don't hide <p> element (category name)
+                    if (thisTarget.style.display != 'none') {
+                        thisTarget.style.display = 'none';
+                    }
+                    else {
+                        thisTarget.style.display = 'block';
+                    }
+                }
+            }
+            // }
         }
     }
     function hexToRgba(hex, alpha) {
@@ -232,22 +251,21 @@ window.addEventListener('load', function () {
     const CTGR_SHADOWS = document.getElementById('CTGR_SHADOWS');
     const CTGR_LEAF = document.getElementById('CTGR_LEAF');
     const CTGR_TREE = document.getElementById('CTGR_TREE');
+    // CTGR_WORLD.style.display = 'none'
     // CTGR_LEAF.style.display = 'none'
     // CTGR_MOUNTAINS.style.display = 'none'
     // CTGR_SHADOWS.style.display = 'none'
-    // CTGR_LIGHTSOURCE.style.display = 'none'
     const canvasContainer = document.getElementById('canvasContainer');
     // let horizonHeight = Math.round(canvasContainer.offsetHeight*0.2 + Math.random()*canvasContainer.offsetHeight*0.6)
     let horizonHeight = Math.round(window.innerHeight * 0.2 + Math.random() * window.innerHeight * 0.4);
     document.documentElement.style.cssText += "--horizonHeight:" + horizonHeight + "px"; // set css property
     // LIGHTSOURCE
     const lightSourceCanvas = document.getElementById('lightSourceCanvas');
-    const lightSourceGlowCanvas = document.getElementById('lightSourceGlowCanvas');
+    // const lightSourceGlowCanvas = document.getElementById('lightSourceGlowCanvas') as HTMLBodyElement
     let lightSourcePositionX = Math.round(sidebarWidth + Math.random() * (this.window.innerWidth - sidebarWidth));
     let lightSourcePositionY = Math.round(Math.random() * horizonHeight * 0.8);
     let lightSourceSize = Math.round(50 + Math.random() * horizonHeight / 2);
-    let mountainRangeWidthMultiplier = Number((Math.random() * 0.5).toFixed(2));
-    let mountainRangeWidth = (window.innerHeight - horizonHeight) * 0.1 + (window.innerHeight - horizonHeight) * mountainRangeWidthMultiplier;
+    let lightsourceSharpness = Number((0.5 + Math.random() * 0.49).toFixed(2));
     let shadowSpreadMultiplier = Number((1 + (Math.random())).toFixed(1)); // change that later?
     let shadowHorizontalStretch = Number((1 + (Math.random())).toFixed(1));
     let shadowSpread = (lightSourcePositionY / horizonHeight) * shadowSpreadMultiplier + 0.15; // + for minimal shadow length
@@ -255,8 +273,11 @@ window.addEventListener('load', function () {
     let treeShadowBlur = 0;
     let shadowColorGlobal = randomRgba();
     let distanceScaling = Number((0.1 + Math.random() * 0.8).toFixed(2));
+    // let mountainRangeWidthMultiplier = Number((Math.random()*0.5).toFixed(2))
+    let mountainRangeWidthMultiplier = 0.7;
+    let mountainRangeWidth = (window.innerHeight - horizonHeight) * 0.1 + (window.innerHeight - horizonHeight) * mountainRangeWidthMultiplier;
     // let mountainsAmount = Math.round(1 + Math.random()*9)
-    let mountainsAmount = 1;
+    let mountainsAmount = 3;
     let mountainTrimCloser = Number((0.1 + Math.random() * 0.8).toFixed(2)); // 0-1
     let mountainHeightMultiplier = Number((0.25 + Math.random() * 0.25).toFixed(2)); // 0.1 - 1?
     let maxLevelTree = Math.round(4 + Math.random() * 2);
@@ -383,6 +404,10 @@ window.addEventListener('load', function () {
         lightSourceSize = valById('lightSourceSize');
         updateLightSource();
     });
+    addSlider(CTGR_SHADOWS, 'lightsourceSharpness', 'Lightsource Sharpness', '', 0, 1, 0.01, lightsourceSharpness, () => {
+        lightsourceSharpness = valById('lightsourceSharpness');
+        updateLightSource();
+    });
     addColorInput(CTGR_SHADOWS, 'shadowColor', 'Shadow Color', '', rgbaToHex(shadowColorGlobal), () => {
         shadowColorGlobal = hexToRgba(hexColorById('shadowColor'), 1); // alpha =1
         recolorMountains();
@@ -477,7 +502,7 @@ window.addEventListener('load', function () {
     addSlider(CTGR_LEAF, 'leafMaxStageGlobal', 'Growth Stages', 'Amount of leaf growth stages.', 2, 200, 1, leafMaxStageGlobal, () => {
         leafMaxStageGlobal = valById('leafMaxStageGlobal');
     });
-    addSlider(CTGR_LEAF, 'leafFolding', 'Leaf Folding', 'Folding leaf by its angle and random number.', 0, 0.25, 0.01, leafFolding, () => {
+    addSlider(CTGR_LEAF, 'leafFolding', 'Leaf Folding', 'Leaf folding strength depends on its angle and this parameter.', 0, 0.25, 0.01, leafFolding, () => {
         leafFolding = valById('leafFolding');
     });
     addSlider(CTGR_LEAF, 'randomizeLeafSize', 'Size randomization', 'Randomize leaf size.', 0, 1, 0.01, randomizeLeafSize, () => {
@@ -1110,7 +1135,7 @@ window.addEventListener('load', function () {
     // ____________________________________________________ LEAF ____________________________________________________
     // ____________________________________________________ MOUNTAIN ____________________________________________________
     class Mountain {
-        constructor(initialAmountOfNodes, octaves, targetHeight, canvasBottom, colorTop, colorBottom, width = window.outerWidth * 1.02, // a little overlap for reassuring
+        constructor(initialAmountOfNodes, octaves, targetHeight, canvasBottom, colorTop, colorBottom, width = window.outerWidth, // a little overlap for reassuring
         lowestPoint = Infinity, highestPoint = 0, currentAmountOfNodes = initialAmountOfNodes, currentOctave = 0, allPoints = [], randomPoints = [], canvas = canvasContainer.appendChild(document.createElement("canvas")), ctx = canvas.getContext('2d'), canvasShadow = canvasContainer.appendChild(document.createElement("canvas")), ctxShadow = canvasShadow.getContext('2d')) {
             this.initialAmountOfNodes = initialAmountOfNodes;
             this.octaves = octaves;
@@ -1302,7 +1327,19 @@ window.addEventListener('load', function () {
             const bottom = horizonHeight + (mountainRangeWidth / mountainsAmount) * m;
             const groundHeight = window.innerHeight - horizonHeight;
             // console.log(groundHeight)
-            const colorProportion = 1 - ((bottom - horizonHeight) / groundHeight); // don't divide by 0 here (limit horizon)
+            let colorProportion = 1 - ((bottom - horizonHeight) / groundHeight); // don't divide by 0 here (limit horizon)
+            // sometimes after resizing colorProportion might get some weird value (negative or /0)
+            if (colorProportion >= 0 && colorProportion <= 1) { } // do nothing, but else change the value
+            else if (colorProportion < 0) {
+                colorProportion = 0;
+            }
+            else if (colorProportion > 1) {
+                colorProportion = 1;
+            }
+            else {
+                colorProportion = 1;
+            } // if NaN or something else
+            // console.log(colorProportion)
             // console.log(colorProportion)
             const groundMiddle = window.innerHeight - (window.innerHeight - horizonHeight) / 2;
             const scaleByTheGroundPosition = (bottom - groundMiddle) / groundHeight * distanceScaling * 1.8;

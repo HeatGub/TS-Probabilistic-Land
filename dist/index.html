@@ -3,8 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <link href='https://fonts.googleapis.com/css?family=Cherry Swash' rel='stylesheet'>
+  <!-- <link href='https://fonts.googleapis.com/css?family=Cherry Swash' rel='stylesheet'>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Tangerine">
+  <link href='https://fonts.googleapis.com/css?family=Aclonica' rel='stylesheet'>
+  <link href='https://fonts.googleapis.com/css?family=Butcherman' rel='stylesheet'>
+  <link href='https://fonts.googleapis.com/css?family=Condiment' rel='stylesheet'>
+  <link href='https://fonts.googleapis.com/css?family=Fugaz One' rel='stylesheet'> -->
+  <link href='https://fonts.googleapis.com/css?family=Galada' rel='stylesheet'>
 
   <title>Treees</title>
   <link rel="shortcut icon" href="#" /> <!-- no icon error -->
@@ -12,24 +17,28 @@
   <script src="./script.js" defer > </script>
 </head>
 <body>
-  <!-- <div id="undoButton" title="undo (ctrl+z)"> </div> -->
-  <div id="closeSidebarButton"> </div>
+  <div id="closeSidebarButton"></div>
 
   <div id="sidebar">
-    <div id="CTGR_WORLD" class="sidebarCategory"> WORLD & PERSPECTIVE </div>
+    <div id="CTGR_INFO" class="sidebarCategory" id="infoCategory"> <p class="categoryName">INFO</p> 
+      <div class="infoElement"><p>Cancel Animation</p><div>ctrl+z or space</div></div>
+      <div class="infoElement"><p>Remove Last Tree</p><div>ctrl+z</div></div>
 
-    <div id="CTGR_SHADOWS" class="sidebarCategory"> LIGHT & SHADOW </div>
+    </div>
+  
+    <div id="CTGR_WORLD" class="sidebarCategory"> <p class="categoryName">WORLD & PERSPECTIVE</p> </div>
+
+    <div id="CTGR_SHADOWS" class="sidebarCategory"> <p class="categoryName">LIGHT & SHADOW</p> </div>
     
-    <div id="CTGR_TREE" class="sidebarCategory"> TREE </div>
+    <div id="CTGR_TREE" class="sidebarCategory"> <p class="categoryName">TREE</p> </div>
 
-    <div id="CTGR_LEAF" class="sidebarCategory"> LEAF </div>
+    <div id="CTGR_LEAF" class="sidebarCategory"> <p class="categoryName">LEAF</p> </div>
+
   </div>
-
 
   <div id="canvasContainer">
     <canvas id="skyCanvas"></canvas>
     <canvas id="lightSourceCanvas"></canvas>
-    <canvas id="lightSourceGlowCanvas"></canvas>
     <canvas id="groundCanvas"></canvas>
   </div>
   
