@@ -168,6 +168,7 @@
     -webkit-user-select: none; /* Safari */
     -ms-user-select: none; /* IE 10 and IE 11 */
     user-select: none; /* Standard syntax */
+    border-radius: 0 0.5rem 0.5rem 0;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -220,6 +221,10 @@
     border: 0.1rem solid var(--oddElementColor);
     background: var(--evenElementColor);
 }
+
+.infoElement > div{
+    color: var(--hoverElementColor);
+}
 .sidebarElement:hover {
     box-shadow: 0 0 0.5rem var(--hoverElementColor);
     outline: solid 0.1rem var(--hoverElementColor);
@@ -256,23 +261,38 @@ span > * {
     cursor: pointer;
     position: absolute;
     height: 10rem;
-    width: 1.5rem;
+    width: 1.8rem;
     top: calc(50% - 5rem);
     background: rgba(255, 255, 255, 0.3); /*same as end of sidebar gradient*/
     z-index: 1000000;
-    border-radius: 0 1rem 1rem 0;
-}
-#closeSidebarButton > p {
-    transform: rotate(-90deg);
-    margin-top: 2rem;
-    font-size: 2rem;
-    /* margin: auto; */
+    border-radius: 0 1rem 1rem 0;    
 }
 
+#closeSidebarButton > div {
+    margin-left: -0.2rem; /* move closer to sidebar */
+}
+
+#closeSidebarText:hover {
+    transition: 0.2s ease;
+    color: var(--sliderBackgroundColor);
+}
+
+#closeSidebarText {
+    height: 100%;
+    width: 100%;
+    padding: -10rem 2rem;
+    text-align: center;
+    font-size: 1.4rem;
+    line-height: 2rem;
+    padding: 1.3rem 0.3rem; /*centering text*/
+    font-weight: 900;
+    color: var(--hoverElementColor);
+    text-shadow: 0 0 0.2rem var(--sliderBackgroundColor);
+}
 
 input[type="text"]{
     font-family: 'Galada';
-    padding-top: 0.4rem; /* to center the text... not many options to do that in the input*/
+    padding-top: 0.5rem; /* to center the text... not many options to do that in the input*/
     font-size: 1.5rem;
     /* line-height: 1.3rem; */
     height: 1.9rem;
