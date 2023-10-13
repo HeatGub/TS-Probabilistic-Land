@@ -68,7 +68,7 @@ window.addEventListener('load', function () {
         return 'rgba(' + Math.round(Math.random() * 255) + ', ' + Math.round(Math.random() * 255) + ', ' + Math.round(Math.random() * 255) + ', ' + 1 + ')';
     }
     function randomRgbaBright() {
-        return 'rgba(' + (125 + Math.round(Math.random() * 125)) + ', ' + (125 + Math.round(Math.random() * 125)) + ', ' + (125 + Math.round(Math.random() * 125)) + ', ' + 1 + ')';
+        return 'rgba(' + (180 + Math.round(Math.random() * 70)) + ', ' + (180 + Math.round(Math.random() * 70)) + ', ' + (180 + Math.round(Math.random() * 70)) + ', ' + 1 + ')';
     }
     // function randomHexColor() {return '#' + Math.floor(Math.random()*16777215).toString(16)}
     function rgbaToHex(rgba) {
@@ -137,13 +137,15 @@ window.addEventListener('load', function () {
         const namePar = document.createElement("p");
         namePar.innerText = name;
         sidebarElement.appendChild(namePar);
+        const colorInputContainer = document.createElement("div");
+        colorInputContainer.classList.add("colorInputContainer");
+        sidebarElement.appendChild(colorInputContainer);
         const input = document.createElement("input"); // create canvas
         input.type = 'color';
-        // input.classList.add("sliderClass")
-        // input.setAttribute('data-slider', name)
         input.id = id; // Range
         input.value = String(value);
-        sidebarElement.appendChild(input);
+        // sidebarElement.appendChild(input)
+        colorInputContainer.appendChild(input);
         input.addEventListener('input', () => {
             passedFunction();
         });
@@ -195,7 +197,7 @@ window.addEventListener('load', function () {
         }
     }
     function resizeSidebar() {
-        sidebarWidth = Math.round(window.innerWidth / 4);
+        sidebarWidth = Math.round(window.innerWidth / 3);
         SIDEBAR.style.width = sidebarWidth + 'px';
         if (SIDEBAR.style.display != 'none') {
             closeSidebarButton.style.left = String(sidebarWidth) + 'px';
@@ -208,6 +210,7 @@ window.addEventListener('load', function () {
     window.addEventListener('resize', function () {
         redrawMountains();
         resizeSidebar();
+        console.log(document.getElementById('lightSourcePositionX'));
         globalCanvasesList.forEach((canvas) => {
             const memorizedCtx = canvas.getContext('2d', { willReadFrequently: true });
             const imgData = memorizedCtx.getImageData(0, 0, window.innerWidth, window.innerHeight);
@@ -228,7 +231,7 @@ window.addEventListener('load', function () {
     let mountainsDrawn = [];
     const SIDEBAR = document.getElementById('sidebar');
     const closeSidebarButton = document.getElementById('closeSidebarButton');
-    let sidebarWidth = Math.round(window.innerWidth / 4);
+    let sidebarWidth = Math.round(window.innerWidth / 3);
     const closeSidebarText = document.getElementById('closeSidebarText');
     // SIDEBAR OPENING AND CLOSING
     closeSidebarButton.addEventListener("click", () => {
@@ -260,7 +263,7 @@ window.addEventListener('load', function () {
     // const lightSourceGlowCanvas = document.getElementById('lightSourceGlowCanvas') as HTMLBodyElement
     let lightSourcePositionX = Math.round(sidebarWidth + Math.random() * (this.window.innerWidth - sidebarWidth));
     let lightSourcePositionY = Math.round(Math.random() * horizonHeight * 0.8);
-    let lightSourceSize = Math.round(50 + Math.random() * horizonHeight / 2);
+    let lightSourceSize = Math.round(horizonHeight / 2 + Math.random() * horizonHeight / 2);
     let lightsourceSharpness = Number((0.5 + Math.random() * 0.49).toFixed(2));
     let shadowSpreadMultiplier = Number((1 + (Math.random())).toFixed(1)); // change that later?
     let shadowHorizontalStretch = Number((1 + (Math.random())).toFixed(1));
@@ -270,18 +273,18 @@ window.addEventListener('load', function () {
     let shadowColorGlobal = randomRgba();
     let distanceScaling = Number((0.1 + Math.random() * 0.8).toFixed(2));
     let mountainsAmount = Math.round(1 + Math.random() * 9);
-    let mountainRangeWidthMultiplier = Number((0.2 + Math.random() * mountainsAmount / 15).toFixed(2));
-    let mountainRangeWidth = (window.innerHeight - horizonHeight) * 0.1 + (window.innerHeight - horizonHeight) * mountainRangeWidthMultiplier;
     let mountainTrimCloser = Number((0.2 + Math.random() * 0.6).toFixed(2)); // 0-1
-    let mountainHeightMultiplier = Number((0.10 + Math.random() * 0.30).toFixed(2)); // 0.1 - 1?
-    let maxLevelTree = Math.round(6 + Math.random() * 2);
+    let mountainHeightMultiplier = Number((0.2 + Math.random() * 0.35).toFixed(2)); // 0.1 - 1?
+    let mountainRangeWidthMultiplier = Number((0.05 + Math.random() * mountainHeightMultiplier).toFixed(2));
+    let mountainRangeWidth = (window.innerHeight - horizonHeight) * 0.1 + (window.innerHeight - horizonHeight) * mountainRangeWidthMultiplier;
+    let maxLevelTree = Math.round(5 + Math.random() * 2);
     let trunkLen = Math.round(80 + Math.random() * 50);
-    let initialsegmentingLen = Number((0.1 + Math.random() * 0.1).toFixed(2));
+    let initialsegmentingLen = Number((0.1 + Math.random() * 0.8).toFixed(2));
     let lenMultiplier = Number((0.65 + Math.random() * 0.25).toFixed(2));
     let trunkWidthAsPartOfLen = Number((0.1 + Math.random() * 0.3).toFixed(2));
-    let widthMultiplier = Number((0.6 + Math.random() * 0.2).toFixed(2));
+    let widthMultiplier = Number((0.55 + Math.random() * 0.2).toFixed(2));
     let rebranchingAngle = Number((5 + Math.random() * 15).toFixed(1));
-    let branchingProbabilityBooster = Number((0.2 + Math.random() * 0.3).toFixed(2)); // when 0 trees look more like sick
+    let branchingProbabilityBooster = Number((0.4 + Math.random() * 0.2).toFixed(2)); // when 0 trees look more like sick
     let occasionalBranchesLimit = Math.round(1 + Math.random());
     let levelShiftRangeAddition = Math.round(Math.random() * 3);
     // AXIS 1 WILL BE THE WIDER ONE. BOTH AXES ARE PERPENDICULAR TO THE LEAF'S MAIN NERVE (x0,y0 - xF,yF)
@@ -312,8 +315,8 @@ window.addEventListener('load', function () {
     let mountainColor = randomRgba();
     let groundColor = randomRgba();
     let lightSourceColor = randomRgbaBright();
-    let treeMistBlendingProportion = Number((0.5 + Math.random() * 0.5).toFixed(2));
-    let treeShadowBlendingProportion = Number((0.5 + Math.random() * 0.5).toFixed(2)); // blend shadow color with ground color
+    let treeMistBlendingProportion = Number((0.6 + Math.random() * 0.4).toFixed(2));
+    let treeShadowBlendingProportion = Number((0.6 + Math.random() * 0.4).toFixed(2)); // blend shadow color with ground color
     let leafFolding = Number((Math.random() * 0.25).toFixed(2));
     let randomizeLeafSize = Number((0.2 + Math.random() * 0.3).toFixed(2));
     // ____________________________________________________________ HERE PASSLINE____________________________________________________________
@@ -358,8 +361,12 @@ window.addEventListener('load', function () {
         mountainColor = hexToRgba(hexColorById('mountainColor'), 1);
         recolorMountains();
     });
-    addSlider(CTGR_WORLD, 'mountainTrimCloser', 'Trim Closer Mountains', '', 0, 1, 0.01, mountainTrimCloser, () => {
-        mountainTrimCloser = valById('mountainTrimCloser');
+    addSlider(CTGR_WORLD, 'mountainsAmount', 'Mountains Amount', 'Amount of mountains in the mountain range.', 0, 100, 1, mountainsAmount, () => {
+        mountainsAmount = valById('mountainsAmount');
+        redrawMountains();
+    });
+    addSlider(CTGR_WORLD, 'mountainHeightMultiplier', 'Mountain Height', '', 0, 1, 0.01, mountainHeightMultiplier, () => {
+        mountainHeightMultiplier = valById('mountainHeightMultiplier');
         redrawMountains();
     });
     addSlider(CTGR_WORLD, 'mountainRangeWidthMultiplier', 'Mountain Range Width', 'Mountain range width as a part of ground height.', 0.01, 1, 0.01, mountainRangeWidthMultiplier, () => {
@@ -367,12 +374,8 @@ window.addEventListener('load', function () {
         mountainRangeWidth = (window.innerHeight - horizonHeight) * mountainRangeWidthMultiplier;
         redrawMountains();
     });
-    addSlider(CTGR_WORLD, 'mountainsAmount', 'Mountains Amount', 'Amount of mountains in the mountain range.', 0, 100, 1, mountainsAmount, () => {
-        mountainsAmount = valById('mountainsAmount');
-        redrawMountains();
-    });
-    addSlider(CTGR_WORLD, 'mountainHeightMultiplier', 'Mountain Height', '', 0, 1, 0.01, mountainHeightMultiplier, () => {
-        mountainHeightMultiplier = valById('mountainHeightMultiplier');
+    addSlider(CTGR_WORLD, 'mountainTrimCloser', 'Trim Closer Mountains', '', 0, 1, 0.01, mountainTrimCloser, () => {
+        mountainTrimCloser = valById('mountainTrimCloser');
         redrawMountains();
     });
     // LIGHT AND SHADOW
@@ -413,7 +416,7 @@ window.addEventListener('load', function () {
         recalculateShadowParameters();
         recolorMountains();
     });
-    addSlider(CTGR_SHADOWS, 'treeShadowBlur', 'Tree Shadow Blur', 'Values higher than 0 will slow down the animation!!', 0, 100, 0.1, treeShadowBlur, () => {
+    addSlider(CTGR_SHADOWS, 'treeShadowBlur', 'Tree Shadow Blur', 'Values higher than 0 will SLOW DOWN THE ANIMATION!!', 0, 100, 0.1, treeShadowBlur, () => {
         treeShadowBlur = valById('treeShadowBlur');
     });
     addSlider(CTGR_SHADOWS, 'treeShadowBlendingProportion', 'Tree Shadow Blending', 'Blend tree shadow color with mist color.', 0, 1, 0.01, treeShadowBlendingProportion, () => {
@@ -435,17 +438,17 @@ window.addEventListener('load', function () {
     addColorInput(CTGR_TREE, 'colorTreeInitialGlobal', 'Trunk Color', '', rgbaToHex(colorTreeInitialGlobal), () => {
         colorTreeInitialGlobal = hexToRgba(hexColorById('colorTreeInitialGlobal'), 1);
     });
+    addSlider(CTGR_TREE, 'initialsegmentingLen', 'Branch Segment Length', 'Segment length as a part of trunk length. Every branch consists of segments, and every segment will check if a minimal distance for leaf spawning was reached. \n HIGHER VALUE = FASTER ANIMATION (but less detailed branches)', 0.01, 1, 0.01, initialsegmentingLen, () => {
+        initialsegmentingLen = valById('trunkLen');
+    });
+    addSlider(CTGR_TREE, 'branchingProbabilityBooster', 'Branching Booster', 'Increases Rebranching Probability. Low value may result in sick-looking tree, while high value may produce a huge amount of branches.', 0, 1, 0.01, branchingProbabilityBooster, () => {
+        branchingProbabilityBooster = valById('branchingProbabilityBooster');
+    });
     addSlider(CTGR_TREE, 'maxLevelTree', 'Branch Max Level', 'At normal rebranching child branch gains 1 level. Level 0 is trunk.', 1, 16, 1, maxLevelTree, () => {
         maxLevelTree = valById('maxLevelTree');
     }); // min > 0!
-    addSlider(CTGR_TREE, 'trunkLen', 'Trunk Length', 'Determines tree height.', 1, 200, 1, trunkLen, () => {
-        trunkLen = valById('trunkLen');
-    });
-    addSlider(CTGR_TREE, 'trunkWidthAsPartOfLen', 'Trunk Width', 'As a part of its length.', 0.01, 1, 0.01, trunkWidthAsPartOfLen, () => {
-        trunkWidthAsPartOfLen = valById('trunkWidthAsPartOfLen');
-    });
-    addSlider(CTGR_TREE, 'initialsegmentingLen', 'Branch Segmenting Length', 'As a part of trunk length. Every branch consists of segments, and every segment will check if a minimal distance for leaf spawning was reached.', 0.01, 1, 0.01, initialsegmentingLen, () => {
-        initialsegmentingLen = valById('trunkLen');
+    addSlider(CTGR_TREE, 'rebranchingAngle', 'Rebranching Angle', 'Angle between parent and child branch (it\'s randomized arterwards). ', 1, 45, 0.1, rebranchingAngle, () => {
+        rebranchingAngle = valById('rebranchingAngle');
     });
     addSlider(CTGR_TREE, 'lenMultiplier', 'Child Branch Length', 'As a part of parent branch length.', 0.1, 1, 0.01, lenMultiplier, () => {
         lenMultiplier = valById('lenMultiplier');
@@ -453,47 +456,47 @@ window.addEventListener('load', function () {
     addSlider(CTGR_TREE, 'widthMultiplier', 'Child Branch Width', 'As a part of parent branch width.', 0.1, 1, 0.01, widthMultiplier, () => {
         widthMultiplier = valById('widthMultiplier');
     });
-    addSlider(CTGR_TREE, 'rebranchingAngle', 'Rebranching Angle', 'Angle between parent and child branch (it\'s randomized arterwards). ', 1, 45, 0.1, rebranchingAngle, () => {
-        rebranchingAngle = valById('rebranchingAngle');
-    });
-    addSlider(CTGR_TREE, 'branchingProbabilityBooster', 'Branching Booster', 'Increases Rebranching Probability. Low value may result in sick-looking tree, while high value may produce a huge amount of branches.', 0, 1, 0.01, branchingProbabilityBooster, () => {
-        branchingProbabilityBooster = valById('branchingProbabilityBooster');
-    });
     addSlider(CTGR_TREE, 'occasionalBranchesLimit', 'Occasional Branches Limit', 'Occasional branches appear at the middle segments of parent branch and have lower rebranching angle.', 0, 4, 1, occasionalBranchesLimit, () => {
         occasionalBranchesLimit = valById('occasionalBranchesLimit');
     });
     addSlider(CTGR_TREE, 'levelShiftRangeAddition', 'Level Shift Addition', 'Level shifts happen with occasional branching - when level of branch is not parent level +1, but its level is in range from parent level +1 to parent level + 1 + this value.', 0, 4, 1, levelShiftRangeAddition, () => {
         levelShiftRangeAddition = valById('levelShiftRangeAddition');
     });
+    addSlider(CTGR_TREE, 'trunkLen', 'Trunk Length', 'Determines tree height.', 1, 200, 1, trunkLen, () => {
+        trunkLen = valById('trunkLen');
+    });
+    addSlider(CTGR_TREE, 'trunkWidthAsPartOfLen', 'Trunk Width', 'As a part of its length.', 0.01, 1, 0.01, trunkWidthAsPartOfLen, () => {
+        trunkWidthAsPartOfLen = valById('trunkWidthAsPartOfLen');
+    });
     addSlider(CTGR_TREE, 'leafyLevels', 'Leafy Levels', 'Every leafy level will have its probability for leaf spawning. This probability is lowest for the lowest leafy level and highest for the highest leafy level. It changes linearly.', 0, 10, 1, leafyLevels, () => {
         leafyLevels = valById('leafyLevels');
-    });
-    addSlider(CTGR_TREE, 'leafDistanceMultiplier', 'Leaf Distancing', 'Distance between leaves. Leaves spawn at segments, so this parameter works only if there is a segment to spawn a leaf on.', 0.1, 2, 0.1, leafDistanceMultiplier, () => {
-        leafDistanceMultiplier = valById('leafDistanceMultiplier');
     });
     addSlider(CTGR_TREE, 'globalLeafProbability', 'Leaf Probability', 'At each leaf node 3 leaves have the same chance to appear. It is this value.', 0, 1, 0.01, globalLeafProbability, () => {
         globalLeafProbability = valById('globalLeafProbability');
     });
-    addSlider(CTGR_TREE, 'whileLoopRetriesEachFrameLeaves', 'Leaves Animation Pack', 'Leaf draw attepmts in each frame. Lower value gives more stable but slower animation.', 1, 1000, 1, whileLoopRetriesEachFrameLeaves, () => {
+    addSlider(CTGR_TREE, 'leafDistanceMultiplier', 'Leaf Distancing', 'Minimal distance between neighbouring leaves on the branch. Leaves spawn at segments, so this parameter works only if there is a segment to spawn a leaf on.', 0.1, 2, 0.1, leafDistanceMultiplier, () => {
+        leafDistanceMultiplier = valById('leafDistanceMultiplier');
+    });
+    addSlider(CTGR_TREE, 'whileLoopRetriesEachFrameLeaves', 'Leaf Animation Pack', 'Leaf draw attepmts in each frame. Lower value gives more stable but slower animation.', 1, 1000, 1, whileLoopRetriesEachFrameLeaves, () => {
         whileLoopRetriesEachFrameLeaves = valById('whileLoopRetriesEachFrameLeaves');
     });
+    addSlider(CTGR_TREE, 'leafMaxStageGlobal', 'Leaf Growth Stages', 'Amount of leaf growth stages. Lower this to speed up animation.', 2, 200, 1, leafMaxStageGlobal, () => {
+        leafMaxStageGlobal = valById('leafMaxStageGlobal');
+    });
     // LEAF
-    addSlider(CTGR_LEAF, 'leafLenScaling', 'Length Scaling', 'Scales leaf size.', 0.01, 3, 0.01, leafLenScaling, () => {
+    addSlider(CTGR_LEAF, 'leafLenScaling', 'Length', 'Scales leaf size.', 0.01, 3, 0.01, leafLenScaling, () => {
         leafLenScaling = valById('leafLenScaling');
     });
-    addSlider(CTGR_LEAF, 'leafLineWidth', 'Leaf Line Width', 'As a part of leaf length.', 0.001, 0.1, 0.001, leafLineWidth, () => {
+    addSlider(CTGR_LEAF, 'leafLineWidth', 'Line Width', 'Leaf line width as a part of leaf length.', 0.001, 0.1, 0.001, leafLineWidth, () => {
         leafLineWidth = valById('leafLineWidth');
     });
     addSlider(CTGR_LEAF, 'petioleLenRatio', 'Petiole Lenght', 'As a part of leaf length.', 0, 1, 0.01, petioleLenRatio, () => {
         petioleLenRatio = valById('petioleLenRatio');
     });
-    addSlider(CTGR_LEAF, 'leafMaxStageGlobal', 'Growth Stages', 'Amount of leaf growth stages.', 2, 200, 1, leafMaxStageGlobal, () => {
-        leafMaxStageGlobal = valById('leafMaxStageGlobal');
-    });
     addSlider(CTGR_LEAF, 'leafFolding', 'Leaf Folding', 'Leaf folding strength depends on its angle and this parameter.', 0, 0.25, 0.01, leafFolding, () => {
         leafFolding = valById('leafFolding');
     });
-    addSlider(CTGR_LEAF, 'randomizeLeafSize', 'Size randomization', 'Randomize leaf size.', 0, 1, 0.01, randomizeLeafSize, () => {
+    addSlider(CTGR_LEAF, 'randomizeLeafSize', 'Size Randomization', 'Randomize leaf size.', 0, 1, 0.01, randomizeLeafSize, () => {
         randomizeLeafSize = valById('randomizeLeafSize');
     });
     addSlider(CTGR_LEAF, 'axis1WidthRatio', 'Axis 1 Width', 'Axis closer to petiole.', 0, 2, 0.01, axis1WidthRatio, () => {
@@ -530,7 +533,6 @@ window.addEventListener('load', function () {
     const sidebarCategories = Array.from(document.getElementsByClassName('sidebarCategory'));
     sidebarCategories.forEach(function (category) {
         category.addEventListener("click", hideShowCategoryElements);
-        // console.log(category.id)
         if (category.id != 'CTGR_INFO') {
             const children = category.children;
             for (let child of children) {
@@ -585,17 +587,6 @@ window.addEventListener('load', function () {
             // THEN CALCULATE BRANCH TIP (FINAL) COORDINATES
             this.xF = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len;
             this.yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len;
-            // // CHECK TREE EXTREME POINTS
-            // // y0 extreme is always trunk because branches dont grow below its level
-            // if (this.xF > this.tree.extremes.xF) {
-            //     this.tree.extremes.xF = this.xF
-            // }
-            // if (this.xF < this.tree.extremes.x0) {
-            //     this.tree.extremes.x0 = this.xF
-            // }
-            // if (this.yF < this.tree.extremes.yF) {
-            //     this.tree.extremes.yF = this.yF
-            // }
             // ____________ SEGMENTING A BRANCH ____________
             // let segAmountByLevel = Math.ceil( ((trunkLen*(Math.pow(lenMultiplier, this.level))) / initialsegmentingLen) + (this.level) )
             let segAmountByLevel = Math.ceil(((this.tree.trunkLen * (Math.pow(lenMultiplier, this.level))) / this.tree.initialsegmentingLen) + (this.level / 6)); //+ (this.level/6) to make more segments for leaf spawning on the twigs
@@ -730,10 +721,6 @@ window.addEventListener('load', function () {
         }
         drawSegmentShadow() {
             if (this.checkIfOutsideDrawingWindow() === false) {
-                // const shadowColorValues = rgbaStrToObj(shadowColor)
-                // const shadowColorAlpha1= 'rgba(' + shadowColorValues.r + ',' + shadowColorValues.g +  ',' + shadowColorValues.b +  ',1)'
-                // this.shadowSegments[this.drawnSegments].y0
-                // this.tree.ctxShadows.strokeStyle = shadowColorAlpha1
                 this.tree.ctxShadows.strokeStyle = this.tree.shadowColorTree;
                 this.tree.ctxShadows.lineCap = "round";
                 this.tree.ctxShadows.lineWidth = this.shadowSegments[this.drawnSegments].width;
@@ -828,10 +815,8 @@ window.addEventListener('load', function () {
                 // this variable lowers branching probability with level. In range from 1 to branchingProbability linearly
                 let branchingProbabilityByLevel = this.branchingProbability + ((1 - branchingProbability) * ((this.maxLevel - currLvl) / this.maxLevel));
                 // console.log(branchingProbabilityByLevel)
-                // let occasionalBranchingProbability = ((this.maxLevel-currLvl+1)/this.maxLevel) // always spawn at lvl 0
-                let occasionalBranchingProbability = 10; // always spawn at lvl 0
+                let occasionalBranchingProbability = ((this.maxLevel - currLvl + 1) / this.maxLevel); // always spawn at lvl 0
                 // console.log(branchingProbabilityByLevel, currLvl)
-                // this.allBranches.push([]) // push empty array to fill it by the forEach loop
                 this.allBranches[currLvl].forEach(element => {
                     // MAKE BRANCHES IF
                     if (element.yF < (this.initY - this.trunkLen / 15)) { // IF PARENT'S END IS NOT ON THE GROUND LEVEL
@@ -889,7 +874,7 @@ window.addEventListener('load', function () {
     class Leaf {
         constructor(
         // public parentSeg: {x0: number, y0: number, xF: number, yF: number, width: number}, // parent segment
-        parentBranch, x0, y0, len, angle, x0LeafShadow, y0LeafShadow, lineWidth = leafLineWidth * len, xF = 0, yF = 0, maxStages = leafMaxStageGlobal - 1, currentStage = 0, growthStages = [], canvas = canvasContainer.appendChild(document.createElement("canvas")), // create canvas
+        parentBranch, x0, y0, len, angle, x0LeafShadow, y0LeafShadow, lineWidth = leafLineWidth * len, xF = 0, yF = 0, maxStages = leafMaxStageGlobal - 1, currentStage = 0, rotateLeafRightFrom0To1 = 0.5 + Math.sin(angle / 180 * Math.PI) * leafFolding + Math.random() * leafFolding, growthStages = [], canvas = canvasContainer.appendChild(document.createElement("canvas")), // create canvas
         ctx = canvas.getContext('2d'), canvasCoords = { x: 0, y: 0 }, // canvasTopLeftCorner
         x0rel = 0, // relative coordinates (for the leaf canvas positioning)
         y0rel = 0, state = "hidden", tree = parentBranch.tree, canvasShadow = canvasContainer.appendChild(document.createElement("canvas")), ctxShadow = canvasShadow.getContext('2d'), shadowStages = [], xFLeafShadow = 0, yFLeafShadow = 0, shadowCanvasCoords = { x: 0, y: 0 }, // canvasTopLeftCorner
@@ -907,6 +892,7 @@ window.addEventListener('load', function () {
             this.yF = yF;
             this.maxStages = maxStages;
             this.currentStage = currentStage;
+            this.rotateLeafRightFrom0To1 = rotateLeafRightFrom0To1;
             this.growthStages = growthStages;
             this.canvas = canvas;
             this.ctx = ctx;
@@ -929,12 +915,7 @@ window.addEventListener('load', function () {
             this.tree.leavesList.push(this);
             let base = rgbaStrToObj(colorLeaf);
             let brghtnAddtn = -leafBrightnessRandomizer / 2 + Math.random() * leafBrightnessRandomizer;
-            // let rAddtn = - leafColorRandomizerR/2 + Math.random() * leafColorRandomizerR // could result in negatives. Not a big deal since it still works, but changed it.
-            // let gAddtn = - leafColorRandomizerG/2 + Math.random() * leafColorRandomizerG
-            // let bAddtn = - leafColorRandomizerB/2 + Math.random() * leafColorRandomizerB
             this.color = { r: base.r + brghtnAddtn + Math.random() * leafColorRandomizerR, g: base.g + brghtnAddtn + Math.random() * leafColorRandomizerG, b: base.b + brghtnAddtn + Math.random() * leafColorRandomizerB };
-            // console.log(leafColorRandomizerR, leafColorRandomizerG, leafColorRandomizerB)
-            // console.log(this.color)
             let leafColor = 'rgba(' + this.color.r + ',' + this.color.g + ',' + this.color.b + ')';
             let colorResulting = blendRgbaColorsInProportions(mistColor, leafColor, this.tree.colorDistortionProportion * treeMistBlendingProportion);
             // NOW BLEND AGAIN WITH SHADOW
@@ -942,8 +923,8 @@ window.addEventListener('load', function () {
             const colorFinalValues = rgbaStrToObj(colorResulting);
             this.color = { r: colorFinalValues.r, g: colorFinalValues.g, b: colorFinalValues.b };
             // RESIZE CANVAS (canvasCoords and 0rels depend on it)
-            this.canvas.width = this.len * 4; // its just *4 but it's not a minimal value which depends on bezier curve shape
-            this.canvas.height = this.len * 4;
+            this.canvas.width = this.len * 2; // its just *4 but it's not a minimal value which depends on bezier curve shape
+            this.canvas.height = this.len * 2;
             // final len in final stage
             this.xF = this.x0 + Math.sin(this.angle / 180 * Math.PI) * this.len;
             this.yF = this.y0 - Math.cos(this.angle / 180 * Math.PI) * this.len;
@@ -993,13 +974,10 @@ window.addEventListener('load', function () {
                 this.growthStages[stg].xFPetiole = this.x0rel + Math.sin(this.angle / 180 * Math.PI) * this.growthStages[stg].stageLen * petioleLenRatio;
                 this.growthStages[stg].yFPetiole = this.y0rel - Math.cos(this.angle / 180 * Math.PI) * this.growthStages[stg].stageLen * petioleLenRatio;
                 // 0.5 is no rotation. 0-1 range
-                let rotateLeafRightFrom0To1 = 0.5 + Math.sin(this.angle / 180 * Math.PI) * leafFolding + Math.random() * leafFolding;
-                // let rotateLeafRightFrom0To1 = 0.5 + Math.random()*leafFolding + Math.sin(this.angle/180*Math.PI) * leafFolding //* Math.random()
-                // let rotateLeafRightFrom0To1 = 1
                 // BEZIER CURVES - AXIS 1
-                const axis1 = this.calcBezierPointsForPerpendicularAxis(axis1PositionAsLenRatio, axis1WidthRatio, rotateLeafRightFrom0To1, stg);
+                const axis1 = this.calcBezierPointsForPerpendicularAxis(axis1PositionAsLenRatio, axis1WidthRatio, this.rotateLeafRightFrom0To1, stg);
                 // BEZIER CURVES - AXIS 2
-                const axis2 = this.calcBezierPointsForPerpendicularAxis(axis2PositionAsLenRatio, axis2WidthRatio, rotateLeafRightFrom0To1, stg);
+                const axis2 = this.calcBezierPointsForPerpendicularAxis(axis2PositionAsLenRatio, axis2WidthRatio, this.rotateLeafRightFrom0To1, stg);
                 // FILL UP THIS STAGE
                 this.growthStages[stg].xR1 = axis1.xR;
                 this.growthStages[stg].yR1 = axis1.yR;
@@ -1017,11 +995,10 @@ window.addEventListener('load', function () {
                 // PETIOLE'S END COORDS
                 this.shadowStages[stg].xFPetiole = this.x0relShadow + Math.sin(this.angle / 180 * Math.PI) * this.shadowStages[stg].stageLen * petioleLenRatio;
                 this.shadowStages[stg].yFPetiole = this.y0relShadow + Math.cos(this.angle / 180 * Math.PI) * this.shadowStages[stg].stageLen * petioleLenRatio;
-                // let shadowRotateLeafRightFrom0To1 = 0.35 + Math.sin(this.angle/180* Math.PI)*0.3 // move up this line or add randomization
                 // BEZIER CURVES - AXIS 1
-                const axis1Shadow = this.calcBezierPointsForPerpendicularAxisShadow(axis1PositionAsLenRatio, axis1WidthRatio, rotateLeafRightFrom0To1, stg);
+                const axis1Shadow = this.calcBezierPointsForPerpendicularAxisShadow(axis1PositionAsLenRatio, axis1WidthRatio, this.rotateLeafRightFrom0To1, stg);
                 // BEZIER CURVES - AXIS 2
-                const axis2Shadow = this.calcBezierPointsForPerpendicularAxisShadow(axis2PositionAsLenRatio, axis2WidthRatio, rotateLeafRightFrom0To1, stg);
+                const axis2Shadow = this.calcBezierPointsForPerpendicularAxisShadow(axis2PositionAsLenRatio, axis2WidthRatio, this.rotateLeafRightFrom0To1, stg);
                 // FILL UP THIS STAGE
                 this.shadowStages[stg].xR1 = axis1Shadow.xR;
                 this.shadowStages[stg].yR1 = axis1Shadow.yR;
@@ -1139,7 +1116,9 @@ window.addEventListener('load', function () {
     // ____________________________________________________ LEAF ____________________________________________________
     // ____________________________________________________ MOUNTAIN ____________________________________________________
     class Mountain {
-        constructor(initialAmountOfNodes, octaves, targetHeight, canvasBottom, colorTop, colorBottom, width = window.outerWidth, // a little overlap for reassuring
+        constructor(initialAmountOfNodes, octaves, targetHeight, canvasBottom, colorTop, colorBottom, 
+        // private width = window.outerWidth,
+        width = window.innerWidth * 1.05, // a little overlap for reassuring
         lowestPoint = Infinity, highestPoint = 0, currentAmountOfNodes = initialAmountOfNodes, currentOctave = 0, allPoints = [], randomPoints = [], canvas = canvasContainer.appendChild(document.createElement("canvas")), ctx = canvas.getContext('2d'), canvasShadow = canvasContainer.appendChild(document.createElement("canvas")), ctxShadow = canvasShadow.getContext('2d')) {
             this.initialAmountOfNodes = initialAmountOfNodes;
             this.octaves = octaves;
@@ -1273,7 +1252,7 @@ window.addEventListener('load', function () {
             const gradient = this.ctxShadow.createLinearGradient(this.canvasShadow.width / 2, 0, this.canvasShadow.width / 2, this.canvasShadow.height);
             gradient.addColorStop(0, this.colorBottom);
             const shadowColorValues = rgbaStrToObj(shadowColorGlobal);
-            const shadowColorTransparent = 'rgba(' + shadowColorValues.r + ',' + shadowColorValues.g + ',' + shadowColorValues.b + ',' + shadowColorValues.a / 4 + ')';
+            const shadowColorTransparent = 'rgba(' + shadowColorValues.r + ',' + shadowColorValues.g + ',' + shadowColorValues.b + ',' + shadowColorValues.a / 5 + ')';
             gradient.addColorStop(1, shadowColorTransparent);
             this.ctxShadow.fillStyle = gradient;
             let h = this.targetHeight;
@@ -1285,10 +1264,11 @@ window.addEventListener('load', function () {
             this.ctxShadow.moveTo(0, h - this.allPoints[0]);
             this.ctxShadow.filter = 'blur(5px)';
             // this.ctxShadow.stroke()
-            for (let point = 0; point < this.allPoints.length - 1; point++) {
+            // for (let point = 0; point < this.allPoints.length-1; point++) {
+            for (let point = 0; point < window.innerWidth; point++) {
                 // let verticalAngleInfluence = ( (h - this.allPoints[point]) / h ) ** 0.7
                 // let shadowAngle = - ((lightSourcePositionX - point) / window.innerWidth)/4 * shadowHorizontalStretch * verticalAngleInfluence
-                let verticalAngleInfluence = ((h - this.allPoints[point]) / h) ** 1;
+                let verticalAngleInfluence = ((h - this.allPoints[point]) / h) ** 2;
                 let shadowAngle = -((lightSourcePositionX - point) / window.innerWidth) * shadowHorizontalStretch * verticalAngleInfluence;
                 // console.log(shadowAngle)
                 this.ctxShadow.lineTo(point + point * shadowAngle, (h - this.allPoints[point]) * shadowSpreadMountain);

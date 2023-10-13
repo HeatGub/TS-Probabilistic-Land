@@ -1,21 +1,14 @@
 :root {
     /* image-rendering: optimizeSpeed; */
     font-size: 62.5%; /*-> rem = 10px*/
-
-    /* font-family: 'Cherry Swash'; */
-    /* font-family: 'Tangerine'; */
-    /* font-family: 'Aclonica'; */
-    /* font-family: 'Butcherman'; */
-    /* font-family: 'Fugaz One'; */
     font-family: 'Galada';
-
     /* font-weight: 600; */
     /* text-transform: capitalize; */
 
     --horizonHeight: 50%;
     --lightSourceColor: rgba(126, 230, 204, 0.861);
 
-    --textInputWidth: 4.2rem;
+    --textInputWidth: 4.4rem;
     --textInputSpaceLeft: 0.5rem;
     --sliderHeight: 1.5rem;
     --sliderThumbBorderWidth: 0.2rem;
@@ -36,11 +29,9 @@
     --categoryBackgroundColor: rgba(109, 109, 109, 0.4);
     --oddElementColor: rgba(255, 255, 255, 0.2);
     --evenElementColor: rgba(136, 136, 136, 0.3);
-    /* --oddElementColor: linear-gradient(rgba(204, 204, 204, 0.6) 0%, rgba(70, 70, 70, 0.4) 100%);
-    --evenElementColor: linear-gradient(rgba(161, 161, 161, 0.6) 0%, rgba(44, 44, 44, 0.4) 100%); */
-
-    /* --categoryOutlineColor: rgb(240, 9, 9); */
-    --hoverElementColor: rgb(255, 255, 255);
+    --oddElementTextColor: rgba(50, 50, 50, 0.90);
+    --evenElementTextColor: rgba(37, 35, 35, 0.85);
+    --hoverElementColor: rgba(255, 255, 255, 0.75);
 
     --lightsourceSharpness: 60%; /*69% max*/
 }
@@ -171,6 +162,12 @@
     border-radius: 0 0.5rem 0.5rem 0;
 }
 
+#CTGR_INFO > div {
+    -webkit-user-select: text; /* Safari */
+    -ms-user-select: text; /* IE 10 and IE 11 */
+    user-select: text; /* Standard syntax */
+}
+
 /* Hide scrollbar for Chrome, Safari and Opera */
 #sidebar::-webkit-scrollbar {
     display: none;
@@ -192,10 +189,11 @@
     border-radius: 1rem;
     /* padding: 1px; */
     outline: solid 0.1rem var(--hoverElementColor);
-    text-shadow: 0 0 1rem var(--hoverElementColor);
+    text-shadow: 0 0 0.5rem var(--hoverElementColor);
 }
 
 .categoryName {
+    color: var(--evenElementTextColor);
     font-size: 4.2rem; /* category name */
     /* line-height: 6rem; */
     margin-top: 1.5rem;
@@ -205,8 +203,11 @@
 .sidebarCategory:hover {
     box-shadow: 0 0 0.5rem var(--hoverElementColor);
     outline: solid 0.2rem var(--hoverElementColor);
-    /* text-shadow: 0 0 1.5rem var(--hoverElementColor); */
+    text-shadow: 0 0 1.5rem var(--hoverElementColor);
     background: var(--GradientCategoryInverse);
+    background-color: rgba(250, 250, 250, 0.15);
+    transition: 2s ease;
+
 }
 .sidebarElement, .infoElement {
     /* font-family: 'Tangerine'; */
@@ -222,9 +223,19 @@
     background: var(--evenElementColor);
 }
 
-.infoElement > div{
+.infoElement {
+    line-height: 3.5rem;
+    color: var(--oddElementTextColor);
+}
+.infoElement > * { /* text */
+    margin-top: 1rem;
+}
+.infoElement > div{ /* brighter text*/
+    margin-top: -0.5rem;
+    margin-bottom: 0.5rem;
     color: var(--hoverElementColor);
 }
+
 .sidebarElement:hover {
     box-shadow: 0 0 0.5rem var(--hoverElementColor);
     outline: solid 0.1rem var(--hoverElementColor);
@@ -235,22 +246,30 @@
 .sidebarElement:nth-child(odd) {
     background: var(--oddElementColor);
     border: 0.1rem solid var(--evenElementColor);
+    color: var(--oddElementTextColor);
 }
 .sidebarElement:nth-child(even) {
     background: var(--evenElementColor);
     border: 0.1rem solid var(--oddElementColor);
+    color: var(--evenElementTextColor);
 }
+
 .sidebarElement > * {
     margin: auto; /*horizontal centering */
 }
 .sidebarElement > p { /*parameter name*/
-    margin-top: 1rem;
-    margin-bottom: -1rem;
-    line-height: 4rem;
+    margin-top: 0.5rem;
+    line-height: 3.5rem;
+    /* margin-bottom: -0.8rem; */
 }
-
 .sidebarSliderElement { /* slider with text input */
     width: 97%;
+    margin-top: -1.6rem;
+    margin-bottom: -0.9rem;
+}
+.colorInputContainer { /*color input element didn't take margins, but container does*/
+    margin-top: -1rem;
+    margin-bottom: -1.4rem;
 }
 
 span > * {
@@ -320,10 +339,8 @@ input[type="color"]{
     width: 67%; /* as sidebarSliderElement width */ 
     border: none;
     background: none;
-    /* border-radius: 2rem; */
     cursor: pointer;
-    /* margin-top: -0.4rem;
-    margin-bottom: -0.4rem; */
+    height: 2.5rem;
 }
 
 /* ___________________________ CUSTOM SLIDER ___________________________*/
