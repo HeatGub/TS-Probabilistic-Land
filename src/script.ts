@@ -231,7 +231,6 @@ function resizeSidebar() {
 window.addEventListener('resize', function() {
     redrawMountains()
     resizeSidebar()
-    console.log(document.getElementById('lightSourcePositionX'))
     globalCanvasesList.forEach( (canvas) => { // REDRAWING TREES
         const memorizedCtx = canvas.getContext('2d', {willReadFrequently: true}) as CanvasRenderingContext2D
         const imgData = memorizedCtx.getImageData(0,0, window.innerWidth, window.innerHeight)
@@ -239,6 +238,17 @@ window.addEventListener('resize', function() {
         canvas.height = window.innerHeight
         memorizedCtx.putImageData(imgData,0 , 0 ) // redraw memorized image
     })
+    
+    // UPDATE MAX X POSITION FOR THE LIGHTSOURCE
+    const posX = document.getElementById('lightSourcePositionX') as HTMLInputElement
+    posX.max = String(window.innerWidth)
+    if (Number(posX.value) >= window.innerWidth) {
+        const textPosX = document.getElementById('lightSourcePositionX_T') as HTMLInputElement
+        posX.value = String(window.innerWidth)
+        textPosX.value = String(window.innerWidth)
+        lightSourcePositionX = window.innerWidth
+    }
+    updateLightSource()
 })
 // ____________________________________________________ FUNCTIONS ____________________________________________________
 
@@ -287,7 +297,8 @@ document.documentElement.style.cssText += "--horizonHeight:" + horizonHeight + "
 // LIGHTSOURCE
 const lightSourceCanvas = document.getElementById('lightSourceCanvas') as HTMLBodyElement
 // const lightSourceGlowCanvas = document.getElementById('lightSourceGlowCanvas') as HTMLBodyElement
-let lightSourcePositionX = Math.round(sidebarWidth + Math.random() * (this.window.innerWidth-sidebarWidth))
+let lightSourcePositionX = Math.round(Math.random() * (this.window.innerWidth))
+
 let lightSourcePositionY = Math.round(Math.random() * horizonHeight*0.8)
 let lightSourceSize = Math.round(horizonHeight/2 + Math.random()*horizonHeight/2)
 let lightsourceSharpness = Number((0.5 + Math.random()*0.49).toFixed(2))
@@ -299,12 +310,11 @@ let shadowSpreadMountain = (lightSourcePositionY)/horizonHeight * shadowSpreadMu
 let treeShadowBlur = 0
 let shadowColorGlobal = randomRgba()
 
-let distanceScaling = Number((0.1 + Math.random()*0.8).toFixed(2))
+let distanceScaling = Number((0.5 + Math.random()*0.3).toFixed(2))
 let mountainsAmount = Math.round(1 + Math.random()*9)
-let mountainTrimCloser = Number((0.2 + Math.random()*0.6).toFixed(2)) // 0-1
-let mountainHeightMultiplier = Number((0.2 + Math.random()*0.35).toFixed(2)) // 0.1 - 1?
-
-let mountainRangeWidthMultiplier = Number((0.05 + Math.random()*mountainHeightMultiplier).toFixed(2))
+let mountainTrimCloser = Number((0.3 + Math.random()*0.4).toFixed(2)) // 0-1
+let mountainHeightMultiplier = Number((0.35 + Math.random()*0.35).toFixed(2)) // 0.1 - 1?
+let mountainRangeWidthMultiplier = Number((0.05 + Math.random()*mountainHeightMultiplier*0.6).toFixed(2))
 let mountainRangeWidth = (window.innerHeight - horizonHeight)*0.1 + (window.innerHeight - horizonHeight)*mountainRangeWidthMultiplier
 
 let maxLevelTree = Math.round(5 + Math.random() * 2)
@@ -312,9 +322,9 @@ let trunkLen = Math.round(80 + Math.random() * 50)
 
 let initialsegmentingLen = Number((0.1 + Math.random()*0.8).toFixed(2))
 
-let lenMultiplier = Number((0.65 + Math.random()*0.25).toFixed(2))
+let lenMultiplier = Number((0.7 + Math.random()*0.2).toFixed(2))
 let trunkWidthAsPartOfLen = Number((0.1 + Math.random()*0.3).toFixed(2))
-let widthMultiplier = Number((0.55 + Math.random()*0.2).toFixed(2))
+let widthMultiplier = Number((0.55 + Math.random()*0.15).toFixed(2))
 let rebranchingAngle = Number((5 + Math.random() * 15).toFixed(1))
 let branchingProbabilityBooster = Number((0.4 + Math.random()*0.2).toFixed(2)) // when 0 trees look more like sick
 let occasionalBranchesLimit = Math.round(1 + Math.random())
@@ -339,10 +349,10 @@ let colorTreeInitialGlobal = randomRgba()
 let colorTreeFinalGlobal = randomRgba()
 let colorLeaf = randomRgba()
 let leafLineDarkness = Number((-0.5 + Math.random()*0.5).toFixed(2)) // 0-1 range (or even -1 to +1)
-let leafBrightnessRandomizer = Math.round(Math.random() * 50) // +- in rgb scale (0-255)
-let leafColorRandomizerR = Math.round(Math.random() * 150) // +- in rgb scale (0-255)
-let leafColorRandomizerG = Math.round(Math.random() * 150) // +- in rgb scale (0-255)
-let leafColorRandomizerB = Math.round(Math.random() * 150) // +- in rgb scale (0-255)
+let leafBrightnessRandomizer = Math.round(Math.random() * 80) // +- in rgb scale (0-255)
+let leafColorRandomizerR = Math.round(Math.random() * 50) // +- in rgb scale (0-255)
+let leafColorRandomizerG = Math.round(Math.random() * 50) // +- in rgb scale (0-255)
+let leafColorRandomizerB = Math.round(Math.random() * 50) // +- in rgb scale (0-255)
 
 let skyColor = randomRgba()
 let mistColor = randomRgba()
@@ -514,7 +524,7 @@ addSlider(CTGR_TREE , 'leafyLevels', 'Leafy Levels' , 'Every leafy level will ha
 addSlider(CTGR_TREE , 'globalLeafProbability', 'Leaf Probability' , 'At each leaf node 3 leaves have the same chance to appear. It is this value.',  0, 1 , 0.01, globalLeafProbability, () => {
     globalLeafProbability = valById('globalLeafProbability')
 })
-addSlider(CTGR_TREE , 'leafDistanceMultiplier', 'Leaf Distancing' , 'Minimal distance between neighbouring leaves on the branch. Leaves spawn at segments, so this parameter works only if there is a segment to spawn a leaf on.',  0.1, 2 , 0.1, leafDistanceMultiplier, () => {
+addSlider(CTGR_TREE , 'leafDistanceMultiplier', 'Leaf Distancing' , 'Minimal distance between neighbouring leaves on the branch. Leaves spawn at segments, so this parameter works only if there is a segment to spawn a leaf on.',  0.1, 2 , 0.01, leafDistanceMultiplier, () => {
     leafDistanceMultiplier = valById('leafDistanceMultiplier')
 })
 addSlider(CTGR_TREE , 'whileLoopRetriesEachFrameLeaves', 'Leaf Animation Pack' , 'Leaf draw attepmts in each frame. Lower value gives more stable but slower animation.',  1, 1000, 1, whileLoopRetriesEachFrameLeaves, () => {
@@ -684,6 +694,7 @@ class Branch {
                     const y0LeafShadow  = this.shadowSegments[seg].yF + Math.sin(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2 // opposite sign to (y0Leaf) because shadow leaves are rotated
                     const leafL = new Leaf (this, x0Leaf , y0Leaf , thisLeafSize*0.9, this.angle -40 - Math.random()*10, x0LeafShadow, y0LeafShadow)
                     this.segments[seg].leaves.push(leafL)
+                    this.parent.tree.leavesAmount ++
                     // console.log('L ')
                 }
                 // MIDDLE LEAF
@@ -696,7 +707,8 @@ class Branch {
                     const x0LeafShadow  = this.shadowSegments[seg].xF - (Math.cos(this.angle/180* Math.PI) * this.shadowSegments[seg].width/4) + Math.random()*(Math.cos(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2)
                     const y0LeafShadow  = this.shadowSegments[seg].yF
                     const leafM = new Leaf (this, x0Leaf , y0Leaf , thisLeafSize, this.angle -10 + Math.random()*20, x0LeafShadow, y0LeafShadow) // slightly bigger than side leaves
-                    this.segments[seg].leaves.push(leafM) 
+                    this.segments[seg].leaves.push(leafM)
+                    this.parent.tree.leavesAmount ++
                     // console.log(' M ')
                 }
                 // RIGHT LEAF
@@ -708,6 +720,7 @@ class Branch {
                     const y0LeafShadow  = this.shadowSegments[seg].yF - Math.sin(this.angle/180* Math.PI) * this.shadowSegments[seg].width/2 // opposite sign
                     const leafR = new Leaf (this, x0Leaf , y0Leaf , thisLeafSize*0.9, this.angle + 40 + Math.random()*10, x0LeafShadow, y0LeafShadow)
                     this.segments[seg].leaves.push(leafR)
+                    this.parent.tree.leavesAmount ++
                     // console.log('   R ')
                 }
             }
@@ -848,6 +861,7 @@ class Tree {
         public greenPerLevel = 0,
         public bluePerLevel = 0,
         public branchesAmount = 0,
+        public leavesAmount = 0,
     ){
         this.redPerLevel = (rgbaStrToObj(this.colorTreeFinal).r - rgbaStrToObj(this.colorTreeInitial).r) / maxLevel,
         this.greenPerLevel = (rgbaStrToObj(this.colorTreeFinal).g - rgbaStrToObj(this.colorTreeInitial).g) / maxLevel,
@@ -864,7 +878,6 @@ class Tree {
         this.canvasShadows.width = window.innerWidth
         this.canvasShadows.height = window.innerHeight
         globalCanvasesList.push(this.canvasShadows)
-        // this.canvasShadows.style.zIndex = String(initY-1)
 
         const root = new Root (this)
         const startTime = Date.now()
@@ -910,7 +923,7 @@ class Tree {
                 }
             })
         }
-        console.log('Tree constructed in ' + (Date.now()- startTime) +  ' ms, ' + this.branchesAmount + ' branches')
+        console.log('Tree constructed in ' + (Date.now()- startTime) +  ' ms - ' + this.branchesAmount + ' branches, ' + this.leavesAmount + ' leaves')
     }// constructor end
 
     removeTreeCanvases() {
@@ -1220,7 +1233,7 @@ class Mountain {
         private colorTop: string,
         private colorBottom: string,
         // private width = window.outerWidth,
-        private width = window.innerWidth*1.05, // a little overlap for reassuring
+        private width = window.innerWidth*1.01, // a little overlap for reassuring?
         private lowestPoint = Infinity,
         private highestPoint = 0,
         private currentAmountOfNodes = initialAmountOfNodes,
@@ -1233,9 +1246,9 @@ class Mountain {
         readonly ctxShadow = canvasShadow.getContext('2d') as CanvasRenderingContext2D,
     ){
         this.canvas.style.zIndex = String(Math.round(canvasBottom))
-        this.canvasShadow.style.zIndex = this.canvas.style.zIndex
+        // this.canvasShadow.style.zIndex = '10' // bit more than tree zIndex shadow (0)
+        this.canvasShadow.style.zIndex = String(Math.round(canvasBottom))
 
-        this.currentAmountOfNodes = this.initialAmountOfNodes // to silence TS declared but never read
         while (this.currentOctave < this.octaves) {
             this.fillPointsOnTheLineBetweenNodes(this.currentAmountOfNodes)
             this.currentAmountOfNodes = this.currentAmountOfNodes * 2
@@ -1245,8 +1258,6 @@ class Mountain {
         // let generatedMountainHeight = highestPoint-lowestPoint
         this.rescale()
         this.smoothOut()
-        this.allPoints = this.allPoints.slice(0, this.width) // trim array to initial width
-        // this.drawMountain()
 
         this.ctx.lineWidth = 1
         this.canvas.style.bottom = (window.innerHeight - this.canvasBottom) + 'px'
@@ -1256,6 +1267,7 @@ class Mountain {
         this.canvas.height = this.targetHeight // ADD VAL FOR HIGHER MOUNTAIN
 
         this.canvasShadow.style.top = (this.canvasBottom-1) + 'px' //1px overlap
+        // this.canvasShadow.style.top = (this.canvasBottom) + 'px' //1px overlap
         this.canvasShadow.classList.add('mountainShadowCanvas')
         this.canvasShadow.height = this.targetHeight*shadowSpreadMountain * 2 // more area for blur
         this.canvasShadow.width = window.innerWidth
@@ -1320,7 +1332,7 @@ class Mountain {
 
     rescale () {
         this.findMinAndMax ()
-        let scalingFactor =  this.targetHeight / (this.highestPoint - this.lowestPoint)
+        const scalingFactor =  this.targetHeight / (this.highestPoint - this.lowestPoint)
         // console.log((this.highestPoint - this.lowestPoint))
         // console.log(scalingFactor)
         for (let i = 0; i < this.allPoints.length; i++) {
@@ -1335,7 +1347,7 @@ class Mountain {
         gradient.addColorStop(1, this.colorBottom)
         this.ctx.fillStyle = gradient
         this.ctx.strokeStyle = gradient
-        this.ctx.stroke()
+        // this.ctx.stroke()
         // this.ctx.filter = 'blur(3px)'
         this.ctx.beginPath()
         this.ctx.moveTo(0, this.allPoints[0])
@@ -1350,7 +1362,6 @@ class Mountain {
         this.ctx.stroke()
         this.ctx.closePath()
         this.ctx.fill()
-
         // console.log(this.allPoints.length)
     }
 
@@ -1365,21 +1376,17 @@ class Mountain {
 
         let h = this.targetHeight
         // this.ctxShadow.lineWidth = 1
-        // let color = 'rgba(0,0,0, 0.5)'
-        // this.ctxShadow.strokeStyle = color
-        // this.ctxShadow.fillStyle = color
         this.ctxShadow.beginPath()
         this.ctxShadow.moveTo(0, h - this.allPoints[0])
         this.ctxShadow.filter = 'blur(5px)'
         // this.ctxShadow.stroke()
 
-        // for (let point = 0; point < this.allPoints.length-1; point++) {
-        for (let point = 0; point < window.innerWidth; point++) {
+        for (let point = 0; point < this.allPoints.length-1; point++) {
+        // for (let point = 0; point < window.innerWidth; point++) {
             // let verticalAngleInfluence = ( (h - this.allPoints[point]) / h ) ** 0.7
             // let shadowAngle = - ((lightSourcePositionX - point) / window.innerWidth)/4 * shadowHorizontalStretch * verticalAngleInfluence
-            let verticalAngleInfluence = ( (h - this.allPoints[point]) / h ) ** 2
+            let verticalAngleInfluence = ( (h - this.allPoints[point]) / h )
             let shadowAngle = - ((lightSourcePositionX - point) / window.innerWidth) * shadowHorizontalStretch * verticalAngleInfluence
-            // console.log(shadowAngle)
             this.ctxShadow.lineTo(point+ point*shadowAngle, (h - this.allPoints[point]) * shadowSpreadMountain)
             this.ctxShadow.lineTo(point+1 + (point+1)*shadowAngle, (h - this.allPoints[point+1]) * shadowSpreadMountain)
         }
@@ -1420,7 +1427,7 @@ class Mountain {
 // _____________________ DRAWING MOUNTAINS _____________________
 function drawMountains () {
     for (let m = 0; m < mountainsAmount; m++ ) {
-        const height = 1000 * mountainHeightMultiplier * ((mountainsAmount - (m* mountainTrimCloser))/(mountainsAmount))
+        const height = window.innerHeight/2.5 * mountainHeightMultiplier * ((mountainsAmount - (m* mountainTrimCloser))/(mountainsAmount))
         const bottom = horizonHeight + (mountainRangeWidth/mountainsAmount) * m
 
         const groundHeight = window.innerHeight - horizonHeight
