@@ -1,5 +1,5 @@
 # Probabilistic Land - TypeScript
-This project started as a tree generating algorithm, but I added shadows, mountains etc. on top of that because plain background didn't look well. So here it is. This is entirely my code (except few copied lines for things like rgba conversion).
+This project started as a tree generating algorithm, but I added shadows, mountains etc. on top of that because plain background didn't look well. So here it is. No libraries etc. used - just pure TypeScript, CSS and a little bit of HTML.
 
 <p align="center">
   <img src="https://github.com/HeatGub/TS-Probabilistic-Land/assets/115884941/809eac02-a677-46c7-b7cc-a664bcd7398d" width=60%>
