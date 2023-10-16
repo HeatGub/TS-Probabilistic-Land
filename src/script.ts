@@ -1145,7 +1145,7 @@ class Leaf {
         this.ctx.closePath()
 
         // BEZIER CURVES FOR BOTH SIDES OF A LEAF
-        this.ctx.beginPath();
+        this.ctx.beginPath()
         this.ctx.moveTo(this.growthStages[this.currentStage].xFPetiole, this.growthStages[this.currentStage].yFPetiole)
         // right side of a leaf
         this.ctx.bezierCurveTo(this.growthStages[this.currentStage].xR1, this.growthStages[this.currentStage].yR1, this.growthStages[this.currentStage].xR2, this.growthStages[this.currentStage].yR2, this.growthStages[this.currentStage].xF, this.growthStages[this.currentStage].yF)
